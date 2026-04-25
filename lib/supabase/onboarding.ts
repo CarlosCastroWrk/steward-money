@@ -38,9 +38,20 @@ export async function saveIncomeSources(
     frequency: string;
     next_expected_date: string;
     is_recurring: boolean;
+    is_variable?: boolean;
+    hourly_rate?: number | null;
+    weekly_hours?: number | null;
   }>
 ) {
-  const rows = sources.map((source) => ({ ...source, user_id: userId }));
+  const rows = sources.map((source) => ({
+    ...source,
+    user_id: userId,
+    // For variable sources, persist the computed estimate as amount so downstream
+    // queries that only read `amount` (e.g. forecast) get a reasonable value.
+    amount: source.is_variable
+      ? (source.hourly_rate ?? 0) * (source.weekly_hours ?? 0)
+      : source.amount,
+  }));
   const { error } = await supabase.from("income_sources").insert(rows);
   if (error) throw error;
 }

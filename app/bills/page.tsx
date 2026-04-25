@@ -1,10 +1,30 @@
-export default function BillsPage() {
+import { createClient } from "@/lib/supabase/server";
+import { BillsView } from "@/components/bills/BillsView";
+
+export default async function BillsPage() {
+  const supabase = createClient();
+  const {
+    data: { user }
+  } = await supabase.auth.getUser();
+  if (!user) return null;
+
+  const [billsRes, accountsRes] = await Promise.all([
+    supabase
+      .from("bills")
+      .select("id, user_id, name, amount, due_day, frequency, is_autopay, next_due_date, account_id, notes, created_at")
+      .eq("user_id", user.id)
+      .order("next_due_date", { ascending: true, nullsFirst: false }),
+    supabase
+      .from("accounts")
+      .select("id, name, type")
+      .eq("user_id", user.id)
+      .eq("is_active", true)
+  ]);
+
   return (
-    <section className="flex min-h-screen items-center justify-center p-8">
-      <div className="text-center">
-        <h1 className="text-3xl font-semibold">Bills</h1>
-        <p className="mt-3 text-zinc-400">This page will be built in a later step.</p>
-      </div>
-    </section>
+    <BillsView
+      bills={billsRes.data ?? []}
+      accounts={accountsRes.data ?? []}
+    />
   );
 }

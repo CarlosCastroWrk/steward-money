@@ -1,10 +1,31 @@
-export default function TransactionsPage() {
+import { createClient } from "@/lib/supabase/server";
+import { TransactionsView } from "@/components/transactions/TransactionsView";
+
+export default async function TransactionsPage() {
+  const supabase = createClient();
+  const {
+    data: { user }
+  } = await supabase.auth.getUser();
+  if (!user) return null;
+
+  const [txRes, accountsRes] = await Promise.all([
+    supabase
+      .from("transactions")
+      .select("id, user_id, account_id, date, merchant, amount, category, is_need, is_recurring, notes, is_manual, created_at")
+      .eq("user_id", user.id)
+      .order("date", { ascending: false })
+      .order("created_at", { ascending: false }),
+    supabase
+      .from("accounts")
+      .select("id, name, type")
+      .eq("user_id", user.id)
+      .eq("is_active", true)
+  ]);
+
   return (
-    <section className="flex min-h-screen items-center justify-center p-8">
-      <div className="text-center">
-        <h1 className="text-3xl font-semibold">Transactions</h1>
-        <p className="mt-3 text-zinc-400">This page will be built in a later step.</p>
-      </div>
-    </section>
+    <TransactionsView
+      transactions={txRes.data ?? []}
+      accounts={accountsRes.data ?? []}
+    />
   );
 }

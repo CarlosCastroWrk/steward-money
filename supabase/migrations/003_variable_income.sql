@@ -1,0 +1,3 @@
+ALTER TABLE income_sources ADD COLUMN IF NOT EXISTS is_variable BOOLEAN DEFAULT false;
+ALTER TABLE income_sources ADD COLUMN IF NOT EXISTS hourly_rate NUMERIC;
+ALTER TABLE income_sources ADD COLUMN IF NOT EXISTS weekly_hours NUMERIC;

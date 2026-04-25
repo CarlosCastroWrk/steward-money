@@ -7,6 +7,9 @@ export interface IncomeSourceInput {
   frequency: string;
   next_expected_date: string;
   is_recurring: boolean;
+  is_variable: boolean;
+  hourly_rate: number | null;
+  weekly_hours: number | null;
 }
 
 export interface AccountInput {

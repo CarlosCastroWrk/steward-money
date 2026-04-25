@@ -1,10 +1,30 @@
-export default function SubscriptionsPage() {
+import { createClient } from "@/lib/supabase/server";
+import { SubscriptionsView } from "@/components/subscriptions/SubscriptionsView";
+
+export default async function SubscriptionsPage() {
+  const supabase = createClient();
+  const {
+    data: { user }
+  } = await supabase.auth.getUser();
+  if (!user) return null;
+
+  const [subsRes, accountsRes] = await Promise.all([
+    supabase
+      .from("subscriptions")
+      .select("id, user_id, name, amount, billing_day, category, status, value_score, account_id, created_at")
+      .eq("user_id", user.id)
+      .order("amount", { ascending: false }),
+    supabase
+      .from("accounts")
+      .select("id, name, type")
+      .eq("user_id", user.id)
+      .eq("is_active", true)
+  ]);
+
   return (
-    <section className="flex min-h-screen items-center justify-center p-8">
-      <div className="text-center">
-        <h1 className="text-3xl font-semibold">Subscriptions</h1>
-        <p className="mt-3 text-zinc-400">This page will be built in a later step.</p>
-      </div>
-    </section>
+    <SubscriptionsView
+      subscriptions={subsRes.data ?? []}
+      accounts={accountsRes.data ?? []}
+    />
   );
 }

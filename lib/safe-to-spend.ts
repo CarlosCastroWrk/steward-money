@@ -51,7 +51,7 @@ export async function calculateSafeToSpend(
     supabase.from("accounts").select("type, current_balance").eq("user_id", userId).eq("is_active", true),
     supabase
       .from("income_sources")
-      .select("amount, next_expected_date")
+      .select("amount, next_expected_date, is_variable, hourly_rate, weekly_hours")
       .eq("user_id", userId)
       .eq("is_active", true),
     supabase.from("bills").select("id, name, amount, next_due_date").eq("user_id", userId)
@@ -69,7 +69,11 @@ export async function calculateSafeToSpend(
 
   const nextIncome = incomes[0];
   const nextIncomeDate = nextIncome?.next_expected_date ?? null;
-  const nextIncomeAmount = Number(nextIncome?.amount ?? 0);
+  const nextIncomeAmount = nextIncome
+    ? nextIncome.is_variable
+      ? Number(nextIncome.hourly_rate ?? 0) * Number(nextIncome.weekly_hours ?? 0)
+      : Number(nextIncome.amount ?? 0)
+    : 0;
 
   const msPerWeek = 1000 * 60 * 60 * 24 * 7;
   const weeksUntilPaycheck = nextIncomeDate

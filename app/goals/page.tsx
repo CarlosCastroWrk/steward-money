@@ -1,10 +1,18 @@
-export default function GoalsPage() {
-  return (
-    <section className="flex min-h-screen items-center justify-center p-8">
-      <div className="text-center">
-        <h1 className="text-3xl font-semibold">Goals</h1>
-        <p className="mt-3 text-zinc-400">This page will be built in a later step.</p>
-      </div>
-    </section>
-  );
+import { createClient } from "@/lib/supabase/server";
+import { GoalsView } from "@/components/goals/GoalsView";
+
+export default async function GoalsPage() {
+  const supabase = createClient();
+  const {
+    data: { user }
+  } = await supabase.auth.getUser();
+  if (!user) return null;
+
+  const { data } = await supabase
+    .from("goals")
+    .select("id, user_id, name, target_amount, current_amount, deadline, priority, type, created_at")
+    .eq("user_id", user.id)
+    .order("priority", { ascending: true });
+
+  return <GoalsView goals={data ?? []} />;
 }
