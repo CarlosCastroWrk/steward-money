@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { AccountCard } from "./AccountCard";
 import { AddAccountModal } from "./AddAccountModal";
+import { PlaidLinkButton } from "./PlaidLinkButton";
 import type { Account } from "./types";
 
 function formatCurrency(value: number) {
@@ -27,13 +28,16 @@ export function AccountsView({ accounts, totalCash, totalDebt, net }: Props) {
             <h1 className="text-2xl font-medium text-white">Accounts</h1>
             <p className="mt-1 text-sm text-zinc-400">Your connected and manual accounts</p>
           </div>
-          <button
-            type="button"
-            onClick={() => setModalOpen(true)}
-            className="rounded-lg bg-white px-4 py-2 text-sm font-medium text-black"
-          >
-            Add account
-          </button>
+          <div className="flex flex-wrap gap-2">
+            <PlaidLinkButton />
+            <button
+              type="button"
+              onClick={() => setModalOpen(true)}
+              className="rounded-lg border border-zinc-700 px-4 py-2 text-sm font-medium text-zinc-300"
+            >
+              Add manual
+            </button>
+          </div>
         </div>
 
         <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-3">
