@@ -133,7 +133,7 @@ export function GoalsView({ goals }: Props) {
   const completedCount = goals.filter((g) => Number(g.current_amount) >= Number(g.target_amount)).length;
 
   return (
-    <section className="min-h-screen p-8">
+    <section className="min-h-screen p-4 md:p-8">
       <div className="mx-auto w-full max-w-4xl">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
@@ -150,7 +150,7 @@ export function GoalsView({ goals }: Props) {
         </div>
 
         {goals.length > 0 && (
-          <div className="mt-6 grid grid-cols-4 gap-4">
+          <div className="mt-6 grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-4">
             <div className="rounded-xl border border-zinc-800 bg-zinc-900 p-4">
               <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">Total target</p>
               <p className="mt-2 text-xl font-semibold text-white">{formatUSD(totalTarget)}</p>

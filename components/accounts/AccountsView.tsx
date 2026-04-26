@@ -20,7 +20,7 @@ export function AccountsView({ accounts, totalCash, totalDebt, net }: Props) {
   const [modalOpen, setModalOpen] = useState(false);
 
   return (
-    <section className="min-h-screen p-8">
+    <section className="min-h-screen p-4 md:p-8">
       <div className="mx-auto w-full max-w-6xl">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>

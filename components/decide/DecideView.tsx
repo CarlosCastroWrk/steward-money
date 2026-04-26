@@ -69,7 +69,7 @@ export function DecideView({ result }: Props) {
     : null;
 
   return (
-    <section className="min-h-screen p-8">
+    <section className="min-h-screen p-4 md:p-8">
       <div className="mx-auto w-full max-w-2xl">
         <h1 className="text-2xl font-medium text-white">Decide</h1>
         <p className="mt-1 text-sm text-zinc-400">

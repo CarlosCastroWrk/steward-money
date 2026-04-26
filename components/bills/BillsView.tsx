@@ -126,7 +126,7 @@ export function BillsView({ bills, accounts }: Props) {
   }
 
   return (
-    <section className="min-h-screen p-8">
+    <section className="min-h-screen p-4 md:p-8">
       <div className="mx-auto w-full max-w-4xl">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
@@ -142,7 +142,7 @@ export function BillsView({ bills, accounts }: Props) {
           </button>
         </div>
 
-        <div className="mt-6 grid grid-cols-3 gap-4">
+        <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-3 sm:gap-4">
           <div className="rounded-xl border border-zinc-800 bg-zinc-900 p-4">
             <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">Monthly total</p>
             <p className="mt-2 text-xl font-semibold text-white">{formatUSD(monthlyTotal)}</p>

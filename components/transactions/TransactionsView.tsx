@@ -125,7 +125,7 @@ export function TransactionsView({ transactions, accounts }: Props) {
     typeFilter !== "all";
 
   return (
-    <section className="min-h-screen p-8">
+    <section className="min-h-screen p-4 md:p-8">
       <div className="mx-auto w-full max-w-4xl">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
@@ -144,7 +144,7 @@ export function TransactionsView({ transactions, accounts }: Props) {
         </div>
 
         {/* Summary */}
-        <div className="mt-6 grid grid-cols-5 gap-3">
+        <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-5">
           <div className="rounded-xl border border-zinc-800 bg-zinc-900 p-4">
             <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">Spent</p>
             <p className="mt-2 text-lg font-semibold text-red-400">{formatUSD(totalExpenses)}</p>

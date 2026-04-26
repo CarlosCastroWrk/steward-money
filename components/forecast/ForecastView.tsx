@@ -42,7 +42,7 @@ export function ForecastView({ days, buffer, startingBalance }: Props) {
   const totalOutgoing = billEvents.reduce((s, e) => s + Math.abs(e.amount), 0);
 
   return (
-    <section className="min-h-screen p-8">
+    <section className="min-h-screen p-4 md:p-8">
       <div className="mx-auto w-full max-w-4xl">
         <div>
           <h1 className="text-2xl font-medium text-white">Forecast</h1>

@@ -135,7 +135,7 @@ export default async function DashboardPage() {
     : "Not set";
 
   return (
-    <div className="space-y-6 p-8">
+    <div className="space-y-4 p-4 md:space-y-6 md:p-8">
       <header>
         <h1 className="text-2xl font-medium text-white">
           {getGreeting()}, {displayName}.
@@ -168,17 +168,29 @@ export default async function DashboardPage() {
       )}
 
       {/* Safe-to-spend hero */}
-      <div className="flex items-center justify-between rounded-xl bg-purple-700 p-6">
-        <div>
-          <p className="text-xs font-medium uppercase tracking-wide text-white/70">Safe to spend</p>
-          <p className="text-4xl font-bold text-white">{formatUSD(result.safeToSpend)}</p>
-          <p className="mt-1 text-xs text-white/60">After all deductions</p>
-        </div>
-        <div className="flex gap-8 text-right">
+      <div className="rounded-xl bg-purple-700 p-5 md:p-6">
+        <div className="flex items-start justify-between">
           <div>
-            <p className="text-xs uppercase tracking-wide text-white/60">Liquid cash</p>
-            <p className="text-lg font-semibold text-white/90">{formatUSD(result.liquidTotal)}</p>
+            <p className="text-xs font-medium uppercase tracking-wide text-white/70">Safe to spend</p>
+            <p className="text-4xl font-bold text-white">{formatUSD(result.safeToSpend)}</p>
+            <p className="mt-1 text-xs text-white/60">After all deductions</p>
           </div>
+          <div className="text-right">
+            <p className="text-xs uppercase tracking-wide text-white/60">Liquid cash</p>
+            <p className="text-base font-semibold text-white/90 md:text-lg">{formatUSD(result.liquidTotal)}</p>
+          </div>
+        </div>
+        <div className="mt-3 flex gap-4 border-t border-white/20 pt-3 md:hidden">
+          <div>
+            <p className="text-xs uppercase tracking-wide text-white/60">Protected</p>
+            <p className="text-sm font-semibold text-white/90">{formatUSD(result.emergencyBuffer)}</p>
+          </div>
+          <div>
+            <p className="text-xs uppercase tracking-wide text-white/60">Paycheck</p>
+            <p className="text-sm font-semibold text-white">{nextPaycheck}</p>
+          </div>
+        </div>
+        <div className="mt-3 hidden gap-8 border-t border-white/20 pt-3 text-right md:flex">
           <div>
             <p className="text-xs uppercase tracking-wide text-white/60">Protected</p>
             <p className="text-lg font-semibold text-white/90">{formatUSD(result.emergencyBuffer)}</p>
@@ -191,7 +203,7 @@ export default async function DashboardPage() {
       </div>
 
       {/* Quick stats */}
-      <div className="grid grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-4">
         <div className="rounded-xl border border-zinc-800 bg-zinc-900 p-4">
           <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">Monthly bills</p>
           <p className="mt-2 text-lg font-semibold text-zinc-100">{formatUSD(monthlyBillsTotal)}</p>
@@ -220,7 +232,7 @@ export default async function DashboardPage() {
       </div>
 
       {/* Bottom three-column grid */}
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
         {/* Bills due in the next 7 days */}
         <div className="rounded-xl border border-zinc-800 bg-zinc-900 p-5">
           <h2 className="mb-3 border-b border-zinc-800 pb-2 text-xs font-medium uppercase tracking-wide text-zinc-500">

@@ -47,7 +47,7 @@ export default async function SettingsPage() {
   const priorities = prioritiesResult.data ?? [];
 
   return (
-    <section className="min-h-screen bg-[var(--color-bg)] p-8 text-[var(--color-text-primary)]">
+    <section className="min-h-screen bg-[var(--color-bg)] p-4 text-[var(--color-text-primary)] md:p-8">
       <div className="mx-auto w-full max-w-4xl">
         <header className="border-b border-[var(--color-border)] pb-6">
           <h1 className="text-[20px] font-extrabold tracking-[-0.02em] [font-family:var(--font-display)]">

@@ -19,7 +19,7 @@ export function Sidebar() {
   const pathname = usePathname();
 
   return (
-    <aside className="fixed left-0 top-0 h-screen w-[220px] border-r border-zinc-800 bg-zinc-900 text-zinc-100">
+    <aside className="fixed left-0 top-0 hidden h-screen w-[220px] border-r border-zinc-800 bg-zinc-900 text-zinc-100 md:block">
       <div className="flex h-full flex-col">
         <div className="border-b border-zinc-800 px-5 py-6">
           <p className="text-sm text-zinc-400">Personal Finance</p>
