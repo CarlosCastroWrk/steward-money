@@ -1,6 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { AccountsView } from "@/components/accounts/AccountsView";
-import type { Account } from "@/components/accounts/types";
+import type { Account, PlaidItem } from "@/components/accounts/types";
 
 function toNumber(value: number | string | null | undefined): number {
   if (value === null || value === undefined) return 0;
@@ -33,19 +33,27 @@ export default async function AccountsPage() {
     return null;
   }
 
-  const { data, error } = await supabase
-    .from("accounts")
-    .select("id, name, institution, type, current_balance, is_manual, is_active, created_at")
-    .eq("user_id", user.id)
-    .eq("is_active", true)
-    .order("created_at", { ascending: false });
+  const [{ data, error }, { data: itemData }] = await Promise.all([
+    supabase
+      .from("accounts")
+      .select("id, name, institution, type, current_balance, is_manual, is_active, created_at")
+      .eq("user_id", user.id)
+      .eq("is_active", true)
+      .order("created_at", { ascending: false }),
+    supabase
+      .from("plaid_items")
+      .select("id, item_id, institution_name, institution_id, created_at")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false }),
+  ]);
 
   if (error) {
     return null;
   }
 
   const accounts = (data ?? []) as Account[];
+  const plaidItems = (itemData ?? []) as PlaidItem[];
   const summary = computeSummary(accounts);
 
-  return <AccountsView accounts={accounts} {...summary} />;
+  return <AccountsView accounts={accounts} plaidItems={plaidItems} {...summary} />;
 }

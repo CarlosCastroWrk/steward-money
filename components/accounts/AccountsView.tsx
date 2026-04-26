@@ -1,23 +1,58 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { AccountCard } from "./AccountCard";
 import { AddAccountModal } from "./AddAccountModal";
 import { PlaidLinkButton } from "./PlaidLinkButton";
-import type { Account } from "./types";
+import type { Account, PlaidItem } from "./types";
 
 function formatCurrency(value: number) {
   return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(value);
 }
 
+function DisconnectButton({ item }: { item: PlaidItem }) {
+  const router = useRouter();
+  const [busy, setBusy] = useState(false);
+
+  const disconnect = async () => {
+    const name = item.institution_name ?? "this bank";
+    if (!window.confirm(`Disconnect ${name}? All linked accounts and transactions will be removed.`)) return;
+    setBusy(true);
+    try {
+      const res = await fetch("/api/plaid/disconnect", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ item_id: item.item_id }),
+      });
+      if (!res.ok) throw new Error("Failed");
+      router.refresh();
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <button
+      type="button"
+      onClick={disconnect}
+      disabled={busy}
+      className="rounded-lg border border-red-900 px-3 py-1.5 text-xs font-medium text-red-400 transition-colors hover:bg-red-950/40 disabled:opacity-40"
+    >
+      {busy ? "Disconnecting…" : "Disconnect"}
+    </button>
+  );
+}
+
 type Props = {
   accounts: Account[];
+  plaidItems: PlaidItem[];
   totalCash: number;
   totalDebt: number;
   net: number;
 };
 
-export function AccountsView({ accounts, totalCash, totalDebt, net }: Props) {
+export function AccountsView({ accounts, plaidItems, totalCash, totalDebt, net }: Props) {
   const [modalOpen, setModalOpen] = useState(false);
 
   return (
@@ -39,6 +74,21 @@ export function AccountsView({ accounts, totalCash, totalDebt, net }: Props) {
             </button>
           </div>
         </div>
+
+        {/* Connected banks */}
+        {plaidItems.length > 0 && (
+          <div className="mt-6 rounded-xl border border-zinc-800 bg-zinc-900 p-4">
+            <p className="mb-3 text-xs font-medium uppercase tracking-wide text-zinc-500">Connected banks</p>
+            <div className="flex flex-col gap-2">
+              {plaidItems.map((item) => (
+                <div key={item.id} className="flex items-center justify-between gap-3">
+                  <span className="text-sm text-zinc-300">{item.institution_name ?? "Unknown institution"}</span>
+                  <DisconnectButton item={item} />
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-3">
           <div className="rounded-xl border border-zinc-800 bg-zinc-900 p-4">

@@ -1,3 +1,11 @@
+export type PlaidItem = {
+  id: string;
+  item_id: string;
+  institution_name: string | null;
+  institution_id: string | null;
+  created_at: string | null;
+};
+
 /** Row shape for `accounts` (matches Supabase schema after migrations). */
 export type Account = {
   id: string;
