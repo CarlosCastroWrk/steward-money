@@ -65,7 +65,7 @@ export default async function DashboardPage() {
   const monthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1)
     .toISOString().split("T")[0];
 
-  const [result, goalsResult, settingsResult, upcomingBillsResult, allBillsResult, subsResult, spendingRes] =
+  const [result, goalsResult, settingsResult, upcomingBillsResult, allBillsResult, subsResult, spendingRes, alertsRes] =
     await Promise.all([
       calculateSafeToSpend(supabase, user.id),
       supabase
@@ -95,6 +95,11 @@ export default async function DashboardPage() {
         .eq("user_id", user.id)
         .lt("amount", 0)
         .gte("date", monthStart),
+      supabase
+        .from("alerts")
+        .select("message, severity")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false }),
     ]);
 
   const goals = goalsResult.data ?? [];
@@ -122,27 +127,7 @@ export default async function DashboardPage() {
   const categoryTotals = [...categoryMap.entries()].sort((a, b) => b[1] - a[1]).slice(0, 6);
   const totalSpentMonth = [...categoryMap.values()].reduce((s, v) => s + v, 0);
 
-  const alerts: Array<{ message: string; severity: "danger" | "warning" }> = [];
-
-  if (result.liquidTotal > 0) {
-    if (result.safeToSpendRaw < 0) {
-      alerts.push({
-        message: "Your safe-to-spend is negative. Review your bills before making any purchases.",
-        severity: "danger"
-      });
-    } else if (result.safeToSpend < result.emergencyBuffer * 0.5) {
-      alerts.push({
-        message: "Your cushion is thin right now. Spend carefully.",
-        severity: "warning"
-      });
-    }
-    if (result.billsDueSoon > result.liquidTotal * 0.6) {
-      alerts.push({
-        message: "Over 60% of your liquid cash is committed to upcoming bills.",
-        severity: "warning"
-      });
-    }
-  }
+  const alerts = (alertsRes.data ?? []) as Array<{ message: string; severity: "info" | "warning" | "danger" }>;
 
   const nextPaycheck = result.nextIncomeDate
     ? new Date(result.nextIncomeDate).toLocaleDateString("en-US", {
@@ -176,6 +161,8 @@ export default async function DashboardPage() {
               className={`rounded-lg border p-3 text-sm ${
                 alert.severity === "danger"
                   ? "border-red-900 bg-red-950/60 text-red-200"
+                  : alert.severity === "info"
+                  ? "border-zinc-700 bg-zinc-800/60 text-zinc-300"
                   : "border-amber-900 bg-amber-950/60 text-amber-200"
               }`}
             >
