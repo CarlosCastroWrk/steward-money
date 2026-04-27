@@ -62,21 +62,33 @@ export function TransactionsView({ transactions, accounts }: Props) {
   const [accountFilter, setAccountFilter] = useState("all");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [typeFilter, setTypeFilter] = useState<TxTypeFilter>("all");
+  const [search, setSearch] = useState("");
 
   const accountMap = Object.fromEntries(accounts.map((a) => [a.id, a.name]));
 
   const filtered = useMemo(() => {
     const cutoff = cutoffFor(timeRange);
+    const q = search.trim().toLowerCase();
     return transactions.filter((tx) => {
-      // Use noon to avoid timezone shifts when comparing dates
       if (new Date(tx.date + "T12:00:00") < cutoff) return false;
       if (accountFilter !== "all" && tx.account_id !== accountFilter) return false;
       if (categoryFilter !== "all" && tx.category !== categoryFilter) return false;
       if (typeFilter === "expense" && tx.amount >= 0) return false;
       if (typeFilter === "income" && tx.amount <= 0) return false;
+      if (q && !(tx.merchant ?? "").toLowerCase().includes(q)) return false;
       return true;
     });
-  }, [transactions, timeRange, accountFilter, categoryFilter, typeFilter]);
+  }, [transactions, timeRange, accountFilter, categoryFilter, typeFilter, search]);
+
+  const categoryTotals = useMemo(() => {
+    const map = new Map<string, number>();
+    for (const tx of filtered) {
+      if (tx.amount >= 0) continue;
+      const key = tx.category ?? "Other";
+      map.set(key, (map.get(key) ?? 0) + Math.abs(tx.amount));
+    }
+    return [...map.entries()].sort((a, b) => b[1] - a[1]);
+  }, [filtered]);
 
   const totalExpenses = filtered
     .filter((tx) => tx.amount < 0)
@@ -122,7 +134,8 @@ export function TransactionsView({ transactions, accounts }: Props) {
     timeRange !== "this-month" ||
     accountFilter !== "all" ||
     categoryFilter !== "all" ||
-    typeFilter !== "all";
+    typeFilter !== "all" ||
+    search !== "";
 
   return (
     <section className="min-h-screen p-4 md:p-8">
@@ -169,8 +182,19 @@ export function TransactionsView({ transactions, accounts }: Props) {
           </div>
         </div>
 
+        {/* Search */}
+        <div className="mt-5">
+          <input
+            type="text"
+            placeholder="Search merchant…"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-zinc-200 placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-500"
+          />
+        </div>
+
         {/* Filters */}
-        <div className="mt-5 flex flex-wrap items-center gap-2">
+        <div className="mt-3 flex flex-wrap items-center gap-2">
           <select
             className={selectClass}
             value={timeRange}
@@ -219,6 +243,7 @@ export function TransactionsView({ transactions, accounts }: Props) {
                 setTypeFilter("all");
                 setAccountFilter("all");
                 setCategoryFilter("all");
+                setSearch("");
               }}
               className="rounded-lg border border-zinc-700 px-3 py-1.5 text-xs text-zinc-400 hover:text-white"
             >
@@ -226,6 +251,34 @@ export function TransactionsView({ transactions, accounts }: Props) {
             </button>
           )}
         </div>
+
+        {/* Spending by category */}
+        {categoryTotals.length > 0 && (
+          <div className="mt-6 rounded-xl border border-zinc-800 bg-zinc-900 p-4">
+            <p className="mb-3 text-xs font-medium uppercase tracking-wide text-zinc-500">
+              Spending by category
+            </p>
+            <div className="space-y-2">
+              {categoryTotals.slice(0, 8).map(([cat, total]) => {
+                const pct = Math.round((total / totalExpenses) * 100);
+                return (
+                  <div key={cat}>
+                    <div className="flex items-center justify-between text-xs mb-0.5">
+                      <span className="text-zinc-300">{cat}</span>
+                      <span className="text-zinc-400">{formatUSD(total)} · {pct}%</span>
+                    </div>
+                    <div className="h-1.5 w-full rounded-full bg-zinc-800">
+                      <div
+                        className="h-1.5 rounded-full bg-purple-500"
+                        style={{ width: `${pct}%` }}
+                      />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         {/* Grouped list with daily totals */}
         <div className="mt-6 space-y-6">

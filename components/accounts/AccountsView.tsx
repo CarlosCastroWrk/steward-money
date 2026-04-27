@@ -11,6 +11,46 @@ function formatCurrency(value: number) {
   return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(value);
 }
 
+function SyncButton() {
+  const router = useRouter();
+  const [busy, setBusy] = useState(false);
+  const [result, setResult] = useState<{ accounts_updated: number; transactions_synced: number } | null>(null);
+
+  const sync = async () => {
+    setBusy(true);
+    setResult(null);
+    try {
+      const res = await fetch("/api/plaid/sync", { method: "POST" });
+      const data = await res.json();
+      if (res.ok) {
+        setResult(data);
+        router.refresh();
+        window.setTimeout(() => setResult(null), 4000);
+      }
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="flex items-center gap-2">
+      <button
+        type="button"
+        onClick={sync}
+        disabled={busy}
+        className="rounded-lg border border-zinc-700 px-4 py-2 text-sm font-medium text-zinc-300 transition-colors hover:border-emerald-700 hover:text-emerald-400 disabled:opacity-40"
+      >
+        {busy ? "Syncing…" : "Sync balances"}
+      </button>
+      {result && (
+        <span className="text-xs text-emerald-400">
+          {result.accounts_updated} accounts · {result.transactions_synced} new txns
+        </span>
+      )}
+    </div>
+  );
+}
+
 function DisconnectButton({ item }: { item: PlaidItem }) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
@@ -64,6 +104,7 @@ export function AccountsView({ accounts, plaidItems, totalCash, totalDebt, net }
             <p className="mt-1 text-sm text-zinc-400">Your connected and manual accounts</p>
           </div>
           <div className="flex flex-wrap gap-2">
+            {plaidItems.length > 0 && <SyncButton />}
             <PlaidLinkButton />
             <button
               type="button"

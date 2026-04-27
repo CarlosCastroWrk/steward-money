@@ -9,12 +9,17 @@ export async function POST() {
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   try {
+    const webhookUrl = process.env.NEXT_PUBLIC_APP_URL
+      ? `${process.env.NEXT_PUBLIC_APP_URL}/api/plaid/webhook`
+      : undefined;
+
     const response = await plaidClient.linkTokenCreate({
       user: { client_user_id: user.id },
       client_name: "Steward Money",
       products: [Products.Transactions],
       country_codes: [CountryCode.Us],
       language: "en",
+      ...(webhookUrl ? { webhook: webhookUrl } : {}),
     });
     return NextResponse.json({ link_token: response.data.link_token });
   } catch (err: unknown) {

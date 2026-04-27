@@ -62,7 +62,10 @@ export default async function DashboardPage() {
   sevenDaysOut.setDate(sevenDaysOut.getDate() + 7);
   const sevenDaysStr = sevenDaysOut.toISOString().split("T")[0];
 
-  const [result, goalsResult, settingsResult, upcomingBillsResult, allBillsResult, subsResult] =
+  const monthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1)
+    .toISOString().split("T")[0];
+
+  const [result, goalsResult, settingsResult, upcomingBillsResult, allBillsResult, subsResult, spendingRes] =
     await Promise.all([
       calculateSafeToSpend(supabase, user.id),
       supabase
@@ -85,7 +88,13 @@ export default async function DashboardPage() {
         .lte("next_due_date", sevenDaysStr)
         .order("next_due_date", { ascending: true }),
       supabase.from("bills").select("amount, frequency").eq("user_id", user.id),
-      supabase.from("subscriptions").select("amount, status").eq("user_id", user.id)
+      supabase.from("subscriptions").select("amount, status").eq("user_id", user.id),
+      supabase
+        .from("transactions")
+        .select("category, amount")
+        .eq("user_id", user.id)
+        .lt("amount", 0)
+        .gte("date", monthStart),
     ]);
 
   const goals = goalsResult.data ?? [];
@@ -103,6 +112,15 @@ export default async function DashboardPage() {
   const subsData = subsResult.data ?? [];
   const keepingCount = subsData.filter((s) => s.status === "keep").length;
   const reviewingCount = subsData.filter((s) => s.status !== "keep").length;
+
+  // Spending by category this month
+  const categoryMap = new Map<string, number>();
+  for (const tx of spendingRes.data ?? []) {
+    const key = tx.category ?? "Other";
+    categoryMap.set(key, (categoryMap.get(key) ?? 0) + Math.abs(Number(tx.amount)));
+  }
+  const categoryTotals = [...categoryMap.entries()].sort((a, b) => b[1] - a[1]).slice(0, 6);
+  const totalSpentMonth = [...categoryMap.values()].reduce((s, v) => s + v, 0);
 
   const alerts: Array<{ message: string; severity: "danger" | "warning" }> = [];
 
@@ -303,57 +321,34 @@ export default async function DashboardPage() {
           )}
         </div>
 
-        {/* Safe-to-spend breakdown */}
+        {/* Spending this month */}
         <div className="rounded-xl border border-zinc-800 bg-zinc-900 p-5">
-          <h2 className="mb-3 border-b border-zinc-800 pb-2 text-xs font-medium uppercase tracking-wide text-zinc-500">
-            Breakdown
+          <h2 className="mb-1 border-b border-zinc-800 pb-2 text-xs font-medium uppercase tracking-wide text-zinc-500">
+            Spending this month
           </h2>
-          <ul className="space-y-2 text-sm">
-            <li className="flex justify-between">
-              <span className="text-zinc-400">Liquid cash</span>
-              <span className="font-medium text-emerald-400">+{formatUSD(result.liquidTotal)}</span>
-            </li>
-            <li className="flex justify-between">
-              <span className="text-zinc-400">Bills before payday</span>
-              <span className="text-zinc-300">
-                {result.billsDueSoon > 0 ? `-${formatUSD(result.billsDueSoon)}` : "—"}
-              </span>
-            </li>
-            <li className="flex justify-between">
-              <span className="text-zinc-400">Emergency reserve</span>
-              <span className="text-zinc-300">
-                {result.emergencyBuffer > 0 ? `-${formatUSD(result.emergencyBuffer)}` : "—"}
-              </span>
-            </li>
-            <li className="flex justify-between">
-              <span className="text-zinc-400">Weekly needs</span>
-              <span className="text-zinc-300">
-                {result.weeklyNeedsTotal > 0 ? `-${formatUSD(result.weeklyNeedsTotal)}` : "—"}
-              </span>
-            </li>
-            <li className="flex justify-between">
-              <span className="text-zinc-400">Giving</span>
-              <span className="text-zinc-300">
-                {result.givingDeducted > 0 ? `-${formatUSD(result.givingDeducted)}` : "—"}
-              </span>
-            </li>
-            <li className="flex justify-between">
-              <span className="text-zinc-400">Savings</span>
-              <span className="text-zinc-300">
-                {result.savingsDeducted > 0 ? `-${formatUSD(result.savingsDeducted)}` : "—"}
-              </span>
-            </li>
-            <li className="flex justify-between">
-              <span className="text-zinc-400">Trading</span>
-              <span className="text-zinc-300">
-                {result.tradingDeducted > 0 ? `-${formatUSD(result.tradingDeducted)}` : "—"}
-              </span>
-            </li>
-          </ul>
-          <div className="mt-3 flex justify-between border-t border-zinc-800 pt-3 text-sm font-semibold">
-            <span className="text-zinc-200">Safe to spend</span>
-            <span className="text-purple-300">{formatUSD(result.safeToSpend)}</span>
-          </div>
+          {categoryTotals.length === 0 ? (
+            <p className="mt-3 text-sm text-zinc-500">No spending recorded yet this month.</p>
+          ) : (
+            <>
+              <p className="mb-3 text-lg font-semibold text-zinc-100">{formatUSD(totalSpentMonth)}</p>
+              <div className="space-y-2">
+                {categoryTotals.map(([cat, total]) => {
+                  const pct = totalSpentMonth > 0 ? Math.round((total / totalSpentMonth) * 100) : 0;
+                  return (
+                    <div key={cat}>
+                      <div className="flex items-center justify-between text-xs mb-0.5">
+                        <span className="text-zinc-300">{cat}</span>
+                        <span className="text-zinc-400">{pct}%</span>
+                      </div>
+                      <div className="h-1.5 w-full rounded-full bg-zinc-800">
+                        <div className="h-1.5 rounded-full bg-purple-500" style={{ width: `${pct}%` }} />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </>
+          )}
         </div>
       </div>
     </div>

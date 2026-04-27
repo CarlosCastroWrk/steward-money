@@ -6,7 +6,14 @@ import { createClient } from "@/lib/supabase/client";
 import { AddBillModal } from "./AddBillModal";
 import type { Bill, AccountOption } from "./types";
 
-type Props = { bills: Bill[]; accounts: AccountOption[] };
+type BillSuggestion = {
+  merchant: string;
+  amount: number;
+  frequency: string;
+  occurrences: number;
+};
+
+type Props = { bills: Bill[]; accounts: AccountOption[]; suggestions: BillSuggestion[] };
 
 function formatUSD(v: number) {
   return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(v);
@@ -74,12 +81,14 @@ const badgeClass: Record<string, string> = {
   none: "bg-zinc-800 text-zinc-500",
 };
 
-export function BillsView({ bills, accounts }: Props) {
+export function BillsView({ bills, accounts, suggestions }: Props) {
   const router = useRouter();
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<Bill | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [paidId, setPaidId] = useState<string | null>(null);
+  const [addingId, setAddingId] = useState<string | null>(null);
+  const [dismissedSuggestions, setDismissedSuggestions] = useState<Set<string>>(new Set());
 
   const monthlyTotal = bills.reduce((s, b) => s + toMonthly(Number(b.amount), b.frequency), 0);
   const autopayMonthly = bills
@@ -112,6 +121,26 @@ export function BillsView({ bills, accounts }: Props) {
     if (!user) { setDeletingId(null); return; }
     await supabase.from("bills").delete().eq("id", id).eq("user_id", user.id);
     setDeletingId(null);
+    router.refresh();
+  }
+
+  async function addSuggestion(s: BillSuggestion) {
+    setAddingId(s.merchant);
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) { setAddingId(null); return; }
+    const today = new Date();
+    const nextDueDate = new Date(today.getFullYear(), today.getMonth() + 1, 1)
+      .toISOString().split("T")[0];
+    await supabase.from("bills").insert({
+      user_id: user.id,
+      name: s.merchant,
+      amount: s.amount,
+      frequency: s.frequency,
+      is_autopay: false,
+      next_due_date: nextDueDate,
+    });
+    setAddingId(null);
     router.refresh();
   }
 
@@ -158,6 +187,47 @@ export function BillsView({ bills, accounts }: Props) {
             </p>
           </div>
         </div>
+
+        {/* Detected recurring charges */}
+        {suggestions.filter((s) => !dismissedSuggestions.has(s.merchant)).length > 0 && (
+          <div className="mt-8 rounded-xl border border-amber-900/50 bg-amber-950/20 p-4">
+            <p className="mb-3 text-xs font-medium uppercase tracking-wide text-amber-400">
+              Detected recurring charges
+            </p>
+            <div className="space-y-2">
+              {suggestions
+                .filter((s) => !dismissedSuggestions.has(s.merchant))
+                .map((s) => (
+                  <div key={s.merchant} className="flex items-center justify-between gap-3 rounded-lg border border-zinc-800 bg-zinc-900 px-4 py-2.5">
+                    <div>
+                      <p className="text-sm font-medium text-zinc-200">{s.merchant}</p>
+                      <p className="text-xs text-zinc-500">
+                        {s.frequency} · {s.occurrences} transactions
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-semibold text-zinc-100">{formatUSD(s.amount)}</span>
+                      <button
+                        type="button"
+                        onClick={() => addSuggestion(s)}
+                        disabled={addingId === s.merchant}
+                        className="rounded-lg border border-emerald-800 px-3 py-1 text-xs font-medium text-emerald-400 hover:bg-emerald-950/40 disabled:opacity-40"
+                      >
+                        {addingId === s.merchant ? "Adding…" : "Add"}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setDismissedSuggestions((prev) => new Set([...prev, s.merchant]))}
+                        className="rounded-lg border border-zinc-700 px-3 py-1 text-xs text-zinc-500 hover:text-zinc-300"
+                      >
+                        Dismiss
+                      </button>
+                    </div>
+                  </div>
+                ))}
+            </div>
+          </div>
+        )}
 
         <div className="mt-8 space-y-3">
           {bills.length === 0 ? (
