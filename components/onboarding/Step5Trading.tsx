@@ -11,14 +11,16 @@ const OPTIONS = [
   { value: "surplus_only", label: "Surplus only" }
 ];
 
-export function Step5Trading({ formData, onChange, onNext, onBack, isSaving, error }: StepProps) {
+export function Step5Trading({ formData, onChange, onNext, onBack, onSkip, isSaving, error }: StepProps) {
   const showValue = !["manual", "surplus_only"].includes(formData.trading_rule);
 
   return (
     <StepWrapper
       title="Trading rule"
+      subtitle="How much do you set aside for trading/investing? You can skip this for now."
       onBack={onBack}
       onNext={onNext}
+      onSkip={onSkip}
       isFirstStep={false}
       isLastStep={false}
       isSaving={isSaving}

@@ -65,7 +65,7 @@ export default async function DashboardPage() {
   const monthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1)
     .toISOString().split("T")[0];
 
-  const [result, goalsResult, settingsResult, upcomingBillsResult, allBillsResult, subsResult, spendingRes, alertsRes] =
+  const [result, goalsResult, settingsResult, upcomingBillsResult, allBillsResult, subsResult, spendingRes, incomeRes] =
     await Promise.all([
       calculateSafeToSpend(supabase, user.id),
       supabase
@@ -78,7 +78,7 @@ export default async function DashboardPage() {
         .select("display_name")
         .eq("user_id", user.id)
         .maybeSingle(),
-      // Separate query for display: bills due in the next 7 days regardless of paycheck date
+      // Bills due in the next 7 days (for dashboard widget)
       supabase
         .from("bills")
         .select("id, name, amount, next_due_date, is_autopay")
@@ -87,7 +87,8 @@ export default async function DashboardPage() {
         .gte("next_due_date", today)
         .lte("next_due_date", sevenDaysStr)
         .order("next_due_date", { ascending: true }),
-      supabase.from("bills").select("amount, frequency").eq("user_id", user.id),
+      // All bills (for monthly total + alerts)
+      supabase.from("bills").select("name, amount, frequency, next_due_date, is_autopay").eq("user_id", user.id),
       supabase.from("subscriptions").select("amount, status").eq("user_id", user.id),
       supabase
         .from("transactions")
@@ -95,11 +96,7 @@ export default async function DashboardPage() {
         .eq("user_id", user.id)
         .lt("amount", 0)
         .gte("date", monthStart),
-      supabase
-        .from("alerts")
-        .select("message, severity")
-        .eq("user_id", user.id)
-        .order("created_at", { ascending: false }),
+      supabase.from("income_sources").select("name, next_date").eq("user_id", user.id).eq("is_active", true),
     ]);
 
   const goals = goalsResult.data ?? [];
@@ -127,7 +124,34 @@ export default async function DashboardPage() {
   const categoryTotals = [...categoryMap.entries()].sort((a, b) => b[1] - a[1]).slice(0, 6);
   const totalSpentMonth = [...categoryMap.values()].reduce((s, v) => s + v, 0);
 
-  const alerts = (alertsRes.data ?? []) as Array<{ message: string; severity: "info" | "warning" | "danger" }>;
+  const in3Days = new Date(Date.now() + 3 * 86_400_000).toISOString().split("T")[0];
+  const in60Days = new Date(Date.now() + 60 * 86_400_000).toISOString().split("T")[0];
+  const alerts: Array<{ message: string; severity: "info" | "warning" | "danger" }> = [];
+
+  for (const b of allBillsResult.data ?? []) {
+    if (b.next_due_date && b.next_due_date < today) {
+      alerts.push({ message: `${b.name} is overdue`, severity: "danger" });
+    } else if (b.next_due_date && !b.is_autopay && b.next_due_date >= today && b.next_due_date <= in3Days) {
+      alerts.push({ message: `${b.name} ($${Number(b.amount).toFixed(0)}) is due in the next 3 days`, severity: "warning" });
+    }
+  }
+  if (result.safeToSpendRaw < 0) {
+    alerts.push({ message: "Your safe-to-spend is negative. Review your bills before spending.", severity: "danger" });
+  } else if (result.liquidTotal > 0 && result.safeToSpend < result.emergencyBuffer * 0.5) {
+    alerts.push({ message: "Your cushion is thin right now. Spend carefully.", severity: "warning" });
+  }
+  for (const g of goalsResult.data ?? []) {
+    if (!g.deadline) continue;
+    const pct = g.target_amount > 0 ? (g.current_amount / g.target_amount) * 100 : 0;
+    if (g.deadline <= in60Days && pct < 50) {
+      alerts.push({ message: `"${g.name}" goal is ${Math.round(pct)}% funded — deadline approaching`, severity: "warning" });
+    }
+  }
+  for (const inc of incomeRes.data ?? []) {
+    if (inc.next_date && inc.next_date < today) {
+      alerts.push({ message: `"${inc.name}" income is past due — mark it received`, severity: "info" });
+    }
+  }
 
   const nextPaycheck = result.nextIncomeDate
     ? new Date(result.nextIncomeDate).toLocaleDateString("en-US", {
@@ -152,6 +176,24 @@ export default async function DashboardPage() {
           })}
         </p>
       </header>
+
+      {/* Quick actions */}
+      <div className="flex flex-wrap gap-2">
+        {[
+          { label: "Add transaction", href: "/transactions" },
+          { label: "Add bill", href: "/bills" },
+          { label: "Add goal", href: "/goals" },
+          { label: "Accounts", href: "/accounts" },
+        ].map((action) => (
+          <a
+            key={action.href}
+            href={action.href}
+            className="rounded-full border border-zinc-700 bg-zinc-900 px-4 py-1.5 text-xs font-medium text-zinc-300 transition hover:border-zinc-500 hover:text-white"
+          >
+            {action.label}
+          </a>
+        ))}
+      </div>
 
       {alerts.length > 0 && (
         <div className="flex flex-col gap-2">

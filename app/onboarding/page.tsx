@@ -210,23 +210,60 @@ export default function OnboardingPage() {
     }
   };
 
+  const onSkip = () => {
+    setError("");
+    setCurrentStep((prev) => Math.min(10, prev + 1));
+  };
+
   if (isBooting) {
     return (
-      <section className="flex min-h-screen items-center justify-center bg-zinc-950 p-8 text-zinc-200">
-        Loading onboarding...
+      <section className="flex min-h-screen items-center justify-center bg-zinc-950">
+        <div className="flex flex-col items-center gap-3">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-600">
+            <span className="text-lg font-black text-white">S</span>
+          </div>
+          <p className="text-sm text-zinc-500">Loading…</p>
+        </div>
       </section>
     );
   }
 
-  const stepProps = { formData, onChange, onNext, onBack, isSaving, error };
+  const OPTIONAL_STEPS = new Set([2, 5, 6, 8]);
+  const stepProps = { formData, onChange, onNext, onBack, onSkip: OPTIONAL_STEPS.has(currentStep) ? onSkip : undefined, isSaving, error };
   const progress = (currentStep / 10) * 100;
 
+  const STEP_LABELS = ["Profile", "Giving", "Emergency", "Savings", "Trading", "Needs", "Income", "Priorities", "Accounts", "Done"];
+
   return (
-    <section className="min-h-screen bg-zinc-950 p-6 text-zinc-100">
+    <section className="min-h-screen bg-zinc-950 px-4 py-8 text-zinc-100 md:py-12">
+      {/* Logo */}
+      <div className="mx-auto mb-8 flex w-full max-w-[520px] items-center gap-3">
+        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-600">
+          <span className="text-sm font-black text-white">S</span>
+        </div>
+        <span className="text-sm font-semibold text-zinc-300 tracking-tight">Steward Money</span>
+        <span className="ml-auto text-xs text-zinc-600">{currentStep} of 10</span>
+      </div>
+
+      {/* Progress */}
       <div className="mx-auto mb-6 w-full max-w-[520px]">
-        <p className="mb-2 text-sm text-zinc-400">Step {currentStep} of 10</p>
-        <div className="h-2 rounded-full bg-zinc-800">
-          <div className="h-2 rounded-full bg-white transition-all" style={{ width: `${progress}%` }} />
+        <div className="h-1.5 rounded-full bg-zinc-800">
+          <div
+            className="h-1.5 rounded-full bg-emerald-500 transition-all duration-500"
+            style={{ width: `${progress}%` }}
+          />
+        </div>
+        <div className="mt-2 flex justify-between">
+          {STEP_LABELS.map((label, i) => (
+            <span
+              key={label}
+              className={`text-[9px] uppercase tracking-wide transition-colors ${
+                i + 1 === currentStep ? "text-emerald-400" : i + 1 < currentStep ? "text-zinc-600" : "text-transparent"
+              }`}
+            >
+              {label}
+            </span>
+          ))}
         </div>
       </div>
 
@@ -240,6 +277,12 @@ export default function OnboardingPage() {
       {currentStep === 8 ? <Step8Priority {...stepProps} /> : null}
       {currentStep === 9 ? <Step9Accounts {...stepProps} /> : null}
       {currentStep === 10 ? <Step10Finish {...stepProps} /> : null}
+
+      {OPTIONAL_STEPS.has(currentStep) && (
+        <p className="mx-auto mt-4 w-full max-w-[520px] text-center text-xs text-zinc-600">
+          This step is optional — you can update it later in Settings.
+        </p>
+      )}
     </section>
   );
 }

@@ -121,7 +121,7 @@ export function Stewart() {
       {/* Floating button */}
       <button
         onClick={() => setOpen((v) => !v)}
-        className="fixed bottom-[84px] right-4 z-40 flex h-12 w-12 items-center justify-center rounded-full bg-emerald-600 shadow-lg shadow-emerald-900/40 transition-transform hover:scale-105 active:scale-95 md:bottom-6 md:right-6"
+        className="fixed bottom-[calc(5rem+env(safe-area-inset-bottom))] right-4 z-[51] flex h-12 w-12 items-center justify-center rounded-full bg-emerald-600 shadow-lg shadow-emerald-900/40 transition-transform hover:scale-105 active:scale-95 md:bottom-6 md:right-6"
         aria-label="Open Stewart"
       >
         {open ? <CloseIcon /> : <SparkleIcon />}
@@ -129,7 +129,7 @@ export function Stewart() {
 
       {/* Chat panel */}
       {open && (
-        <div className="stewart-panel fixed bottom-[144px] right-4 z-40 flex w-[calc(100vw-2rem)] max-w-sm flex-col overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-900 shadow-2xl shadow-black/60 md:bottom-24 md:right-6 md:w-[380px]">
+        <div className="stewart-panel fixed bottom-[calc(9rem+env(safe-area-inset-bottom))] right-4 z-[51] flex w-[calc(100vw-2rem)] max-w-sm flex-col overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-900 shadow-2xl shadow-black/60 md:bottom-24 md:right-6 md:w-[380px]">
           {/* Header */}
           <div className="flex items-center gap-2.5 border-b border-zinc-800 px-4 py-3">
             <div className="flex h-7 w-7 items-center justify-center rounded-full bg-emerald-600">

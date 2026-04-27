@@ -28,12 +28,14 @@ function Toggle({
   );
 }
 
-export function Step2Giving({ formData, onChange, onNext, onBack, isSaving, error }: StepProps) {
+export function Step2Giving({ formData, onChange, onNext, onBack, onSkip, isSaving, error }: StepProps) {
   return (
     <StepWrapper
       title="Giving preferences"
+      subtitle="Do you give a portion of your income? You can always change this later."
       onBack={onBack}
       onNext={onNext}
+      onSkip={onSkip}
       isFirstStep={false}
       isLastStep={false}
       isSaving={isSaving}

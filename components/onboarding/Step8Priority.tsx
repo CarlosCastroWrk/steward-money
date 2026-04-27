@@ -3,7 +3,7 @@
 import { StepWrapper } from "@/components/onboarding/StepWrapper";
 import { StepProps } from "@/components/onboarding/types";
 
-export function Step8Priority({ formData, onChange, onNext, onBack, isSaving, error }: StepProps) {
+export function Step8Priority({ formData, onChange, onNext, onBack, onSkip, isSaving, error }: StepProps) {
   const move = (index: number, direction: -1 | 1) => {
     const nextIndex = index + direction;
     if (nextIndex < 0 || nextIndex >= formData.priorities.length) return;
@@ -18,6 +18,7 @@ export function Step8Priority({ formData, onChange, onNext, onBack, isSaving, er
       subtitle="Rank 1 is highest priority. This controls how your paycheck is allocated and how decisions are weighed."
       onBack={onBack}
       onNext={onNext}
+      onSkip={onSkip}
       isFirstStep={false}
       isLastStep={false}
       isSaving={isSaving}

@@ -48,6 +48,7 @@ export interface StepProps {
   onChange: (patch: Partial<OnboardingFormData>) => void;
   onNext: () => void;
   onBack: () => void;
+  onSkip?: () => void;
   isSaving: boolean;
   error?: string;
 }

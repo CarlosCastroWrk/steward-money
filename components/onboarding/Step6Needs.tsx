@@ -30,12 +30,14 @@ function MoneyInput({
   );
 }
 
-export function Step6Needs({ formData, onChange, onNext, onBack, isSaving, error }: StepProps) {
+export function Step6Needs({ formData, onChange, onNext, onBack, onSkip, isSaving, error }: StepProps) {
   return (
     <StepWrapper
       title="Weekly needs"
+      subtitle="Set weekly spending targets. These power your safe-to-spend calculation. You can skip for now."
       onBack={onBack}
       onNext={onNext}
+      onSkip={onSkip}
       isFirstStep={false}
       isLastStep={false}
       isSaving={isSaving}
