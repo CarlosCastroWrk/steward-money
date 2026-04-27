@@ -9,6 +9,21 @@ import type { Transaction, AccountOption } from "./types";
 
 type Props = { transactions: Transaction[]; accounts: AccountOption[] };
 
+const AVATAR_COLORS = [
+  "bg-rose-500", "bg-orange-500", "bg-amber-500", "bg-lime-500",
+  "bg-emerald-500", "bg-teal-500", "bg-cyan-500", "bg-blue-500",
+  "bg-indigo-500", "bg-violet-500", "bg-purple-500", "bg-pink-500",
+];
+
+function merchantAvatar(name: string | null) {
+  const clean = (name ?? "?").trim();
+  const hash = clean.split("").reduce((a, c) => a + c.charCodeAt(0), 0);
+  return {
+    letter: clean[0]?.toUpperCase() ?? "?",
+    bg: AVATAR_COLORS[hash % AVATAR_COLORS.length],
+  };
+}
+
 type TimeRange = "week" | "this-month" | "month" | "3months" | "all";
 type TxTypeFilter = "all" | "expense" | "income";
 
@@ -348,9 +363,18 @@ export function TransactionsView({ transactions, accounts }: Props) {
                       return (
                         <div
                           key={tx.id}
-                          className="flex items-center justify-between rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-3"
+                          className="flex items-center justify-between rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-3 transition-colors hover:border-zinc-700"
                         >
-                          <div>
+                          <div className="flex min-w-0 items-center gap-3">
+                            {(() => {
+                              const av = merchantAvatar(tx.merchant);
+                              return (
+                                <div className={`flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full text-xs font-bold text-white ${av.bg}`}>
+                                  {av.letter}
+                                </div>
+                              );
+                            })()}
+                            <div className="min-w-0">
                             <p className="text-sm font-medium text-zinc-100">
                               {tx.merchant || "—"}
                             </p>
@@ -377,8 +401,9 @@ export function TransactionsView({ transactions, accounts }: Props) {
                                 <span className="italic text-zinc-600">{tx.notes}</span>
                               )}
                             </div>
-                          </div>
-                          <div className="flex items-center gap-2">
+                            </div>{/* end min-w-0 */}
+                          </div>{/* end flex items-center gap-3 */}
+                          <div className="flex flex-shrink-0 items-center gap-2">
                             <p
                               className={`text-sm font-semibold ${
                                 isExpense ? "text-red-400" : "text-emerald-400"

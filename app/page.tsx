@@ -186,7 +186,7 @@ export default async function DashboardPage() {
       )}
 
       {/* Safe-to-spend hero */}
-      <div className="rounded-xl bg-purple-700 p-5 md:p-6">
+      <div className="rounded-xl bg-gradient-to-br from-violet-600 via-purple-700 to-indigo-800 p-5 shadow-lg shadow-purple-900/30 md:p-6">
         <div className="flex items-start justify-between">
           <div>
             <p className="text-xs font-medium uppercase tracking-wide text-white/70">Safe to spend</p>

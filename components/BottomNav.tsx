@@ -94,7 +94,7 @@ export function BottomNav() {
       )}
 
       {/* Bottom bar */}
-      <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-zinc-800 bg-zinc-900 md:hidden">
+      <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-zinc-800/80 bg-zinc-900/95 backdrop-blur-sm md:hidden">
         <div className="flex items-stretch">
           {PRIMARY_NAV.map((item) => {
             const isActive =
@@ -109,6 +109,7 @@ export function BottomNav() {
               >
                 {item.icon}
                 <span>{item.label}</span>
+                <span className={`mt-0.5 h-0.5 w-4 rounded-full transition-all duration-200 ${isActive ? "bg-emerald-400" : "bg-transparent"}`} />
               </Link>
             );
           })}
@@ -125,6 +126,7 @@ export function BottomNav() {
               <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z" />
             </svg>
             <span>More</span>
+            <span className={`mt-0.5 h-0.5 w-4 rounded-full transition-all duration-200 ${isMoreActive || moreOpen ? "bg-emerald-400" : "bg-transparent"}`} />
           </button>
         </div>
       </nav>
