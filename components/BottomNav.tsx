@@ -62,11 +62,12 @@ export function BottomNav() {
       {/* More overlay */}
       {moreOpen && (
         <div
-          className="fixed inset-0 z-40 bg-black/60 md:hidden"
+          className="fixed inset-0 z-40 bg-black/70 backdrop-blur-sm md:hidden"
           onClick={() => setMoreOpen(false)}
         >
           <div
-            className="absolute bottom-[64px] left-0 right-0 rounded-t-2xl border-t border-zinc-700 bg-zinc-900 px-4 pb-4 pt-3"
+            className="absolute left-3 right-3 overflow-hidden rounded-2xl border border-[#ffffff08] bg-[#13131f] px-4 pb-4 pt-3 shadow-2xl shadow-black/60"
+            style={{ bottom: "calc(env(safe-area-inset-bottom) + 76px)" }}
             onClick={(e) => e.stopPropagation()}
           >
             <div className="mb-3 h-1 w-10 rounded-full bg-zinc-700 mx-auto" />
@@ -80,8 +81,8 @@ export function BottomNav() {
                     onClick={() => setMoreOpen(false)}
                     className={`flex items-center gap-3 rounded-xl border px-4 py-3 text-sm font-medium transition-colors ${
                       isActive
-                        ? "border-emerald-700 bg-emerald-950/40 text-emerald-400"
-                        : "border-zinc-800 bg-zinc-800/50 text-zinc-300"
+                        ? "border-emerald-700/60 bg-emerald-950/30 text-emerald-400"
+                        : "border-[#ffffff06] bg-[#1a1a28] text-zinc-300 hover:border-[#ffffff10]"
                     }`}
                   >
                     {item.label}
@@ -93,41 +94,52 @@ export function BottomNav() {
         </div>
       )}
 
-      {/* Bottom bar */}
-      <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-zinc-800/80 bg-zinc-900/95 backdrop-blur-sm md:hidden" style={{ paddingBottom: "env(safe-area-inset-bottom)" }}>
-        <div className="flex items-stretch">
-          {PRIMARY_NAV.map((item) => {
-            const isActive =
-              item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={`flex flex-1 flex-col items-center justify-center gap-0.5 py-2.5 text-[10px] font-medium transition-colors ${
-                  isActive ? "text-emerald-400" : "text-zinc-500"
-                }`}
-              >
-                {item.icon}
-                <span>{item.label}</span>
-                <span className={`mt-0.5 h-0.5 w-4 rounded-full transition-all duration-200 ${isActive ? "bg-emerald-400" : "bg-transparent"}`} />
-              </Link>
-            );
-          })}
+      {/* Floating glass nav */}
+      <nav className="fixed bottom-0 left-0 right-0 z-50 md:hidden">
+        <div
+          className="mx-3 overflow-hidden rounded-2xl border border-[#ffffff08] bg-[#13131f]/95 shadow-2xl shadow-black/50 backdrop-blur-xl"
+          style={{ marginBottom: "calc(env(safe-area-inset-bottom) + 12px)" }}
+        >
+          <div className="flex items-stretch px-1 py-1">
+            {PRIMARY_NAV.map((item) => {
+              const isActive =
+                item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={`flex flex-1 flex-col items-center justify-center gap-0.5 rounded-xl py-2.5 text-[10px] font-medium transition-colors ${
+                    isActive
+                      ? "text-emerald-400"
+                      : "text-zinc-500 hover:text-zinc-300"
+                  }`}
+                >
+                  {item.icon}
+                  <span>{item.label}</span>
+                  {isActive && (
+                    <span className="h-0.5 w-4 rounded-full bg-emerald-400" />
+                  )}
+                </Link>
+              );
+            })}
 
-          {/* More button */}
-          <button
-            type="button"
-            onClick={() => setMoreOpen((v) => !v)}
-            className={`flex flex-1 flex-col items-center justify-center gap-0.5 py-2.5 text-[10px] font-medium transition-colors ${
-              isMoreActive || moreOpen ? "text-emerald-400" : "text-zinc-500"
-            }`}
-          >
-            <svg viewBox="0 0 24 24" fill="none" strokeWidth={1.8} stroke="currentColor" className="h-5 w-5">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z" />
-            </svg>
-            <span>More</span>
-            <span className={`mt-0.5 h-0.5 w-4 rounded-full transition-all duration-200 ${isMoreActive || moreOpen ? "bg-emerald-400" : "bg-transparent"}`} />
-          </button>
+            {/* More button */}
+            <button
+              type="button"
+              onClick={() => setMoreOpen((v) => !v)}
+              className={`flex flex-1 flex-col items-center justify-center gap-0.5 rounded-xl py-2.5 text-[10px] font-medium transition-colors ${
+                isMoreActive || moreOpen ? "text-emerald-400" : "text-zinc-500 hover:text-zinc-300"
+              }`}
+            >
+              <svg viewBox="0 0 24 24" fill="none" strokeWidth={1.8} stroke="currentColor" className="h-5 w-5">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z" />
+              </svg>
+              <span>More</span>
+              {(isMoreActive || moreOpen) && (
+                <span className="h-0.5 w-4 rounded-full bg-emerald-400" />
+              )}
+            </button>
+          </div>
         </div>
       </nav>
     </>
