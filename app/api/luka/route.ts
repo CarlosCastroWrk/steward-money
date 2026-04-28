@@ -194,12 +194,8 @@ async function executeTool(
 
       case "add_bill": {
         const { error } = await supabase.from("bills").insert({
-          user_id: userId,
-          name: input.name,
-          amount: input.amount,
-          frequency: input.frequency,
-          next_due_date: input.next_due_date,
-          is_autopay: input.is_autopay ?? false,
+          user_id: userId, name: input.name, amount: input.amount,
+          frequency: input.frequency, next_due_date: input.next_due_date, is_autopay: input.is_autopay ?? false,
         });
         if (error) return { result: { error: error.message }, refreshNeeded: false };
         return { result: { success: true, message: `Bill "${input.name}" added` }, refreshNeeded: true };
@@ -207,11 +203,8 @@ async function executeTool(
 
       case "add_goal": {
         const { error } = await supabase.from("goals").insert({
-          user_id: userId,
-          name: input.name,
-          target_amount: input.target_amount,
-          current_amount: input.current_amount ?? 0,
-          deadline: input.deadline ?? null,
+          user_id: userId, name: input.name, target_amount: input.target_amount,
+          current_amount: input.current_amount ?? 0, deadline: input.deadline ?? null,
         });
         if (error) return { result: { error: error.message }, refreshNeeded: false };
         return { result: { success: true, message: `Goal "${input.name}" created` }, refreshNeeded: true };
@@ -220,13 +213,9 @@ async function executeTool(
       case "add_transaction": {
         const today = new Date().toISOString().split("T")[0];
         const { error } = await supabase.from("transactions").insert({
-          user_id: userId,
-          merchant: input.merchant,
-          amount: input.amount,
-          date: input.date ?? today,
-          category: input.category ?? null,
-          notes: input.notes ?? null,
-          is_manual: true,
+          user_id: userId, merchant: input.merchant, amount: input.amount,
+          date: input.date ?? today, category: input.category ?? null,
+          notes: input.notes ?? null, is_manual: true,
         });
         if (error) return { result: { error: error.message }, refreshNeeded: false };
         return { result: { success: true }, refreshNeeded: true };
@@ -234,13 +223,8 @@ async function executeTool(
 
       case "add_income_source": {
         const { error } = await supabase.from("income_sources").insert({
-          user_id: userId,
-          name: input.name,
-          amount: input.amount,
-          frequency: input.frequency,
-          next_date: input.next_date,
-          is_active: true,
-          is_variable: false,
+          user_id: userId, name: input.name, amount: input.amount,
+          frequency: input.frequency, next_date: input.next_date, is_active: true, is_variable: false,
         });
         if (error) return { result: { error: error.message }, refreshNeeded: false };
         return { result: { success: true, message: `Income source "${input.name}" added` }, refreshNeeded: true };
@@ -300,7 +284,7 @@ export async function POST(req: NextRequest) {
   const displayName = settings.data?.display_name ?? "there";
   const today = new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric" });
 
-  const system = `You are Stewart, a personal financial co-pilot inside Steward Money.
+  const system = `Your name is Luka, a personal finance AI assistant for Steward Money.
 
 Today is ${today}. The user's name is ${displayName}.
 
@@ -325,7 +309,6 @@ You have tools to read data and take actions. Use them naturally as part of conv
 
   while (iterations < 6) {
     iterations++;
-
     const response = await anthropic.messages.create({
       model: "claude-sonnet-4-5",
       max_tokens: 1024,
@@ -341,21 +324,16 @@ You have tools to read data and take actions. Use them naturally as part of conv
 
     if (response.stop_reason === "tool_use") {
       messages.push({ role: "assistant", content: response.content });
-
       const toolResults: Anthropic.ToolResultBlockParam[] = [];
       for (const block of response.content) {
         if (block.type === "tool_use") {
           const { result, refreshNeeded: needs } = await executeTool(
-            block.name,
-            block.input as Record<string, unknown>,
-            user.id,
-            supabase
+            block.name, block.input as Record<string, unknown>, user.id, supabase
           );
           if (needs) refreshNeeded = true;
           toolResults.push({ type: "tool_result", tool_use_id: block.id, content: JSON.stringify(result) });
         }
       }
-
       messages.push({ role: "user", content: toolResults });
     }
   }

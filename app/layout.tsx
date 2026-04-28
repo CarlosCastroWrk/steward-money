@@ -2,7 +2,8 @@ import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import { Sidebar } from "@/components/Sidebar";
 import { BottomNav } from "@/components/BottomNav";
-import { Stewart } from "@/components/Stewart";
+import { Luka } from "@/components/Luka";
+import { NotificationBell } from "@/components/NotificationBell";
 import "./globals.css";
 
 const inter = Inter({ subsets: ["latin"], display: "swap" });
@@ -34,7 +35,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           {children}
         </main>
         <BottomNav />
-        <Stewart />
+        {/* Mobile-only bell — fixed top-right, hidden on desktop (sidebar has it) */}
+        <div
+          className="fixed right-4 top-[calc(env(safe-area-inset-top)+12px)] z-[52] md:hidden"
+        >
+          <NotificationBell align="right" />
+        </div>
+        <Luka />
       </body>
     </html>
   );

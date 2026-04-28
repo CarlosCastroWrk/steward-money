@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { LogoMark } from "./Logo";
+import { NotificationBell } from "./NotificationBell";
 
 type NavItem = {
   label: string;
@@ -108,13 +109,14 @@ export function Sidebar() {
 
   return (
     <aside className="fixed left-0 top-0 hidden h-screen w-[240px] flex-col border-r border-zinc-800/60 bg-zinc-900 md:flex">
-      {/* Logo */}
-      <div className="flex items-center gap-3 px-5 py-5">
+      {/* Logo + Bell */}
+      <div className="flex items-center gap-3 px-4 py-5">
         <LogoMark size={32} />
-        <div className="leading-tight">
+        <div className="flex-1 leading-tight">
           <p className="text-[15px] font-semibold text-zinc-100 tracking-tight">Steward</p>
           <p className="text-[11px] font-medium text-zinc-500 uppercase tracking-widest">Money</p>
         </div>
+        <NotificationBell align="right" />
       </div>
 
       <div className="mx-4 h-px bg-zinc-800/60" />

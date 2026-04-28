@@ -125,33 +125,52 @@ export default async function DashboardPage() {
   const totalSpentMonth = [...categoryMap.values()].reduce((s, v) => s + v, 0);
 
   const in3Days = new Date(Date.now() + 3 * 86_400_000).toISOString().split("T")[0];
-  const in60Days = new Date(Date.now() + 60 * 86_400_000).toISOString().split("T")[0];
-  const alerts: Array<{ message: string; severity: "info" | "warning" | "danger" }> = [];
+  // Only treat bills as overdue if the date is within the last 14 days (ignore ancient sandbox dates)
+  const fourteenDaysAgo = new Date(Date.now() - 14 * 86_400_000).toISOString().split("T")[0];
 
-  for (const b of allBillsResult.data ?? []) {
-    if (b.next_due_date && b.next_due_date < today) {
-      alerts.push({ message: `${b.name} is overdue`, severity: "danger" });
-    } else if (b.next_due_date && !b.is_autopay && b.next_due_date >= today && b.next_due_date <= in3Days) {
-      alerts.push({ message: `${b.name} ($${Number(b.amount).toFixed(0)}) is due in the next 3 days`, severity: "warning" });
-    }
-  }
+  const allAlerts: Array<{ message: string; severity: "info" | "warning" | "danger"; priority: number }> = [];
+
+  // 1. Safe-to-spend negative (highest priority)
   if (result.safeToSpendRaw < 0) {
-    alerts.push({ message: "Your safe-to-spend is negative. Review your bills before spending.", severity: "danger" });
-  } else if (result.liquidTotal > 0 && result.safeToSpend < result.emergencyBuffer * 0.5) {
-    alerts.push({ message: "Your cushion is thin right now. Spend carefully.", severity: "warning" });
+    allAlerts.push({ message: "Safe-to-spend is negative. Review your bills before spending.", severity: "danger", priority: 0 });
   }
-  for (const g of goalsResult.data ?? []) {
-    if (!g.deadline) continue;
-    const pct = g.target_amount > 0 ? (g.current_amount / g.target_amount) * 100 : 0;
-    if (g.deadline <= in60Days && pct < 50) {
-      alerts.push({ message: `"${g.name}" goal is ${Math.round(pct)}% funded — deadline approaching`, severity: "warning" });
+
+  // 2. Safe-to-spend below emergency buffer
+  if (result.safeToSpendRaw >= 0 && result.liquidTotal > 0 && result.safeToSpend < result.emergencyBuffer * 0.5) {
+    allAlerts.push({ message: "Your cushion is thin — below 50% of your emergency reserve.", severity: "warning", priority: 1 });
+  }
+
+  // 3. Over 60% of liquid cash committed to bills
+  if (result.liquidTotal > 0 && result.billsDueSoon > result.liquidTotal * 0.6) {
+    allAlerts.push({ message: "Over 60% of your liquid cash is committed to upcoming bills.", severity: "warning", priority: 2 });
+  }
+
+  // 4. Overdue bills (only recently overdue, not ancient dates)
+  for (const b of allBillsResult.data ?? []) {
+    if (b.next_due_date && b.next_due_date < today && b.next_due_date >= fourteenDaysAgo) {
+      allAlerts.push({ message: `${b.name} is overdue.`, severity: "danger", priority: 3 });
+      break; // show at most one overdue bill in the banner
     }
   }
+
+  // 5. Bill due within 3 days (non-autopay only)
+  for (const b of allBillsResult.data ?? []) {
+    if (b.next_due_date && !b.is_autopay && b.next_due_date >= today && b.next_due_date <= in3Days) {
+      allAlerts.push({ message: `${b.name} ($${Number(b.amount).toFixed(0)}) is due within 3 days.`, severity: "warning", priority: 4 });
+      break; // show at most one
+    }
+  }
+
+  // 6. Stale income source
   for (const inc of incomeRes.data ?? []) {
     if (inc.next_date && inc.next_date < today) {
-      alerts.push({ message: `"${inc.name}" income is past due — mark it received`, severity: "info" });
+      allAlerts.push({ message: `"${inc.name}" income is past due — mark it received.`, severity: "info", priority: 5 });
+      break;
     }
   }
+
+  // Sort by priority and cap at 3
+  const alerts = allAlerts.sort((a, b) => a.priority - b.priority).slice(0, 3);
 
   const nextPaycheck = result.nextIncomeDate
     ? new Date(result.nextIncomeDate).toLocaleDateString("en-US", {

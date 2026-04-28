@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
+import { createClient } from "@/lib/supabase/client";
 
 type Message = { role: "user" | "assistant"; content: string };
 
@@ -36,14 +37,15 @@ function TypingDots() {
         <span
           key={i}
           className="h-1.5 w-1.5 rounded-full bg-zinc-400"
-          style={{ animation: `stewartDot 1.2s ease-in-out ${i * 0.2}s infinite` }}
+          style={{ animation: `lukaDot 1.2s ease-in-out ${i * 0.2}s infinite` }}
         />
       ))}
     </div>
   );
 }
 
-export function Stewart() {
+export function Luka() {
+  const [authed, setAuthed] = useState(false);
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
@@ -51,20 +53,30 @@ export function Stewart() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const router = useRouter();
+  const pathname = usePathname();
+
+  // Auth gate — only show when a session exists
+  useEffect(() => {
+    const supabase = createClient();
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setAuthed(!!session);
+    });
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_e, session) => {
+      setAuthed(!!session);
+    });
+    return () => subscription.unsubscribe();
+  }, []);
 
   const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, []);
 
-  useEffect(() => {
-    scrollToBottom();
-  }, [messages, loading, scrollToBottom]);
+  useEffect(() => { scrollToBottom(); }, [messages, loading, scrollToBottom]);
+  useEffect(() => { if (open && inputRef.current) inputRef.current.focus(); }, [open]);
 
-  useEffect(() => {
-    if (open && inputRef.current) {
-      inputRef.current.focus();
-    }
-  }, [open]);
+  // Hide on auth/onboarding pages
+  const isAuthPage = pathname === "/login" || pathname.startsWith("/onboarding");
+  if (!authed || isAuthPage) return null;
 
   async function sendMessage(text: string) {
     if (!text.trim() || loading) return;
@@ -73,76 +85,62 @@ export function Stewart() {
     setMessages(next);
     setInput("");
     setLoading(true);
-
     try {
-      const res = await fetch("/api/stewart", {
+      const res = await fetch("/api/luka", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ messages: next }),
       });
       const data = await res.json();
       setMessages((prev) => [...prev, { role: "assistant", content: data.reply }]);
-      if (data.refreshNeeded) {
-        router.refresh();
-      }
+      if (data.refreshNeeded) router.refresh();
     } catch {
-      setMessages((prev) => [
-        ...prev,
-        { role: "assistant", content: "Something went wrong. Try again." },
-      ]);
+      setMessages((prev) => [...prev, { role: "assistant", content: "Something went wrong. Try again." }]);
     } finally {
       setLoading(false);
     }
   }
 
   function handleKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      sendMessage(input);
-    }
+    if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(input); }
   }
 
   return (
     <>
       <style>{`
-        @keyframes stewartDot {
+        @keyframes lukaDot {
           0%, 80%, 100% { opacity: 0.3; transform: scale(0.8); }
           40% { opacity: 1; transform: scale(1); }
         }
-        @keyframes stewartSlideUp {
+        @keyframes lukaSlideUp {
           from { opacity: 0; transform: translateY(12px) scale(0.97); }
-          to   { opacity: 1; transform: translateY(0)   scale(1); }
+          to   { opacity: 1; transform: translateY(0) scale(1); }
         }
-        .stewart-panel {
-          animation: stewartSlideUp 0.18s cubic-bezier(0.16,1,0.3,1) both;
-        }
+        .luka-panel { animation: lukaSlideUp 0.18s cubic-bezier(0.16,1,0.3,1) both; }
       `}</style>
 
       {/* Floating button */}
       <button
         onClick={() => setOpen((v) => !v)}
         className="fixed bottom-[calc(5rem+env(safe-area-inset-bottom))] right-4 z-[51] flex h-12 w-12 items-center justify-center rounded-full bg-emerald-600 shadow-lg shadow-emerald-900/40 transition-transform hover:scale-105 active:scale-95 md:bottom-6 md:right-6"
-        aria-label="Open Stewart"
+        aria-label="Open Luka"
       >
         {open ? <CloseIcon /> : <SparkleIcon />}
       </button>
 
       {/* Chat panel */}
       {open && (
-        <div className="stewart-panel fixed bottom-[calc(9rem+env(safe-area-inset-bottom))] right-4 z-[51] flex w-[calc(100vw-2rem)] max-w-sm flex-col overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-900 shadow-2xl shadow-black/60 md:bottom-24 md:right-6 md:w-[380px]">
+        <div className="luka-panel fixed bottom-[calc(9rem+env(safe-area-inset-bottom))] right-4 z-[51] flex w-[calc(100vw-2rem)] max-w-sm flex-col overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-900 shadow-2xl shadow-black/60 md:bottom-24 md:right-6 md:w-[380px]">
           {/* Header */}
           <div className="flex items-center gap-2.5 border-b border-zinc-800 px-4 py-3">
             <div className="flex h-7 w-7 items-center justify-center rounded-full bg-emerald-600">
               <SparkleIcon />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-zinc-100">Stewart</p>
+              <p className="text-sm font-medium text-zinc-100">Luka</p>
               <p className="text-xs text-zinc-500">Your financial co-pilot</p>
             </div>
-            <button
-              onClick={() => setOpen(false)}
-              className="text-zinc-500 hover:text-zinc-300 transition-colors"
-            >
+            <button onClick={() => setOpen(false)} className="text-zinc-500 hover:text-zinc-300 transition-colors">
               <CloseIcon />
             </button>
           </div>
@@ -151,13 +149,10 @@ export function Stewart() {
           <div className="flex flex-col gap-3 overflow-y-auto px-4 py-4" style={{ height: 340 }}>
             {messages.length === 0 && (
               <div className="flex flex-1 flex-col items-center justify-center gap-2 py-8 text-center">
-                <p className="text-sm text-zinc-400">Ask me anything about your finances.</p>
-                <div className="mt-2 flex flex-wrap justify-center gap-2">
-                  {[
-                    "How much can I spend today?",
-                    "What bills are coming up?",
-                    "Add a transaction",
-                  ].map((s) => (
+                <p className="text-sm font-medium text-zinc-300">Hi, I'm Luka.</p>
+                <p className="text-xs text-zinc-500">Ask me anything about your finances.</p>
+                <div className="mt-3 flex flex-wrap justify-center gap-2">
+                  {["How much can I spend today?", "What bills are coming up?", "Add a transaction"].map((s) => (
                     <button
                       key={s}
                       onClick={() => sendMessage(s)}
@@ -171,15 +166,10 @@ export function Stewart() {
             )}
 
             {messages.map((m, i) => (
-              <div
-                key={i}
-                className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}
-              >
+              <div key={i} className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}>
                 <div
                   className={`max-w-[85%] rounded-2xl px-3 py-2 text-sm leading-relaxed ${
-                    m.role === "user"
-                      ? "rounded-br-sm bg-emerald-700 text-white"
-                      : "rounded-bl-sm bg-zinc-800 text-zinc-200"
+                    m.role === "user" ? "rounded-br-sm bg-emerald-700 text-white" : "rounded-bl-sm bg-zinc-800 text-zinc-200"
                   }`}
                   style={{ whiteSpace: "pre-wrap", wordBreak: "break-word" }}
                 >
@@ -190,12 +180,9 @@ export function Stewart() {
 
             {loading && (
               <div className="flex justify-start">
-                <div className="rounded-2xl rounded-bl-sm bg-zinc-800 px-3 py-2">
-                  <TypingDots />
-                </div>
+                <div className="rounded-2xl rounded-bl-sm bg-zinc-800 px-3 py-2"><TypingDots /></div>
               </div>
             )}
-
             <div ref={messagesEndRef} />
           </div>
 
@@ -207,7 +194,7 @@ export function Stewart() {
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={handleKeyDown}
-                placeholder="Ask Stewart anything…"
+                placeholder="Ask Luka anything…"
                 rows={1}
                 className="flex-1 resize-none bg-transparent text-sm text-zinc-100 placeholder-zinc-500 outline-none"
                 style={{ maxHeight: 80 }}
