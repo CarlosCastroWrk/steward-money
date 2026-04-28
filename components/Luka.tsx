@@ -149,8 +149,9 @@ export function Luka() {
           <div className="flex flex-col gap-3 overflow-y-auto px-4 py-4" style={{ height: 340 }}>
             {messages.length === 0 && (
               <div className="flex flex-1 flex-col items-center justify-center gap-2 py-8 text-center">
-                <p className="text-sm font-medium text-zinc-300">Hi, I'm Luka.</p>
+                <p className="text-sm font-medium text-zinc-300">Hi, I&apos;m Luka.</p>
                 <p className="text-xs text-zinc-500">Ask me anything about your finances.</p>
+
                 <div className="mt-3 flex flex-wrap justify-center gap-2">
                   {["How much can I spend today?", "What bills are coming up?", "Add a transaction"].map((s) => (
                     <button

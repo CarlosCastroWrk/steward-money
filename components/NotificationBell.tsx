@@ -159,7 +159,7 @@ export function NotificationBell({ align = "right" }: { align?: "left" | "right"
           <div className="max-h-[340px] overflow-y-auto">
             {alerts.length === 0 ? (
               <div className="flex flex-col items-center gap-1.5 px-4 py-10 text-center">
-                <p className="text-sm font-medium text-emerald-400">You're all caught up ✓</p>
+                <p className="text-sm font-medium text-emerald-400">You&apos;re all caught up ✓</p>
                 <p className="text-xs text-zinc-600">No notifications right now</p>
               </div>
             ) : (
