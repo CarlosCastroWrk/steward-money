@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { plaidClient } from "@/lib/plaid";
+import { cleanName, mapCategory, inferIsNeed } from "@/lib/plaid-utils";
 
 export async function POST() {
   const supabase = createClient();
@@ -37,7 +38,11 @@ export async function POST() {
       for (const a of accountsRes.data.accounts) {
         await supabase
           .from("accounts")
-          .update({ current_balance: a.balances.current ?? 0, last_synced: now })
+          .update({
+            name: cleanName(a.name),
+            current_balance: a.balances.current ?? 0,
+            last_synced: now,
+          })
           .eq("plaid_account_id", a.account_id)
           .eq("user_id", user.id);
         accountsUpdated++;
@@ -49,19 +54,25 @@ export async function POST() {
         end_date: endDate,
       });
 
-      const txRows = txRes.data.transactions.map((tx) => ({
-        user_id: user.id,
-        account_id: accountIdMap[tx.account_id] ?? null,
-        date: tx.date,
-        merchant: tx.merchant_name ?? tx.name,
-        amount: -(tx.amount),
-        category: tx.personal_finance_category?.primary ?? tx.category?.[0] ?? null,
-        is_manual: false,
-        plaid_transaction_id: tx.transaction_id,
-      }));
+      const rawCategory = (tx: typeof txRes.data.transactions[0]) =>
+        tx.personal_finance_category?.primary ?? tx.category?.[0] ?? null;
+
+      const txRows = txRes.data.transactions.map((tx) => {
+        const cat = rawCategory(tx);
+        return {
+          user_id: user.id,
+          account_id: accountIdMap[tx.account_id] ?? null,
+          date: tx.date,
+          merchant: cleanName(tx.merchant_name ?? tx.name),
+          amount: -(tx.amount),
+          category: mapCategory(cat),
+          is_need: inferIsNeed(cat),
+          is_manual: false,
+          plaid_transaction_id: tx.transaction_id,
+        };
+      });
 
       if (txRows.length > 0) {
-        // ignoreDuplicates so we don't overwrite user-edited fields
         await supabase.from("transactions").upsert(txRows, {
           onConflict: "plaid_transaction_id",
           ignoreDuplicates: true,
@@ -69,7 +80,7 @@ export async function POST() {
         transactionsSynced += txRows.length;
       }
     } catch {
-      // Continue if one item fails
+      // continue if one item fails
     }
   }
 

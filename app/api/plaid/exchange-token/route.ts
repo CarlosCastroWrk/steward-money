@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { plaidClient } from "@/lib/plaid";
+import { cleanName, mapCategory, inferIsNeed } from "@/lib/plaid-utils";
 
 function mapType(type: string, subtype: string | null | undefined): string {
   if (type === "credit") return "credit card";
@@ -17,7 +18,6 @@ export async function POST(req: NextRequest) {
 
     const { public_token, institution_name, institution_id } = await req.json();
 
-    // Exchange public token for access token
     let accessToken: string;
     let itemId: string;
     try {
@@ -25,13 +25,12 @@ export async function POST(req: NextRequest) {
       accessToken = exchangeRes.data.access_token;
       itemId = exchangeRes.data.item_id;
     } catch (err: unknown) {
-      const plaidErr = err as { response?: { data?: { error_message?: string; error_code?: string } } };
+      const plaidErr = err as { response?: { data?: { error_message?: string } } };
       const msg = plaidErr?.response?.data?.error_message ?? "Failed to exchange Plaid token";
-      console.error("[exchange-token] itemPublicTokenExchange failed:", msg);
+      console.error("[exchange-token] itemPublicTokenExchange:", msg);
       return NextResponse.json({ error: msg }, { status: 500 });
     }
 
-    // Save the access token
     const { error: itemErr } = await supabase.from("plaid_items").insert({
       user_id: user.id,
       access_token: accessToken,
@@ -41,13 +40,12 @@ export async function POST(req: NextRequest) {
     });
     if (itemErr) console.error("[exchange-token] plaid_items insert:", itemErr.message);
 
-    // Pull accounts from Plaid
     const accountsRes = await plaidClient.accountsGet({ access_token: accessToken });
     const accounts = accountsRes.data.accounts;
 
     const accountRows = accounts.map((a) => ({
       user_id: user.id,
-      name: a.name,
+      name: cleanName(a.name),
       institution: institution_name ?? null,
       type: mapType(a.type as string, a.subtype as string | null),
       current_balance: a.balances.current ?? 0,
@@ -61,7 +59,6 @@ export async function POST(req: NextRequest) {
       .upsert(accountRows, { onConflict: "plaid_account_id" });
     if (accErr) console.error("[exchange-token] accounts upsert:", accErr.message);
 
-    // Map Plaid account IDs → our internal UUIDs
     const { data: savedAccounts } = await supabase
       .from("accounts")
       .select("id, plaid_account_id")
@@ -72,7 +69,6 @@ export async function POST(req: NextRequest) {
       (savedAccounts ?? []).map((a) => [a.plaid_account_id, a.id])
     );
 
-    // Pull transactions (may not be ready immediately on a new link)
     let transactionsSynced = 0;
     try {
       const endDate = new Date().toISOString().split("T")[0];
@@ -84,16 +80,23 @@ export async function POST(req: NextRequest) {
         end_date: endDate,
       });
 
-      const txRows = txRes.data.transactions.map((tx) => ({
-        user_id: user.id,
-        account_id: accountIdMap[tx.account_id] ?? null,
-        date: tx.date,
-        merchant: tx.merchant_name ?? tx.name,
-        amount: -(tx.amount),
-        category: tx.personal_finance_category?.primary ?? (tx.category?.[0] ?? null),
-        is_manual: false,
-        plaid_transaction_id: tx.transaction_id,
-      }));
+      const rawCategory = (tx: typeof txRes.data.transactions[0]) =>
+        tx.personal_finance_category?.primary ?? tx.category?.[0] ?? null;
+
+      const txRows = txRes.data.transactions.map((tx) => {
+        const cat = rawCategory(tx);
+        return {
+          user_id: user.id,
+          account_id: accountIdMap[tx.account_id] ?? null,
+          date: tx.date,
+          merchant: cleanName(tx.merchant_name ?? tx.name),
+          amount: -(tx.amount),
+          category: mapCategory(cat),
+          is_need: inferIsNeed(cat),
+          is_manual: false,
+          plaid_transaction_id: tx.transaction_id,
+        };
+      });
 
       if (txRows.length > 0) {
         const { error: txErr } = await supabase
@@ -104,9 +107,7 @@ export async function POST(req: NextRequest) {
       }
     } catch (err: unknown) {
       const plaidErr = err as { response?: { data?: { error_code?: string; error_message?: string } } };
-      const code = plaidErr?.response?.data?.error_code;
-      // PRODUCT_NOT_READY is normal on a fresh link — transactions will sync via webhook
-      if (code !== "PRODUCT_NOT_READY") {
+      if (plaidErr?.response?.data?.error_code !== "PRODUCT_NOT_READY") {
         console.error("[exchange-token] transactionsGet:", plaidErr?.response?.data?.error_message ?? err);
       }
     }
@@ -115,8 +116,8 @@ export async function POST(req: NextRequest) {
       accounts_synced: accountRows.length,
       transactions_synced: transactionsSynced,
     });
-  } catch (err: unknown) {
-    console.error("[exchange-token] unexpected error:", err);
+  } catch (err) {
+    console.error("[exchange-token] unexpected:", err);
     return NextResponse.json({ error: "Unexpected error during bank sync" }, { status: 500 });
   }
 }

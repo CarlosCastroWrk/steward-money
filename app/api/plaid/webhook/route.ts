@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { plaidClient } from "@/lib/plaid";
+import { cleanName, mapCategory, inferIsNeed } from "@/lib/plaid-utils";
 
 const SYNC_CODES = new Set([
   "DEFAULT_UPDATE",
@@ -47,16 +48,23 @@ export async function POST(req: NextRequest) {
       end_date: endDate,
     });
 
-    const txRows = txRes.data.transactions.map((tx) => ({
-      user_id: item.user_id,
-      account_id: accountIdMap[tx.account_id] ?? null,
-      date: tx.date,
-      merchant: tx.merchant_name ?? tx.name,
-      amount: -(tx.amount),
-      category: tx.personal_finance_category?.primary ?? tx.category?.[0] ?? null,
-      is_manual: false,
-      plaid_transaction_id: tx.transaction_id,
-    }));
+    const rawCategory = (tx: typeof txRes.data.transactions[0]) =>
+      tx.personal_finance_category?.primary ?? tx.category?.[0] ?? null;
+
+    const txRows = txRes.data.transactions.map((tx) => {
+      const cat = rawCategory(tx);
+      return {
+        user_id: item.user_id,
+        account_id: accountIdMap[tx.account_id] ?? null,
+        date: tx.date,
+        merchant: cleanName(tx.merchant_name ?? tx.name),
+        amount: -(tx.amount),
+        category: mapCategory(cat),
+        is_need: inferIsNeed(cat),
+        is_manual: false,
+        plaid_transaction_id: tx.transaction_id,
+      };
+    });
 
     if (txRows.length > 0) {
       await supabase.from("transactions").upsert(txRows, {
@@ -65,7 +73,7 @@ export async function POST(req: NextRequest) {
       });
     }
   } catch {
-    // Non-fatal — log but still return 200 so Plaid doesn't retry
+    // Non-fatal — return 200 so Plaid doesn't retry
   }
 
   return NextResponse.json({ ok: true });
