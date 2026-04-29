@@ -143,7 +143,7 @@ export function TransactionsView({ transactions, accounts }: Props) {
   }
 
   const selectClass =
-    "rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-1.5 text-sm text-zinc-300 focus:outline-none focus:ring-1 focus:ring-zinc-500";
+    "select-pill rounded-xl border border-white/[0.08] bg-white/[0.04] pl-3 pr-8 py-2 text-sm text-zinc-300 focus:border-emerald-500/40 focus:outline-none transition cursor-pointer";
 
   const hasActiveFilters =
     timeRange !== "this-month" ||
@@ -157,44 +157,34 @@ export function TransactionsView({ transactions, accounts }: Props) {
       <div className="mx-auto w-full max-w-4xl">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-medium text-white">Transactions</h1>
-            <p className="mt-1 text-sm text-zinc-400">
+            <h1 className="text-2xl font-semibold tracking-tight text-white">Transactions</h1>
+            <p className="mt-1 text-sm text-zinc-500">
               {rangeLabel(timeRange)} · {filtered.length} transaction{filtered.length !== 1 ? "s" : ""}
             </p>
           </div>
           <button
             type="button"
             onClick={() => { setEditing(null); setModalOpen(true); }}
-            className="rounded-lg bg-white px-4 py-2 text-sm font-medium text-black"
+            className="rounded-xl bg-emerald-500 px-4 py-2 text-sm font-semibold text-black transition hover:bg-emerald-400"
           >
-            Add transaction
+            + Add
           </button>
         </div>
 
         {/* Summary */}
-        <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-5">
-          <div className="rounded-xl border border-zinc-800 bg-zinc-900 p-4">
-            <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">Spent</p>
-            <p className="mt-2 text-lg font-semibold text-red-400">{formatUSD(totalExpenses)}</p>
-          </div>
-          <div className="rounded-xl border border-zinc-800 bg-zinc-900 p-4">
-            <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">Income</p>
-            <p className="mt-2 text-lg font-semibold text-emerald-400">{formatUSD(totalIncome)}</p>
-          </div>
-          <div className={`rounded-xl border p-4 ${netAmount >= 0 ? "border-emerald-900/50 bg-emerald-950/20" : "border-red-900/50 bg-red-950/20"}`}>
-            <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">Net</p>
-            <p className={`mt-2 text-lg font-semibold ${netAmount >= 0 ? "text-emerald-400" : "text-red-400"}`}>
-              {formatUSDSigned(netAmount)}
-            </p>
-          </div>
-          <div className="rounded-xl border border-zinc-800 bg-zinc-900 p-4">
-            <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">Needs</p>
-            <p className="mt-2 text-lg font-semibold text-blue-400">{formatUSD(needsTotal)}</p>
-          </div>
-          <div className="rounded-xl border border-zinc-800 bg-zinc-900 p-4">
-            <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">Wants</p>
-            <p className="mt-2 text-lg font-semibold text-purple-400">{formatUSD(wantsTotal)}</p>
-          </div>
+        <div className="mt-6 grid grid-cols-2 gap-2.5 sm:grid-cols-5">
+          {[
+            { label: "Spent",  value: formatUSD(totalExpenses),  color: "text-red-400"     },
+            { label: "Income", value: formatUSD(totalIncome),    color: "text-emerald-400" },
+            { label: "Net",    value: formatUSDSigned(netAmount), color: netAmount >= 0 ? "text-emerald-400" : "text-red-400" },
+            { label: "Needs",  value: formatUSD(needsTotal),     color: "text-blue-400"    },
+            { label: "Wants",  value: formatUSD(wantsTotal),     color: "text-purple-400"  },
+          ].map(({ label, value, color }) => (
+            <div key={label} className="rounded-2xl border border-white/[0.06] bg-white/[0.025] p-4">
+              <p className="text-[10px] font-medium uppercase tracking-wide text-zinc-600">{label}</p>
+              <p className={`mt-1.5 text-[17px] font-semibold ${color}`}>{value}</p>
+            </div>
+          ))}
         </div>
 
         {/* Search */}
@@ -204,52 +194,68 @@ export function TransactionsView({ transactions, accounts }: Props) {
             placeholder="Search merchant…"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-zinc-200 placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-500"
+            className="w-full rounded-2xl border border-white/[0.07] bg-white/[0.03] px-4 py-2.5 text-sm text-zinc-200 placeholder-zinc-600 transition focus:border-white/[0.14] focus:outline-none"
           />
         </div>
 
         {/* Filters */}
         <div className="mt-3 flex flex-wrap items-center gap-2">
-          <select
-            className={selectClass}
-            value={timeRange}
-            onChange={(e) => setTimeRange(e.target.value as TimeRange)}
-          >
-            <option value="week">Last 7 days</option>
-            <option value="this-month">This month</option>
-            <option value="month">Last 30 days</option>
-            <option value="3months">Last 90 days</option>
-            <option value="all">All time</option>
-          </select>
-          <select
-            className={selectClass}
-            value={typeFilter}
-            onChange={(e) => setTypeFilter(e.target.value as TxTypeFilter)}
-          >
-            <option value="all">All types</option>
-            <option value="expense">Expenses only</option>
-            <option value="income">Income only</option>
-          </select>
-          <select
-            className={selectClass}
-            value={accountFilter}
-            onChange={(e) => setAccountFilter(e.target.value)}
-          >
-            <option value="all">All accounts</option>
-            {accounts.map((a) => (
-              <option key={a.id} value={a.id}>{a.name}</option>
-            ))}
-          </select>
-          <select
-            className={selectClass}
-            value={categoryFilter}
-            onChange={(e) => setCategoryFilter(e.target.value)}
-          >
-            <option value="all">All categories</option>
-            {CATEGORIES.map((c) => (
-              <option key={c} value={c}>{c}</option>
-            ))}
-          </select>
+          {[
+            {
+              value: timeRange,
+              onChange: (v: string) => setTimeRange(v as TimeRange),
+              options: [
+                { v: "week",       l: "Last 7 days" },
+                { v: "this-month", l: "This month"  },
+                { v: "month",      l: "Last 30 days"},
+                { v: "3months",    l: "Last 90 days"},
+                { v: "all",        l: "All time"    },
+              ],
+            },
+            {
+              value: typeFilter,
+              onChange: (v: string) => setTypeFilter(v as TxTypeFilter),
+              options: [
+                { v: "all",     l: "All types"     },
+                { v: "expense", l: "Expenses only" },
+                { v: "income",  l: "Income only"   },
+              ],
+            },
+            {
+              value: accountFilter,
+              onChange: (v: string) => setAccountFilter(v),
+              options: [
+                { v: "all", l: "All accounts" },
+                ...accounts.map((a) => ({ v: a.id, l: a.name })),
+              ],
+            },
+            {
+              value: categoryFilter,
+              onChange: (v: string) => setCategoryFilter(v),
+              options: [
+                { v: "all", l: "All categories" },
+                ...CATEGORIES.map((c) => ({ v: c, l: c })),
+              ],
+            },
+          ].map(({ value, onChange, options }, i) => (
+            <div key={i} className="relative">
+              <select
+                className={selectClass}
+                value={value}
+                onChange={(e) => onChange(e.target.value)}
+              >
+                {options.map(({ v, l }) => (
+                  <option key={v} value={v}>{l}</option>
+                ))}
+              </select>
+              <svg
+                className="pointer-events-none absolute right-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-zinc-500"
+                viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+              </svg>
+            </div>
+          ))}
           {hasActiveFilters && (
             <button
               type="button"
@@ -260,17 +266,17 @@ export function TransactionsView({ transactions, accounts }: Props) {
                 setCategoryFilter("all");
                 setSearch("");
               }}
-              className="rounded-lg border border-zinc-700 px-3 py-1.5 text-xs text-zinc-400 hover:text-white"
+              className="rounded-xl border border-white/[0.08] px-3 py-2 text-xs text-zinc-400 transition hover:border-white/[0.14] hover:text-white"
             >
-              Reset filters
+              Reset
             </button>
           )}
         </div>
 
         {/* Spending by category */}
         {categoryTotals.length > 0 && (
-          <div className="mt-6 rounded-xl border border-zinc-800 bg-zinc-900 p-4">
-            <p className="mb-3 text-xs font-medium uppercase tracking-wide text-zinc-500">
+          <div className="mt-5 rounded-2xl border border-white/[0.06] bg-white/[0.025] p-4">
+            <p className="mb-3 text-[10px] font-medium uppercase tracking-wide text-zinc-600">
               Spending by category
             </p>
             <div className="space-y-2">
@@ -298,21 +304,21 @@ export function TransactionsView({ transactions, accounts }: Props) {
         {/* Grouped list with daily totals */}
         <div className="mt-6 space-y-6">
           {transactions.length === 0 ? (
-            <div className="rounded-xl border border-dashed border-zinc-700 p-12 text-center">
+            <div className="rounded-2xl border border-dashed border-white/[0.08] p-12 text-center">
               <p className="font-medium text-zinc-400">No transactions yet</p>
               <p className="mt-1 text-sm text-zinc-600">
-                Log your first purchase or income to start tracking your money.
+                Log your first purchase or income to start tracking.
               </p>
               <button
                 type="button"
                 onClick={() => { setEditing(null); setModalOpen(true); }}
-                className="mt-4 rounded-lg bg-white px-4 py-2 text-sm font-medium text-black"
+                className="mt-4 rounded-xl bg-emerald-500 px-4 py-2 text-sm font-semibold text-black transition hover:bg-emerald-400"
               >
                 Add your first transaction
               </button>
             </div>
           ) : grouped.length === 0 ? (
-            <div className="rounded-xl border border-dashed border-zinc-700 p-10 text-center">
+            <div className="rounded-2xl border border-dashed border-white/[0.08] p-10 text-center">
               <p className="text-zinc-500">No transactions match the current filters.</p>
               <button
                 type="button"
@@ -363,7 +369,7 @@ export function TransactionsView({ transactions, accounts }: Props) {
                       return (
                         <div
                           key={tx.id}
-                          className="flex items-center justify-between rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-3 transition-colors hover:border-zinc-700"
+                          className="flex items-center justify-between rounded-2xl border border-white/[0.06] bg-white/[0.025] px-4 py-3 transition-colors hover:border-white/[0.1]"
                         >
                           <div className="flex min-w-0 items-center gap-3">
                             {(() => {
@@ -380,17 +386,17 @@ export function TransactionsView({ transactions, accounts }: Props) {
                             </p>
                             <div className="mt-0.5 flex flex-wrap items-center gap-1.5 text-xs text-zinc-500">
                               {tx.category && (
-                                <span className="rounded-full bg-zinc-800 px-2 py-0.5 text-zinc-400">
+                                <span className="rounded-full bg-white/[0.06] px-2 py-0.5 text-zinc-400">
                                   {tx.category}
                                 </span>
                               )}
                               {tx.is_need === true && (
-                                <span className="rounded-full bg-blue-900/40 px-2 py-0.5 text-blue-400">
+                                <span className="rounded-full bg-blue-500/10 px-2 py-0.5 text-blue-400">
                                   need
                                 </span>
                               )}
                               {tx.is_need === false && (
-                                <span className="rounded-full bg-purple-900/40 px-2 py-0.5 text-purple-400">
+                                <span className="rounded-full bg-purple-500/10 px-2 py-0.5 text-purple-400">
                                   want
                                 </span>
                               )}
@@ -416,7 +422,7 @@ export function TransactionsView({ transactions, accounts }: Props) {
                             <button
                               type="button"
                               onClick={() => { setEditing(tx); setModalOpen(true); }}
-                              className="rounded-md border border-zinc-700 px-2 py-1 text-xs text-zinc-400 hover:text-white"
+                              className="rounded-lg border border-white/[0.08] px-2.5 py-1 text-xs text-zinc-400 transition hover:border-white/[0.14] hover:text-white"
                             >
                               Edit
                             </button>
@@ -424,9 +430,9 @@ export function TransactionsView({ transactions, accounts }: Props) {
                               type="button"
                               onClick={() => deleteTx(tx.id)}
                               disabled={deletingId === tx.id}
-                              className="rounded-md border border-zinc-800 px-2 py-1 text-xs text-zinc-600 hover:border-red-900 hover:text-red-400 disabled:opacity-40"
+                              className="rounded-lg border border-white/[0.04] px-2.5 py-1 text-xs text-zinc-600 transition hover:border-red-800/60 hover:text-red-400 disabled:opacity-40"
                             >
-                              {deletingId === tx.id ? "..." : "Del"}
+                              {deletingId === tx.id ? "…" : "Del"}
                             </button>
                           </div>
                         </div>

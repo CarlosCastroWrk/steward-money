@@ -17,10 +17,10 @@ function Icon({ path, path2 }: { path: string; path2?: string }) {
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"
-      strokeWidth={1.6}
+      strokeWidth={1.5}
       strokeLinecap="round"
       strokeLinejoin="round"
-      className="h-4 w-4 flex-shrink-0"
+      className="h-[18px] w-[18px] flex-shrink-0"
     >
       <path d={path} />
       {path2 && <path d={path2} />}
@@ -60,11 +60,6 @@ const PRIMARY_NAV: NavItem[] = [
     icon: <Icon path="M3 3v1.5M3 21v-6m0 0l2.77-.693a9 9 0 016.208.682l.108.054a9 9 0 006.086.71l3.114-.732a48.524 48.524 0 01-.005-10.499l-3.11.732a9 9 0 01-6.085-.711l-.108-.054a9 9 0 00-6.208-.682L3 4.5M3 15V4.5" />,
   },
   {
-    label: "Forecast",
-    href: "/forecast",
-    icon: <Icon path="M2.25 18L9 11.25l4.306 4.307a11.95 11.95 0 015.814-5.519l2.74-1.22m0 0l-5.94-2.28m5.94 2.28l-2.28 5.941" />,
-  },
-  {
     label: "Decide",
     href: "/decide",
     icon: <Icon path="M12 3v17.25m0 0c-1.472 0-2.882.265-4.185.75M12 20.25c1.472 0 2.882.265 4.185.75M18.75 4.97A48.416 48.416 0 0012 4.5c-2.291 0-4.545.16-6.75.47m13.5 0c1.01.143 2.01.317 3 .52m-3-.52l2.62 10.726c.122.499-.106 1.028-.589 1.202a5.988 5.988 0 01-2.031.352 5.988 5.988 0 01-2.031-.352c-.483-.174-.711-.703-.59-1.202L18.75 4.971zm-16.5.52c.99-.203 1.99-.377 3-.52m0 0l2.62 10.726c.122.499-.106 1.028-.589 1.202a5.989 5.989 0 01-2.031.352 5.989 5.989 0 01-2.031-.352c-.483-.174-.711-.703-.59-1.202L5.25 4.971z" />,
@@ -86,12 +81,15 @@ function NavLink({ item, isActive }: { item: NavItem; isActive: boolean }) {
   return (
     <Link
       href={item.href}
-      className={`group flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-all duration-150 ${
+      className={`group relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-[13px] font-medium transition-all duration-150 ${
         isActive
-          ? "bg-zinc-800 text-zinc-100 font-medium"
-          : "text-zinc-500 hover:bg-zinc-800/60 hover:text-zinc-300"
+          ? "bg-white/[0.07] text-white"
+          : "text-zinc-500 hover:bg-white/[0.04] hover:text-zinc-300"
       }`}
     >
+      {isActive && (
+        <span className="absolute left-0 top-1/2 h-4 w-[3px] -translate-y-1/2 rounded-full bg-emerald-400" />
+      )}
       <span className={isActive ? "text-emerald-400" : "text-zinc-600 group-hover:text-zinc-400"}>
         {item.icon}
       </span>
@@ -108,18 +106,18 @@ export function Sidebar() {
   }
 
   return (
-    <aside className="fixed left-0 top-0 hidden h-screen w-[240px] flex-col border-r border-zinc-800/60 bg-zinc-900 md:flex">
-      {/* Logo + Bell */}
+    <aside className="fixed left-0 top-0 hidden h-screen w-[228px] flex-col border-r border-white/[0.05] bg-[#0b0b12] md:flex">
+      {/* Logo */}
       <div className="flex items-center gap-3 px-4 py-5">
-        <LogoMark size={32} />
+        <LogoMark size={30} />
         <div className="flex-1 leading-tight">
-          <p className="text-[15px] font-semibold text-zinc-100 tracking-tight">Steward</p>
-          <p className="text-[11px] font-medium text-zinc-500 uppercase tracking-widest">Money</p>
+          <p className="text-[14px] font-semibold tracking-tight text-white">Steward</p>
+          <p className="text-[10px] font-medium uppercase tracking-[0.12em] text-zinc-600">Money</p>
         </div>
         <NotificationBell align="right" />
       </div>
 
-      <div className="mx-4 h-px bg-zinc-800/60" />
+      <div className="mx-4 h-px bg-white/[0.05]" />
 
       {/* Main nav */}
       <nav className="flex-1 space-y-0.5 overflow-y-auto px-3 py-4">
@@ -129,7 +127,7 @@ export function Sidebar() {
       </nav>
 
       {/* Settings pinned at bottom */}
-      <div className="mx-4 h-px bg-zinc-800/60" />
+      <div className="mx-4 h-px bg-white/[0.05]" />
       <div className="px-3 py-4">
         <NavLink item={SETTINGS_NAV} isActive={isActive(SETTINGS_NAV.href)} />
       </div>

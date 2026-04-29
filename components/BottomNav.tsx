@@ -46,7 +46,6 @@ const PRIMARY_NAV = [
 const MORE_NAV = [
   { label: "Goals", href: "/goals" },
   { label: "Subscriptions", href: "/subscriptions" },
-  { label: "Forecast", href: "/forecast" },
   { label: "Decide", href: "/decide" },
   { label: "Settings", href: "/settings" },
 ];

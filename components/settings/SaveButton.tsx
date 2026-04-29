@@ -27,19 +27,19 @@ export function SaveButton({ onClick, status }: SaveButtonProps) {
   const map = {
     idle: {
       text: "Save changes",
-      className: "border-[var(--color-border)] text-[var(--color-text-muted)]"
+      className: "bg-white/[0.06] border-white/[0.08] text-zinc-300 hover:bg-white/[0.1] hover:text-white"
     },
     saving: {
       text: "Saving...",
-      className: "border-[var(--color-border)] text-[var(--color-text-muted)] opacity-50"
+      className: "bg-white/[0.04] border-white/[0.06] text-zinc-500 opacity-60 cursor-not-allowed"
     },
     saved: {
       text: "Saved",
-      className: "border-[#1a2e20] text-[var(--color-green)]"
+      className: "bg-emerald-500/10 border-emerald-500/30 text-emerald-400"
     },
     error: {
-      text: "Error - try again",
-      className: "border-red-800 text-red-400"
+      text: "Error — try again",
+      className: "bg-red-500/10 border-red-500/30 text-red-400"
     }
   } as const;
 
@@ -48,7 +48,7 @@ export function SaveButton({ onClick, status }: SaveButtonProps) {
       type="button"
       onClick={onClick}
       disabled={displayStatus === "saving"}
-      className={`rounded-[8px] border px-4 py-2 text-[11px] font-medium [font-family:var(--font-body)] transition ${map[displayStatus].className}`}
+      className={`rounded-xl border px-5 py-2 text-[13px] font-medium transition-all duration-150 ${map[displayStatus].className}`}
     >
       {map[displayStatus].text}
     </button>
