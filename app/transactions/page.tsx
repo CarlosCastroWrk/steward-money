@@ -11,7 +11,7 @@ export default async function TransactionsPage() {
   const [txRes, accountsRes] = await Promise.all([
     supabase
       .from("transactions")
-      .select("id, user_id, account_id, date, merchant, amount, category, is_need, is_recurring, notes, is_manual, created_at")
+      .select("id, user_id, account_id, date, merchant, amount, category, is_need, is_recurring, is_pending, notes, is_manual, plaid_transaction_id, created_at")
       .eq("user_id", user.id)
       .order("date", { ascending: false })
       .order("created_at", { ascending: false }),

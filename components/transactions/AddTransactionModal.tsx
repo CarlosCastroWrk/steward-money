@@ -31,6 +31,7 @@ export function AddTransactionModal({ open, onClose, accounts, transaction }: Pr
   const [category, setCategory] = useState<string>(CATEGORIES[0]);
   const [accountId, setAccountId] = useState("");
   const [isNeed, setIsNeed] = useState(false);
+  const [isPending, setIsPending] = useState(false);
   const [notes, setNotes] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
@@ -44,6 +45,7 @@ export function AddTransactionModal({ open, onClose, accounts, transaction }: Pr
       setCategory(transaction.category ?? CATEGORIES[0]);
       setAccountId(transaction.account_id ?? "");
       setIsNeed(transaction.is_need ?? false);
+      setIsPending(transaction.is_pending ?? false);
       setNotes(transaction.notes ?? "");
     } else if (!open) {
       setTxType("expense");
@@ -53,6 +55,7 @@ export function AddTransactionModal({ open, onClose, accounts, transaction }: Pr
       setCategory(CATEGORIES[0]);
       setAccountId("");
       setIsNeed(false);
+      setIsPending(false);
       setNotes("");
       setSaveError(null);
     }
@@ -86,7 +89,8 @@ export function AddTransactionModal({ open, onClose, accounts, transaction }: Pr
       category: category || null,
       account_id: accountId || null,
       is_need: txType === "expense" ? isNeed : null,
-      is_manual: true
+      is_pending: !editing && txType === "expense" ? isPending : false,
+      is_manual: true,
     };
     if (notes.trim()) payload.notes = notes.trim();
 
@@ -227,17 +231,33 @@ export function AddTransactionModal({ open, onClose, accounts, transaction }: Pr
             </select>
           </div>
           {txType === "expense" && (
-            <div className="flex items-center gap-2">
-              <input
-                id="tx-need"
-                type="checkbox"
-                checked={isNeed}
-                onChange={(e) => setIsNeed(e.target.checked)}
-                className="h-4 w-4 accent-emerald-500"
-              />
-              <label htmlFor="tx-need" className="text-sm text-zinc-300">
-                This is a need (not a want)
-              </label>
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <input
+                  id="tx-need"
+                  type="checkbox"
+                  checked={isNeed}
+                  onChange={(e) => setIsNeed(e.target.checked)}
+                  className="h-4 w-4 accent-emerald-500"
+                />
+                <label htmlFor="tx-need" className="text-sm text-[var(--text-2)]">
+                  This is a need (not a want)
+                </label>
+              </div>
+              {!editing && (
+                <div className="flex items-start gap-2">
+                  <input
+                    id="tx-pending"
+                    type="checkbox"
+                    checked={isPending}
+                    onChange={(e) => setIsPending(e.target.checked)}
+                    className="mt-0.5 h-4 w-4 accent-amber-500"
+                  />
+                  <label htmlFor="tx-pending" className="text-sm text-[var(--text-2)]">
+                    Mark as pending — auto-removes when Plaid confirms it
+                  </label>
+                </div>
+              )}
             </div>
           )}
           <div>

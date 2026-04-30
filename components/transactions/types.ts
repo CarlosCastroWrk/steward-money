@@ -8,8 +8,10 @@ export type Transaction = {
   category: string | null;
   is_need: boolean | null;
   is_recurring: boolean | null;
+  is_pending: boolean | null;
   notes: string | null;
   is_manual: boolean | null;
+  plaid_transaction_id: string | null;
   created_at: string | null;
 };
 
