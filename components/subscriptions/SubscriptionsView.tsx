@@ -70,7 +70,7 @@ export function SubscriptionsView({ subscriptions, accounts }: Props) {
       <div className="mx-auto w-full max-w-4xl">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-medium text-white">Subscriptions</h1>
+            <h1 className="text-2xl font-medium text-[var(--text-1)]">Subscriptions</h1>
             <p className="mt-1 text-sm text-zinc-400">Review, keep, or cut recurring services</p>
           </div>
           <button
@@ -83,19 +83,19 @@ export function SubscriptionsView({ subscriptions, accounts }: Props) {
         </div>
 
         <div className="mt-6 grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-4">
-          <div className="rounded-xl border border-zinc-800 bg-zinc-900 p-4">
+          <div className="rounded-xl border border-[var(--border)] bg-[var(--bg-card)] p-4">
             <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">Monthly total</p>
             <p className="mt-2 text-xl font-semibold text-white">{formatUSD(monthlyTotal)}</p>
           </div>
-          <div className="rounded-xl border border-zinc-800 bg-zinc-900 p-4">
+          <div className="rounded-xl border border-[var(--border)] bg-[var(--bg-card)] p-4">
             <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">Annual total</p>
             <p className="mt-2 text-xl font-semibold text-zinc-300">{formatUSD(monthlyTotal * 12)}</p>
           </div>
-          <div className="rounded-xl border border-zinc-800 bg-zinc-900 p-4">
+          <div className="rounded-xl border border-[var(--border)] bg-[var(--bg-card)] p-4">
             <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">Keeping</p>
             <p className="mt-2 text-xl font-semibold text-emerald-400">{formatUSD(keepTotal)}</p>
           </div>
-          <div className="rounded-xl border border-zinc-800 bg-zinc-900 p-4">
+          <div className="rounded-xl border border-[var(--border)] bg-[var(--bg-card)] p-4">
             <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">To cancel</p>
             <p className="mt-2 text-xl font-semibold text-red-400">{formatUSD(cancelTotal)}</p>
           </div>
@@ -110,7 +110,7 @@ export function SubscriptionsView({ subscriptions, accounts }: Props) {
             sorted.map((sub) => (
               <div
                 key={sub.id}
-                className="flex items-center justify-between rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-3"
+                className="flex items-center justify-between rounded-xl border border-[var(--border)] bg-[var(--bg-card)] px-4 py-3"
               >
                 <div className="flex items-center gap-3">
                   <div>

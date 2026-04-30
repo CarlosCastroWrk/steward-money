@@ -3,7 +3,7 @@
 import { StepWrapper } from "@/components/onboarding/StepWrapper";
 import { StepProps } from "@/components/onboarding/types";
 
-const INPUT = "w-full rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2 text-white focus:border-zinc-500 focus:outline-none";
+const INPUT = "w-full rounded-lg border border-[var(--border)] bg-[var(--bg-elevated)] px-3 py-2 text-[var(--text-1)] focus:border-emerald-500 focus:outline-none";
 const LABEL = "mb-1 block text-sm text-zinc-400";
 
 function Toggle({
@@ -22,7 +22,7 @@ function Toggle({
         onChange={(e) => onChange(e.target.checked)}
       />
       <span className="h-6 w-11 rounded-full bg-zinc-700 transition peer-checked:bg-zinc-200">
-        <span className="ml-1 mt-1 block h-4 w-4 rounded-full bg-zinc-300 transition peer-checked:translate-x-5 peer-checked:bg-zinc-900" />
+        <span className="ml-1 mt-1 block h-4 w-4 rounded-full bg-zinc-300 transition peer-checked:translate-x-5 peer-checked:bg-emerald-600" />
       </span>
     </label>
   );

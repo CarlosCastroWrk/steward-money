@@ -171,7 +171,7 @@ export function IncomeSection({ initialSources }: { initialSources: IncomeSource
     <SettingSection title="Income sources" description="Add, edit, or deactivate expected income.">
       <div className="space-y-3">
         {sources.map((source) => (
-          <div key={source.id} className="rounded-lg border border-zinc-800 p-3">
+          <div key={source.id} className="rounded-lg border border-[var(--border)] p-3">
             {editingId === source.id ? (
               <IncomeDraftForm
                 draft={draft}
@@ -233,7 +233,7 @@ export function IncomeSection({ initialSources }: { initialSources: IncomeSource
       </div>
 
       {showAddForm ? (
-        <div className="mt-4 rounded-lg border border-zinc-800 p-4">
+        <div className="mt-4 rounded-lg border border-[var(--border)] p-4">
           <IncomeDraftForm
             draft={draft}
             patch={patch}
@@ -291,7 +291,7 @@ function IncomeDraftForm({
       </div>
 
       {/* Variable income toggle */}
-      <div className="flex items-center justify-between rounded-lg border border-zinc-800 px-3 py-2">
+      <div className="flex items-center justify-between rounded-lg border border-[var(--border)] px-3 py-2">
         <div>
           <p className="text-sm text-zinc-200">Variable income</p>
           <p className="text-xs text-zinc-500">

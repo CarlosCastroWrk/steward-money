@@ -38,7 +38,7 @@ function SyncButton() {
         type="button"
         onClick={sync}
         disabled={busy}
-        className="rounded-lg border border-zinc-700 px-4 py-2 text-sm font-medium text-zinc-300 transition-colors hover:border-emerald-700 hover:text-emerald-400 disabled:opacity-40"
+        className="rounded-lg border border-[var(--border)] px-4 py-2 text-sm font-medium text-[var(--text-2)] transition-colors hover:border-emerald-700 hover:text-emerald-400 disabled:opacity-40"
       >
         {busy ? "Syncing…" : "Sync balances"}
       </button>
@@ -100,8 +100,8 @@ export function AccountsView({ accounts, plaidItems, totalCash, totalDebt, net }
       <div className="mx-auto w-full max-w-6xl">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-medium text-white">Accounts</h1>
-            <p className="mt-1 text-sm text-zinc-400">Your connected and manual accounts</p>
+            <h1 className="text-2xl font-medium text-[var(--text-1)]">Accounts</h1>
+            <p className="mt-1 text-sm text-[var(--text-3)]">Your connected and manual accounts</p>
           </div>
           <div className="flex flex-wrap gap-2">
             {plaidItems.length > 0 && <SyncButton />}
@@ -109,7 +109,7 @@ export function AccountsView({ accounts, plaidItems, totalCash, totalDebt, net }
             <button
               type="button"
               onClick={() => setModalOpen(true)}
-              className="rounded-lg border border-zinc-700 px-4 py-2 text-sm font-medium text-zinc-300"
+              className="rounded-lg border border-[var(--border)] px-4 py-2 text-sm font-medium text-[var(--text-2)]"
             >
               Add manual
             </button>
@@ -118,12 +118,12 @@ export function AccountsView({ accounts, plaidItems, totalCash, totalDebt, net }
 
         {/* Connected banks */}
         {plaidItems.length > 0 && (
-          <div className="mt-6 rounded-xl border border-zinc-800 bg-zinc-900 p-4">
-            <p className="mb-3 text-xs font-medium uppercase tracking-wide text-zinc-500">Connected banks</p>
+          <div className="mt-6 rounded-xl border border-[var(--border)] bg-[var(--bg-card)] p-4">
+            <p className="mb-3 text-xs font-medium uppercase tracking-wide text-[var(--text-3)]">Connected banks</p>
             <div className="flex flex-col gap-2">
               {plaidItems.map((item) => (
                 <div key={item.id} className="flex items-center justify-between gap-3">
-                  <span className="text-sm text-zinc-300">{item.institution_name ?? "Unknown institution"}</span>
+                  <span className="text-sm text-[var(--text-2)]">{item.institution_name ?? "Unknown institution"}</span>
                   <DisconnectButton item={item} />
                 </div>
               ))}
@@ -132,17 +132,17 @@ export function AccountsView({ accounts, plaidItems, totalCash, totalDebt, net }
         )}
 
         <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-3">
-          <div className="rounded-xl border border-zinc-800 bg-zinc-900 p-4">
-            <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">Total cash</p>
-            <p className="mt-2 text-xl font-semibold text-white">{formatCurrency(totalCash)}</p>
+          <div className="rounded-xl border border-[var(--border)] bg-[var(--bg-card)] p-4">
+            <p className="text-xs font-medium uppercase tracking-wide text-[var(--text-3)]">Total cash</p>
+            <p className="mt-2 text-xl font-semibold text-[var(--text-1)]">{formatCurrency(totalCash)}</p>
           </div>
-          <div className="rounded-xl border border-zinc-800 bg-zinc-900 p-4">
-            <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">Total debt</p>
-            <p className="mt-2 text-xl font-semibold text-white">{formatCurrency(totalDebt)}</p>
+          <div className="rounded-xl border border-[var(--border)] bg-[var(--bg-card)] p-4">
+            <p className="text-xs font-medium uppercase tracking-wide text-[var(--text-3)]">Total debt</p>
+            <p className="mt-2 text-xl font-semibold text-[var(--text-1)]">{formatCurrency(totalDebt)}</p>
           </div>
-          <div className="rounded-xl border border-zinc-800 bg-zinc-900 p-4">
-            <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">Net</p>
-            <p className={`mt-2 text-xl font-semibold ${net >= 0 ? "text-green-400" : "text-red-400"}`}>
+          <div className="rounded-xl border border-[var(--border)] bg-[var(--bg-card)] p-4">
+            <p className="text-xs font-medium uppercase tracking-wide text-[var(--text-3)]">Net</p>
+            <p className={`mt-2 text-xl font-semibold ${net >= 0 ? "text-emerald-400" : "text-red-400"}`}>
               {formatCurrency(net)}
             </p>
           </div>

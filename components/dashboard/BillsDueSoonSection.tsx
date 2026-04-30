@@ -41,25 +41,25 @@ function dueColor(dateStr: string): string {
   const diff = Math.floor((due.getTime() - today.getTime()) / 86400000);
   if (diff <= 1) return "text-red-400";
   if (diff <= 3) return "text-amber-400";
-  return "text-[#9898a8]";
+  return "text-[var(--text-3)]";
 }
 
 export function BillsDueSoonSection({ bills }: { bills: Bill[] }) {
   return (
     <section>
       <div className="mb-3 flex items-center justify-between">
-        <h2 className="text-[10px] font-semibold uppercase tracking-widest text-[#9898a8]">Bills Due Soon</h2>
+        <h2 className="text-[10px] font-semibold uppercase tracking-widest text-[var(--text-3)]">Bills Due Soon</h2>
         <a href="/bills" className="text-xs text-emerald-400 transition-colors hover:text-emerald-300">
           See all
         </a>
       </div>
 
       {bills.length === 0 ? (
-        <div className="rounded-2xl border border-[#ffffff08] bg-[#13131f] px-4 py-6 text-center">
-          <p className="text-sm text-[#9898a8]">No bills due in the next 7 days</p>
+        <div className="rounded-2xl border border-[var(--border)] bg-[var(--bg-card)] px-4 py-6 text-center">
+          <p className="text-sm text-[var(--text-3)]">No bills due in the next 7 days</p>
         </div>
       ) : (
-        <div className="overflow-hidden rounded-2xl border border-[#ffffff08] bg-[#13131f] divide-y divide-[#ffffff04]">
+        <div className="overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--bg-card)] divide-y divide-[var(--divider)]">
           {bills.map((bill) => (
             <div key={bill.id} className="flex items-center gap-3 px-4 py-3.5">
               <div
@@ -68,11 +68,11 @@ export function BillsDueSoonSection({ bills }: { bills: Bill[] }) {
                 {bill.name[0].toUpperCase()}
               </div>
               <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-medium text-zinc-100">{bill.name}</p>
+                <p className="truncate text-sm font-medium text-[var(--text-1)]">{bill.name}</p>
                 <p className={`text-xs ${dueColor(bill.next_due_date!)}`}>{relativeDue(bill.next_due_date!)}</p>
               </div>
               <div className="flex-shrink-0 text-right">
-                <p className="text-sm font-semibold text-zinc-100">{fmt(Number(bill.amount))}</p>
+                <p className="text-sm font-semibold text-[var(--text-1)]">{fmt(Number(bill.amount))}</p>
                 {bill.is_autopay && (
                   <p className="text-[10px] text-emerald-400">Auto</p>
                 )}

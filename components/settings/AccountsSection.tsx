@@ -67,14 +67,14 @@ export function AccountsSection({ initialAccounts }: { initialAccounts: AccountR
     <SettingSection title="Accounts" description="Manage your manual account balances.">
       <div className="space-y-3">
         {accounts.map((account) => (
-          <div key={account.id} className="rounded-lg border border-zinc-800 p-3">
+          <div key={account.id} className="rounded-lg border border-[var(--border)] p-3">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
                 <p className="text-sm text-zinc-200">{account.name} {account.institution ? `(${account.institution})` : ""}</p>
                 <p className="text-sm text-zinc-400">{account.type} - {formatCurrency(account.current_balance)}</p>
               </div>
               <div className="flex items-center gap-2">
-                <span className="rounded-full bg-zinc-800 px-2 py-1 text-xs text-zinc-400">Manual</span>
+                <span className="rounded-full bg-[var(--bg-elevated)] px-2 py-1 text-xs text-zinc-400">Manual</span>
                 <button type="button" onClick={() => startEditBalance(account)} className="rounded-lg border border-zinc-700 px-3 py-1 text-sm text-zinc-300">Edit balance</button>
                 <button type="button" onClick={() => deactivate(account.id)} className="rounded-lg border border-zinc-700 px-3 py-1 text-sm text-zinc-300">Deactivate</button>
               </div>
@@ -90,7 +90,7 @@ export function AccountsSection({ initialAccounts }: { initialAccounts: AccountR
         ))}
       </div>
       {showAddForm ? (
-        <div className="mt-4 space-y-3 rounded-lg border border-zinc-800 p-4">
+        <div className="mt-4 space-y-3 rounded-lg border border-[var(--border)] p-4">
           <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
             <div>
               <label className={LABEL_CLASS}>Name</label>

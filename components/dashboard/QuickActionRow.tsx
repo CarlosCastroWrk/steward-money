@@ -54,12 +54,12 @@ export function QuickActionRow() {
     <div className="flex justify-between gap-1">
       {ACTIONS.map(({ lines, href, Icon, ring }) => (
         <Link key={href} href={href} className="flex flex-1 flex-col items-center gap-2 rounded-xl p-1 transition-opacity active:opacity-60">
-          <div className={`flex h-13 w-13 items-center justify-center rounded-2xl border border-[#ffffff08] bg-[#1a1a28] ${ring} h-12 w-12`}>
+          <div className={`flex h-12 w-12 items-center justify-center rounded-2xl border border-[var(--border)] bg-[var(--bg-elevated)] ${ring}`}>
             <Icon />
           </div>
           <div className="text-center">
             {lines.map((line, i) => line ? (
-              <p key={i} className="text-[10px] leading-tight text-[#9898a8]">{line}</p>
+              <p key={i} className="text-[10px] leading-tight text-[var(--text-3)]">{line}</p>
             ) : null)}
           </div>
         </Link>

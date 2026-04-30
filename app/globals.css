@@ -2,11 +2,54 @@
 @tailwind components;
 @tailwind utilities;
 
-/* ── Design tokens ────────────────────────────────────────── */
+/* ── Light mode (default) ─────────────────────────────────── */
 :root {
+  --bg:           #f4f4f8;
+  --bg-card:      #ffffff;
+  --bg-elevated:  #ebebf0;
+  --border:       rgba(0, 0, 0, 0.07);
+  --divider:      rgba(0, 0, 0, 0.05);
+  --text-1:       #0f0f14;
+  --text-2:       #5c5c6a;
+  --text-3:       #9898a8;
+  --sidebar-bg:   #ededf2;
+  --luka-bg:      #f8f8fc;
+  --luka-msg-bg:  #ebebf0;
+
+  --color-bg:             #f4f4f8;
+  --color-bg-card:        #ffffff;
+  --color-bg-elevated:    #ebebf0;
+  --color-border:         rgba(0, 0, 0, 0.07);
+  --color-border-hover:   rgba(0, 0, 0, 0.12);
+  --color-text-primary:   #0f0f14;
+  --color-text-secondary: #5c5c6a;
+  --color-text-muted:     #8e8e9a;
+  --color-text-faint:     #b0b0be;
+  --color-accent:         #10b981;
+  --color-accent-dim:     rgba(16, 185, 129, 0.1);
+  --color-green:          #10b981;
+  --font-display: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-body:    'Inter', system-ui, -apple-system, sans-serif;
+  --font-mono:    ui-monospace, 'SF Mono', 'Fira Code', monospace;
+}
+
+/* ── Dark mode ────────────────────────────────────────────── */
+.dark {
+  --bg:           #0b0b12;
+  --bg-card:      #121219;
+  --bg-elevated:  #1a1a28;
+  --border:       rgba(255, 255, 255, 0.06);
+  --divider:      rgba(255, 255, 255, 0.03);
+  --text-1:       #f0f0f2;
+  --text-2:       #8e8e9a;
+  --text-3:       #9898a8;
+  --sidebar-bg:   #0b0b12;
+  --luka-bg:      #0c0c14;
+  --luka-msg-bg:  #27272a;
+
   --color-bg:             #0b0b12;
   --color-bg-card:        #121219;
-  --color-bg-elevated:    #18181f;
+  --color-bg-elevated:    #1a1a28;
   --color-border:         rgba(255, 255, 255, 0.06);
   --color-border-hover:   rgba(255, 255, 255, 0.10);
   --color-text-primary:   #f0f0f2;
@@ -16,16 +59,12 @@
   --color-accent:         #10b981;
   --color-accent-dim:     rgba(16, 185, 129, 0.12);
   --color-green:          #10b981;
-  --font-display: 'Inter', system-ui, -apple-system, sans-serif;
-  --font-body:    'Inter', system-ui, -apple-system, sans-serif;
-  --font-mono:    ui-monospace, 'SF Mono', 'Fira Code', monospace;
 }
 
 /* ── Custom scrollbar ─────────────────────────────────────── */
 ::-webkit-scrollbar { width: 4px; height: 4px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 4px; }
-::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.14); }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
 
 /* ── Text selection ───────────────────────────────────────── */
 ::selection { background: #059669; color: #fff; }
@@ -48,7 +87,7 @@
   100% { background-position:  400px 0; }
 }
 .shimmer {
-  background: linear-gradient(90deg, #1e1e28 25%, #2a2a36 50%, #1e1e28 75%);
+  background: linear-gradient(90deg, var(--bg-card) 25%, var(--bg-elevated) 50%, var(--bg-card) 75%);
   background-size: 400px 100%;
   animation: shimmer 1.4s ease-in-out infinite;
 }

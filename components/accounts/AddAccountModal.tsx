@@ -20,7 +20,7 @@ type Props = {
 };
 
 const inputClass =
-  "mt-1 w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-white placeholder:text-zinc-600";
+  "mt-1 w-full rounded-lg border border-[var(--border)] bg-[var(--bg-elevated)] px-3 py-2 text-sm text-[var(--text-1)] placeholder:text-[var(--text-3)]";
 
 export function AddAccountModal({ open, onClose }: Props) {
   const router = useRouter();
@@ -97,7 +97,7 @@ export function AddAccountModal({ open, onClose }: Props) {
       }}
     >
       <div
-        className="max-h-[90vh] w-full max-w-md overflow-y-auto rounded-2xl border border-zinc-800 bg-zinc-900 p-6"
+        className="max-h-[90vh] w-full max-w-md overflow-y-auto rounded-2xl border border-[var(--border)] bg-[var(--bg-card)] p-6"
         onClick={(e) => e.stopPropagation()}
       >
         <h2 className="text-lg font-medium text-white">Add account</h2>

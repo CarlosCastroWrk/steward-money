@@ -4,7 +4,7 @@ import { useState } from "react";
 import { StepWrapper } from "@/components/onboarding/StepWrapper";
 import { IncomeSourceInput, StepProps } from "@/components/onboarding/types";
 
-const INPUT = "w-full rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2 text-white focus:border-zinc-500 focus:outline-none";
+const INPUT = "w-full rounded-lg border border-[var(--border)] bg-[var(--bg-elevated)] px-3 py-2 text-[var(--text-1)] focus:border-emerald-500 focus:outline-none";
 const FREQUENCIES = ["weekly", "biweekly", "twice monthly", "monthly", "variable"];
 
 const EMPTY_DRAFT: IncomeSourceInput = {

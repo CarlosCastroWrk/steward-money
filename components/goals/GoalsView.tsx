@@ -76,7 +76,7 @@ function daysLeftLabel(days: number | null): { text: string; className: string }
   if (days === 0) return { text: "Due today", className: "text-red-400" };
   if (days <= 7) return { text: `${days} days left`, className: "text-amber-400" };
   if (days <= 30) return { text: `${days} days left`, className: "text-yellow-500" };
-  return { text: `${days} days left`, className: "text-zinc-500" };
+  return { text: `${days} days left`, className: "text-[var(--text-3)]" };
 }
 
 export function GoalsView({ goals }: Props) {
@@ -137,13 +137,13 @@ export function GoalsView({ goals }: Props) {
       <div className="mx-auto w-full max-w-4xl">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-medium text-white">Goals</h1>
-            <p className="mt-1 text-sm text-zinc-400">Financial targets and milestones</p>
+            <h1 className="text-2xl font-medium text-[var(--text-1)]">Goals</h1>
+            <p className="mt-1 text-sm text-[var(--text-3)]">Financial targets and milestones</p>
           </div>
           <button
             type="button"
             onClick={() => { setEditing(null); setModalOpen(true); }}
-            className="rounded-lg bg-white px-4 py-2 text-sm font-medium text-black"
+            className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white"
           >
             Add goal
           </button>
@@ -151,23 +151,23 @@ export function GoalsView({ goals }: Props) {
 
         {goals.length > 0 && (
           <div className="mt-6 grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-4">
-            <div className="rounded-xl border border-zinc-800 bg-zinc-900 p-4">
-              <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">Total target</p>
-              <p className="mt-2 text-xl font-semibold text-white">{formatUSD(totalTarget)}</p>
+            <div className="rounded-xl border border-[var(--border)] bg-[var(--bg-card)] p-4">
+              <p className="text-xs font-medium uppercase tracking-wide text-[var(--text-3)]">Total target</p>
+              <p className="mt-2 text-xl font-semibold text-[var(--text-1)]">{formatUSD(totalTarget)}</p>
             </div>
-            <div className="rounded-xl border border-zinc-800 bg-zinc-900 p-4">
-              <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">Total saved</p>
+            <div className="rounded-xl border border-[var(--border)] bg-[var(--bg-card)] p-4">
+              <p className="text-xs font-medium uppercase tracking-wide text-[var(--text-3)]">Total saved</p>
               <p className="mt-2 text-xl font-semibold text-emerald-400">{formatUSD(totalSaved)}</p>
             </div>
-            <div className="rounded-xl border border-zinc-800 bg-zinc-900 p-4">
-              <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">Remaining</p>
-              <p className="mt-2 text-xl font-semibold text-zinc-300">
+            <div className="rounded-xl border border-[var(--border)] bg-[var(--bg-card)] p-4">
+              <p className="text-xs font-medium uppercase tracking-wide text-[var(--text-3)]">Remaining</p>
+              <p className="mt-2 text-xl font-semibold text-[var(--text-2)]">
                 {formatUSD(Math.max(0, totalTarget - totalSaved))}
               </p>
             </div>
-            <div className="rounded-xl border border-zinc-800 bg-zinc-900 p-4">
-              <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">Completed</p>
-              <p className="mt-2 text-xl font-semibold text-zinc-300">
+            <div className="rounded-xl border border-[var(--border)] bg-[var(--bg-card)] p-4">
+              <p className="text-xs font-medium uppercase tracking-wide text-[var(--text-3)]">Completed</p>
+              <p className="mt-2 text-xl font-semibold text-[var(--text-2)]">
                 {completedCount} / {goals.length}
               </p>
             </div>
@@ -176,15 +176,15 @@ export function GoalsView({ goals }: Props) {
 
         <div className="mt-8 space-y-4">
           {goals.length === 0 ? (
-            <div className="rounded-xl border border-dashed border-zinc-700 p-12 text-center">
-              <p className="font-medium text-zinc-400">No goals yet</p>
-              <p className="mt-1 text-sm text-zinc-600">
+            <div className="rounded-xl border border-dashed border-[var(--border)] p-12 text-center">
+              <p className="font-medium text-[var(--text-2)]">No goals yet</p>
+              <p className="mt-1 text-sm text-[var(--text-3)]">
                 Set a target — emergency fund, vacation, down payment — and track your progress.
               </p>
               <button
                 type="button"
                 onClick={() => { setEditing(null); setModalOpen(true); }}
-                className="mt-4 rounded-lg bg-white px-4 py-2 text-sm font-medium text-black"
+                className="mt-4 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white"
               >
                 Add your first goal
               </button>
@@ -210,28 +210,28 @@ export function GoalsView({ goals }: Props) {
               return (
                 <div
                   key={goal.id}
-                  className="rounded-xl border border-zinc-800 bg-zinc-900 p-5"
+                  className="rounded-xl border border-[var(--border)] bg-[var(--bg-card)] p-5"
                 >
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex-1 min-w-0">
                       <div className="flex flex-wrap items-center gap-2">
-                        <p className="font-medium text-zinc-100">{goal.name}</p>
+                        <p className="font-medium text-[var(--text-1)]">{goal.name}</p>
                         {statusLabel[status] && (
                           <span className={`rounded-full px-2 py-0.5 text-xs ${statusBadge[status]}`}>
                             {statusLabel[status]}
                           </span>
                         )}
                         {goal.type && (
-                          <span className="rounded-full bg-zinc-800 px-2 py-0.5 text-xs text-zinc-500">
+                          <span className="rounded-full bg-[var(--bg-elevated)] px-2 py-0.5 text-xs text-[var(--text-3)]">
                             {goal.type}
                           </span>
                         )}
                       </div>
 
-                      <div className="mt-1 flex flex-wrap items-center gap-3 text-sm text-zinc-400">
+                      <div className="mt-1 flex flex-wrap items-center gap-3 text-sm text-[var(--text-2)]">
                         <span>
                           {formatUSD(current)} of {formatUSD(target)}{" "}
-                          <span className="text-zinc-500">({pct}%)</span>
+                          <span className="text-[var(--text-3)]">({pct}%)</span>
                         </span>
                         {daysInfo && (
                           <span className={`text-xs ${daysInfo.className}`}>{daysInfo.text}</span>
@@ -239,7 +239,7 @@ export function GoalsView({ goals }: Props) {
                       </div>
 
                       {weeklyAmt !== null && weeklyAmt > 0 && (
-                        <p className="mt-0.5 text-xs text-zinc-600">
+                        <p className="mt-0.5 text-xs text-[var(--text-3)]">
                           {formatUSD(weeklyAmt)}/week needed to hit deadline
                         </p>
                       )}
@@ -254,7 +254,7 @@ export function GoalsView({ goals }: Props) {
                             setContributeAmount("");
                             setContributeError("");
                           }}
-                          className="rounded-lg border border-zinc-700 px-3 py-1.5 text-xs font-medium text-zinc-300 hover:border-emerald-700 hover:text-emerald-400"
+                          className="rounded-lg border border-[var(--border)] px-3 py-1.5 text-xs font-medium text-[var(--text-2)] hover:border-emerald-700 hover:text-emerald-400"
                         >
                           Contribute
                         </button>
@@ -262,7 +262,7 @@ export function GoalsView({ goals }: Props) {
                       <button
                         type="button"
                         onClick={() => { setEditing(goal); setModalOpen(true); }}
-                        className="rounded-lg border border-zinc-700 px-3 py-1.5 text-xs font-medium text-zinc-400 hover:text-white"
+                        className="rounded-lg border border-[var(--border)] px-3 py-1.5 text-xs font-medium text-[var(--text-2)] hover:text-[var(--text-1)]"
                       >
                         Edit
                       </button>
@@ -270,7 +270,7 @@ export function GoalsView({ goals }: Props) {
                         type="button"
                         onClick={() => deleteGoal(goal.id)}
                         disabled={deletingId === goal.id}
-                        className="rounded-lg border border-zinc-800 px-3 py-1.5 text-xs font-medium text-zinc-600 hover:border-red-900 hover:text-red-400 disabled:opacity-40"
+                        className="rounded-lg border border-[var(--border)] px-3 py-1.5 text-xs font-medium text-[var(--text-3)] hover:border-red-900 hover:text-red-400 disabled:opacity-40"
                       >
                         {deletingId === goal.id ? "..." : "Delete"}
                       </button>
@@ -278,7 +278,7 @@ export function GoalsView({ goals }: Props) {
                   </div>
 
                   {/* Progress bar */}
-                  <div className="mt-4 h-2 w-full overflow-hidden rounded-full bg-zinc-800">
+                  <div className="mt-4 h-2 w-full overflow-hidden rounded-full bg-[var(--bg-elevated)]">
                     <div
                       className={`h-2 rounded-full transition-all ${progressBarColor[status]}`}
                       style={{ width: `${pct}%` }}
@@ -287,7 +287,7 @@ export function GoalsView({ goals }: Props) {
 
                   {/* Inline contribute */}
                   {contributeId === goal.id && (
-                    <div className="mt-4 border-t border-zinc-800 pt-4">
+                    <div className="mt-4 border-t border-[var(--border)] pt-4">
                       <div className="flex items-center gap-2">
                         <input
                           type="number"
@@ -299,7 +299,7 @@ export function GoalsView({ goals }: Props) {
                             setContributeAmount(e.target.value);
                             setContributeError("");
                           }}
-                          className="w-44 rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-1.5 text-sm text-white placeholder:text-zinc-600"
+                          className="w-44 rounded-lg border border-[var(--border)] bg-[var(--bg-elevated)] px-3 py-1.5 text-sm text-[var(--text-1)] placeholder:text-[var(--text-3)]"
                         />
                         <button
                           type="button"
@@ -312,7 +312,7 @@ export function GoalsView({ goals }: Props) {
                         <button
                           type="button"
                           onClick={() => { setContributeId(null); setContributeError(""); }}
-                          className="text-xs text-zinc-500 hover:text-zinc-300"
+                          className="text-xs text-[var(--text-3)] hover:text-[var(--text-2)]"
                         >
                           Cancel
                         </button>

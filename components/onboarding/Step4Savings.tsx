@@ -3,7 +3,7 @@
 import { StepWrapper } from "@/components/onboarding/StepWrapper";
 import { StepProps } from "@/components/onboarding/types";
 
-const INPUT = "w-full rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2 text-white focus:border-zinc-500 focus:outline-none";
+const INPUT = "w-full rounded-lg border border-[var(--border)] bg-[var(--bg-elevated)] px-3 py-2 text-[var(--text-1)] focus:border-emerald-500 focus:outline-none";
 const OPTIONS = [
   { value: "percentage", label: "% of income" },
   { value: "fixed_per_paycheck", label: "Fixed per paycheck" },

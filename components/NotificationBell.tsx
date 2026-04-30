@@ -63,7 +63,6 @@ export function NotificationBell({ align = "right" }: { align?: "left" | "right"
     return () => subscription.unsubscribe();
   }, [fetchAlerts]);
 
-  // Close on outside click
   useEffect(() => {
     function onClickOutside(e: MouseEvent) {
       if (panelRef.current && !panelRef.current.contains(e.target as Node)) {
@@ -103,7 +102,7 @@ export function NotificationBell({ align = "right" }: { align?: "left" | "right"
   function textColor(severity: string) {
     if (severity === "danger") return "text-red-300";
     if (severity === "warning") return "text-amber-300";
-    return "text-zinc-300";
+    return "text-[var(--text-2)]";
   }
 
   return (
@@ -111,33 +110,33 @@ export function NotificationBell({ align = "right" }: { align?: "left" | "right"
       <button
         onClick={() => setOpen((v) => !v)}
         className={`relative flex h-8 w-8 items-center justify-center rounded-lg transition-colors ${
-          open ? "bg-zinc-700 text-zinc-200" : "text-zinc-500 hover:bg-zinc-800 hover:text-zinc-300"
+          open ? "bg-[var(--bg-elevated)] text-[var(--text-1)]" : "text-[var(--text-3)] hover:bg-[var(--bg-elevated)] hover:text-[var(--text-2)]"
         }`}
         aria-label="Notifications"
       >
         <BellIcon />
         {hasUnread && (
-          <span className="absolute right-1 top-1 h-2 w-2 rounded-full bg-red-500 ring-2 ring-zinc-900" />
+          <span className="absolute right-1 top-1 h-2 w-2 rounded-full bg-red-500 ring-2 ring-[var(--bg-card)]" />
         )}
       </button>
 
       {open && (
         <div
-          className={`absolute top-10 z-[60] w-80 rounded-2xl border border-zinc-800 bg-zinc-900 shadow-2xl shadow-black/60 ${
+          className={`absolute top-10 z-[60] w-80 rounded-2xl border border-[var(--border)] bg-[var(--bg-card)] shadow-2xl shadow-black/60 ${
             align === "left" ? "left-0" : "right-0"
           }`}
-          style={{ animation: "lukaSlideUp 0.15s cubic-bezier(0.16,1,0.3,1) both" }}
+          style={{ animation: "notifSlideUp 0.15s cubic-bezier(0.16,1,0.3,1) both" }}
         >
           <style>{`
-            @keyframes lukaSlideUp {
+            @keyframes notifSlideUp {
               from { opacity: 0; transform: translateY(6px) scale(0.98); }
               to   { opacity: 1; transform: translateY(0) scale(1); }
             }
           `}</style>
 
           {/* Header */}
-          <div className="flex items-center justify-between border-b border-zinc-800 px-4 py-3">
-            <p className="text-sm font-medium text-zinc-100">
+          <div className="flex items-center justify-between border-b border-[var(--border)] px-4 py-3">
+            <p className="text-sm font-medium text-[var(--text-1)]">
               Notifications
               {hasUnread && (
                 <span className="ml-2 rounded-full bg-red-500/20 px-1.5 py-0.5 text-[10px] font-semibold text-red-400">
@@ -148,7 +147,7 @@ export function NotificationBell({ align = "right" }: { align?: "left" | "right"
             {hasUnread && (
               <button
                 onClick={markAllRead}
-                className="text-xs text-zinc-500 transition-colors hover:text-emerald-400"
+                className="text-xs text-[var(--text-3)] transition-colors hover:text-emerald-400"
               >
                 Mark all read
               </button>
@@ -160,15 +159,15 @@ export function NotificationBell({ align = "right" }: { align?: "left" | "right"
             {alerts.length === 0 ? (
               <div className="flex flex-col items-center gap-1.5 px-4 py-10 text-center">
                 <p className="text-sm font-medium text-emerald-400">You&apos;re all caught up ✓</p>
-                <p className="text-xs text-zinc-600">No notifications right now</p>
+                <p className="text-xs text-[var(--text-3)]">No notifications right now</p>
               </div>
             ) : (
-              <div className="divide-y divide-zinc-800/60">
+              <div className="divide-y divide-[var(--divider)]">
                 {alerts.map((alert) => (
                   <button
                     key={alert.id}
                     onClick={() => markRead(alert.id)}
-                    className={`w-full px-4 py-3 text-left transition-colors hover:bg-zinc-800/50 ${
+                    className={`w-full px-4 py-3 text-left transition-colors hover:bg-[var(--bg-elevated)] ${
                       alert.is_read ? "opacity-40" : ""
                     }`}
                   >
@@ -180,7 +179,7 @@ export function NotificationBell({ align = "right" }: { align?: "left" | "right"
                         <p className={`text-xs leading-relaxed ${textColor(alert.severity)}`}>
                           {alert.message}
                         </p>
-                        <p className="mt-0.5 text-[10px] text-zinc-600">{timeAgo(alert.created_at)}</p>
+                        <p className="mt-0.5 text-[10px] text-[var(--text-3)]">{timeAgo(alert.created_at)}</p>
                       </div>
                       {!alert.is_read && (
                         <span className="mt-1.5 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-emerald-500" />

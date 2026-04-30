@@ -119,7 +119,6 @@ export function TransactionsView({ transactions, accounts }: Props) {
     .filter((tx) => tx.amount < 0 && tx.is_need === false)
     .reduce((s, tx) => s + Math.abs(tx.amount), 0);
 
-  // Group by date descending
   const grouped = useMemo(() => {
     const map = new Map<string, Transaction[]>();
     for (const tx of filtered) {
@@ -143,7 +142,7 @@ export function TransactionsView({ transactions, accounts }: Props) {
   }
 
   const selectClass =
-    "select-pill rounded-xl border border-white/[0.08] bg-white/[0.04] pl-3 pr-8 py-2 text-sm text-zinc-300 focus:border-emerald-500/40 focus:outline-none transition cursor-pointer";
+    "select-pill rounded-xl border border-[var(--border)] bg-[var(--bg-elevated)] pl-3 pr-8 py-2 text-sm text-[var(--text-2)] focus:border-emerald-500/40 focus:outline-none transition cursor-pointer";
 
   const hasActiveFilters =
     timeRange !== "this-month" ||
@@ -157,15 +156,15 @@ export function TransactionsView({ transactions, accounts }: Props) {
       <div className="mx-auto w-full max-w-4xl">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-semibold tracking-tight text-white">Transactions</h1>
-            <p className="mt-1 text-sm text-zinc-500">
+            <h1 className="text-2xl font-semibold tracking-tight text-[var(--text-1)]">Transactions</h1>
+            <p className="mt-1 text-sm text-[var(--text-3)]">
               {rangeLabel(timeRange)} · {filtered.length} transaction{filtered.length !== 1 ? "s" : ""}
             </p>
           </div>
           <button
             type="button"
             onClick={() => { setEditing(null); setModalOpen(true); }}
-            className="rounded-xl bg-emerald-500 px-4 py-2 text-sm font-semibold text-black transition hover:bg-emerald-400"
+            className="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-500"
           >
             + Add
           </button>
@@ -180,8 +179,8 @@ export function TransactionsView({ transactions, accounts }: Props) {
             { label: "Needs",  value: formatUSD(needsTotal),     color: "text-blue-400"    },
             { label: "Wants",  value: formatUSD(wantsTotal),     color: "text-purple-400"  },
           ].map(({ label, value, color }) => (
-            <div key={label} className="rounded-2xl border border-white/[0.06] bg-white/[0.025] p-4">
-              <p className="text-[10px] font-medium uppercase tracking-wide text-zinc-600">{label}</p>
+            <div key={label} className="rounded-2xl border border-[var(--border)] bg-[var(--bg-card)] p-4">
+              <p className="text-[10px] font-medium uppercase tracking-wide text-[var(--text-3)]">{label}</p>
               <p className={`mt-1.5 text-[17px] font-semibold ${color}`}>{value}</p>
             </div>
           ))}
@@ -194,7 +193,7 @@ export function TransactionsView({ transactions, accounts }: Props) {
             placeholder="Search merchant…"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full rounded-2xl border border-white/[0.07] bg-white/[0.03] px-4 py-2.5 text-sm text-zinc-200 placeholder-zinc-600 transition focus:border-white/[0.14] focus:outline-none"
+            className="w-full rounded-2xl border border-[var(--border)] bg-[var(--bg-card)] px-4 py-2.5 text-sm text-[var(--text-1)] placeholder-[var(--text-3)] transition focus:border-emerald-500/40 focus:outline-none"
           />
         </div>
 
@@ -249,7 +248,7 @@ export function TransactionsView({ transactions, accounts }: Props) {
                 ))}
               </select>
               <svg
-                className="pointer-events-none absolute right-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-zinc-500"
+                className="pointer-events-none absolute right-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[var(--text-3)]"
                 viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}
               >
                 <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
@@ -266,7 +265,7 @@ export function TransactionsView({ transactions, accounts }: Props) {
                 setCategoryFilter("all");
                 setSearch("");
               }}
-              className="rounded-xl border border-white/[0.08] px-3 py-2 text-xs text-zinc-400 transition hover:border-white/[0.14] hover:text-white"
+              className="rounded-xl border border-[var(--border)] px-3 py-2 text-xs text-[var(--text-3)] transition hover:text-[var(--text-1)]"
             >
               Reset
             </button>
@@ -275,8 +274,8 @@ export function TransactionsView({ transactions, accounts }: Props) {
 
         {/* Spending by category */}
         {categoryTotals.length > 0 && (
-          <div className="mt-5 rounded-2xl border border-white/[0.06] bg-white/[0.025] p-4">
-            <p className="mb-3 text-[10px] font-medium uppercase tracking-wide text-zinc-600">
+          <div className="mt-5 rounded-2xl border border-[var(--border)] bg-[var(--bg-card)] p-4">
+            <p className="mb-3 text-[10px] font-medium uppercase tracking-wide text-[var(--text-3)]">
               Spending by category
             </p>
             <div className="space-y-2">
@@ -285,10 +284,10 @@ export function TransactionsView({ transactions, accounts }: Props) {
                 return (
                   <div key={cat}>
                     <div className="flex items-center justify-between text-xs mb-0.5">
-                      <span className="text-zinc-300">{cat}</span>
-                      <span className="text-zinc-400">{formatUSD(total)} · {pct}%</span>
+                      <span className="text-[var(--text-2)]">{cat}</span>
+                      <span className="text-[var(--text-3)]">{formatUSD(total)} · {pct}%</span>
                     </div>
-                    <div className="h-1.5 w-full rounded-full bg-zinc-800">
+                    <div className="h-1.5 w-full rounded-full bg-[var(--bg-elevated)]">
                       <div
                         className="h-1.5 rounded-full bg-purple-500"
                         style={{ width: `${pct}%` }}
@@ -301,25 +300,25 @@ export function TransactionsView({ transactions, accounts }: Props) {
           </div>
         )}
 
-        {/* Grouped list with daily totals */}
+        {/* Grouped list */}
         <div className="mt-6 space-y-6">
           {transactions.length === 0 ? (
-            <div className="rounded-2xl border border-dashed border-white/[0.08] p-12 text-center">
-              <p className="font-medium text-zinc-400">No transactions yet</p>
-              <p className="mt-1 text-sm text-zinc-600">
+            <div className="rounded-2xl border border-dashed border-[var(--border)] p-12 text-center">
+              <p className="font-medium text-[var(--text-2)]">No transactions yet</p>
+              <p className="mt-1 text-sm text-[var(--text-3)]">
                 Log your first purchase or income to start tracking.
               </p>
               <button
                 type="button"
                 onClick={() => { setEditing(null); setModalOpen(true); }}
-                className="mt-4 rounded-xl bg-emerald-500 px-4 py-2 text-sm font-semibold text-black transition hover:bg-emerald-400"
+                className="mt-4 rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-500"
               >
                 Add your first transaction
               </button>
             </div>
           ) : grouped.length === 0 ? (
-            <div className="rounded-2xl border border-dashed border-white/[0.08] p-10 text-center">
-              <p className="text-zinc-500">No transactions match the current filters.</p>
+            <div className="rounded-2xl border border-dashed border-[var(--border)] p-10 text-center">
+              <p className="text-[var(--text-3)]">No transactions match the current filters.</p>
               <button
                 type="button"
                 onClick={() => {
@@ -328,7 +327,7 @@ export function TransactionsView({ transactions, accounts }: Props) {
                   setAccountFilter("all");
                   setCategoryFilter("all");
                 }}
-                className="mt-3 text-sm text-zinc-400 underline hover:text-zinc-200"
+                className="mt-3 text-sm text-[var(--text-3)] underline hover:text-[var(--text-2)]"
               >
                 Clear filters
               </button>
@@ -345,9 +344,8 @@ export function TransactionsView({ transactions, accounts }: Props) {
 
               return (
                 <div key={date}>
-                  {/* Date header with daily total */}
                   <div className="mb-2 flex items-center justify-between">
-                    <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">
+                    <p className="text-xs font-medium uppercase tracking-wide text-[var(--text-3)]">
                       {new Date(date + "T12:00:00").toLocaleDateString("en-US", {
                         weekday: "short",
                         month: "short",
@@ -369,7 +367,7 @@ export function TransactionsView({ transactions, accounts }: Props) {
                       return (
                         <div
                           key={tx.id}
-                          className="flex items-center justify-between rounded-2xl border border-white/[0.06] bg-white/[0.025] px-4 py-3 transition-colors hover:border-white/[0.1]"
+                          className="flex items-center justify-between rounded-2xl border border-[var(--border)] bg-[var(--bg-card)] px-4 py-3 transition-colors hover:bg-[var(--bg-elevated)]"
                         >
                           <div className="flex min-w-0 items-center gap-3">
                             {(() => {
@@ -381,34 +379,34 @@ export function TransactionsView({ transactions, accounts }: Props) {
                               );
                             })()}
                             <div className="min-w-0">
-                            <p className="text-sm font-medium text-zinc-100">
-                              {tx.merchant || "—"}
-                            </p>
-                            <div className="mt-0.5 flex flex-wrap items-center gap-1.5 text-xs text-zinc-500">
-                              {tx.category && (
-                                <span className="rounded-full bg-white/[0.06] px-2 py-0.5 text-zinc-400">
-                                  {tx.category}
-                                </span>
-                              )}
-                              {tx.is_need === true && (
-                                <span className="rounded-full bg-blue-500/10 px-2 py-0.5 text-blue-400">
-                                  need
-                                </span>
-                              )}
-                              {tx.is_need === false && (
-                                <span className="rounded-full bg-purple-500/10 px-2 py-0.5 text-purple-400">
-                                  want
-                                </span>
-                              )}
-                              {tx.account_id && accountMap[tx.account_id] && (
-                                <span>{accountMap[tx.account_id]}</span>
-                              )}
-                              {tx.notes && (
-                                <span className="italic text-zinc-600">{tx.notes}</span>
-                              )}
+                              <p className="text-sm font-medium text-[var(--text-1)]">
+                                {tx.merchant || "—"}
+                              </p>
+                              <div className="mt-0.5 flex flex-wrap items-center gap-1.5 text-xs text-[var(--text-3)]">
+                                {tx.category && (
+                                  <span className="rounded-full bg-[var(--bg-elevated)] px-2 py-0.5 text-[var(--text-2)]">
+                                    {tx.category}
+                                  </span>
+                                )}
+                                {tx.is_need === true && (
+                                  <span className="rounded-full bg-blue-500/10 px-2 py-0.5 text-blue-400">
+                                    need
+                                  </span>
+                                )}
+                                {tx.is_need === false && (
+                                  <span className="rounded-full bg-purple-500/10 px-2 py-0.5 text-purple-400">
+                                    want
+                                  </span>
+                                )}
+                                {tx.account_id && accountMap[tx.account_id] && (
+                                  <span>{accountMap[tx.account_id]}</span>
+                                )}
+                                {tx.notes && (
+                                  <span className="italic text-[var(--text-3)]">{tx.notes}</span>
+                                )}
+                              </div>
                             </div>
-                            </div>{/* end min-w-0 */}
-                          </div>{/* end flex items-center gap-3 */}
+                          </div>
                           <div className="flex flex-shrink-0 items-center gap-2">
                             <p
                               className={`text-sm font-semibold ${
@@ -422,7 +420,7 @@ export function TransactionsView({ transactions, accounts }: Props) {
                             <button
                               type="button"
                               onClick={() => { setEditing(tx); setModalOpen(true); }}
-                              className="rounded-lg border border-white/[0.08] px-2.5 py-1 text-xs text-zinc-400 transition hover:border-white/[0.14] hover:text-white"
+                              className="rounded-lg border border-[var(--border)] px-2.5 py-1 text-xs text-[var(--text-3)] transition hover:text-[var(--text-1)]"
                             >
                               Edit
                             </button>
@@ -430,7 +428,7 @@ export function TransactionsView({ transactions, accounts }: Props) {
                               type="button"
                               onClick={() => deleteTx(tx.id)}
                               disabled={deletingId === tx.id}
-                              className="rounded-lg border border-white/[0.04] px-2.5 py-1 text-xs text-zinc-600 transition hover:border-red-800/60 hover:text-red-400 disabled:opacity-40"
+                              className="rounded-lg border border-[var(--border)] px-2.5 py-1 text-xs text-[var(--text-3)] transition hover:border-red-800/60 hover:text-red-400 disabled:opacity-40"
                             >
                               {deletingId === tx.id ? "…" : "Del"}
                             </button>

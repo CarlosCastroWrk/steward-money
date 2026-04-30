@@ -22,11 +22,11 @@ export function MonthlyOverview({
 
   return (
     <section>
-      <h2 className="mb-3 text-[10px] font-semibold uppercase tracking-widest text-[#9898a8]">Monthly Overview</h2>
+      <h2 className="mb-3 text-[10px] font-semibold uppercase tracking-widest text-[var(--text-3)]">Monthly Overview</h2>
       <div className="grid grid-cols-2 gap-2.5 md:grid-cols-4">
         {items.map(({ label, value, color }) => (
-          <div key={label} className="rounded-2xl border border-[#ffffff08] bg-[#13131f] p-4">
-            <p className="text-[10px] uppercase tracking-wide text-[#9898a8]">{label}</p>
+          <div key={label} className="rounded-2xl border border-[var(--border)] bg-[var(--bg-card)] p-4">
+            <p className="text-[10px] uppercase tracking-wide text-[var(--text-3)]">{label}</p>
             <p className={`mt-2 text-lg font-semibold ${color}`}>{value}</p>
           </div>
         ))}

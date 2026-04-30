@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
+import { ThemeToggle } from "./ThemeToggle";
 
 const PRIMARY_NAV = [
   {
@@ -65,11 +66,11 @@ export function BottomNav() {
           onClick={() => setMoreOpen(false)}
         >
           <div
-            className="absolute left-3 right-3 overflow-hidden rounded-2xl border border-[#ffffff08] bg-[#13131f] px-4 pb-4 pt-3 shadow-2xl shadow-black/60"
+            className="absolute left-3 right-3 overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--bg-card)] px-4 pb-4 pt-3 shadow-2xl shadow-black/60"
             style={{ bottom: "calc(env(safe-area-inset-bottom) + 76px)" }}
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="mb-3 h-1 w-10 rounded-full bg-zinc-700 mx-auto" />
+            <div className="mb-3 h-1 w-10 rounded-full bg-[var(--border)] mx-auto" />
             <div className="grid grid-cols-2 gap-2">
               {MORE_NAV.map((item) => {
                 const isActive = pathname.startsWith(item.href);
@@ -81,13 +82,17 @@ export function BottomNav() {
                     className={`flex items-center gap-3 rounded-xl border px-4 py-3 text-sm font-medium transition-colors ${
                       isActive
                         ? "border-emerald-700/60 bg-emerald-950/30 text-emerald-400"
-                        : "border-[#ffffff06] bg-[#1a1a28] text-zinc-300 hover:border-[#ffffff10]"
+                        : "border-[var(--border)] bg-[var(--bg-elevated)] text-[var(--text-2)] hover:border-[var(--color-border-hover)]"
                     }`}
                   >
                     {item.label}
                   </Link>
                 );
               })}
+            </div>
+            <div className="mt-3 flex items-center justify-between border-t border-[var(--border)] pt-3">
+              <span className="text-xs text-[var(--text-3)]">Appearance</span>
+              <ThemeToggle />
             </div>
           </div>
         </div>
@@ -96,7 +101,7 @@ export function BottomNav() {
       {/* Floating glass nav */}
       <nav className="fixed bottom-0 left-0 right-0 z-50 md:hidden">
         <div
-          className="mx-3 overflow-hidden rounded-2xl border border-[#ffffff08] bg-[#13131f]/95 shadow-2xl shadow-black/50 backdrop-blur-xl"
+          className="mx-3 overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--bg-card)]/95 shadow-2xl shadow-black/50 backdrop-blur-xl"
           style={{ marginBottom: "calc(env(safe-area-inset-bottom) + 12px)" }}
         >
           <div className="flex items-stretch px-1 py-1">
@@ -110,7 +115,7 @@ export function BottomNav() {
                   className={`flex flex-1 flex-col items-center justify-center gap-0.5 rounded-xl py-2.5 text-[10px] font-medium transition-colors ${
                     isActive
                       ? "text-emerald-400"
-                      : "text-zinc-500 hover:text-zinc-300"
+                      : "text-[var(--text-3)] hover:text-[var(--text-2)]"
                   }`}
                 >
                   {item.icon}
@@ -127,7 +132,7 @@ export function BottomNav() {
               type="button"
               onClick={() => setMoreOpen((v) => !v)}
               className={`flex flex-1 flex-col items-center justify-center gap-0.5 rounded-xl py-2.5 text-[10px] font-medium transition-colors ${
-                isMoreActive || moreOpen ? "text-emerald-400" : "text-zinc-500 hover:text-zinc-300"
+                isMoreActive || moreOpen ? "text-emerald-400" : "text-[var(--text-3)] hover:text-[var(--text-2)]"
               }`}
             >
               <svg viewBox="0 0 24 24" fill="none" strokeWidth={1.8} stroke="currentColor" className="h-5 w-5">

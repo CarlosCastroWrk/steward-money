@@ -69,16 +69,16 @@ function toMonthly(amount: number, freq: string): number {
 const rowClass: Record<string, string> = {
   overdue: "border-red-800 bg-red-950/30",
   urgent: "border-amber-800 bg-amber-950/20",
-  soon: "border-yellow-800/40 bg-zinc-900",
-  fine: "border-zinc-800 bg-zinc-900",
-  none: "border-zinc-800 bg-zinc-900",
+  soon: "border-yellow-800/40 bg-[var(--bg-card)]",
+  fine: "border-[var(--border)] bg-[var(--bg-card)]",
+  none: "border-[var(--border)] bg-[var(--bg-card)]",
 };
 const badgeClass: Record<string, string> = {
   overdue: "bg-red-900/60 text-red-300",
   urgent: "bg-amber-900/60 text-amber-300",
   soon: "bg-yellow-900/60 text-yellow-300",
-  fine: "bg-zinc-800 text-zinc-400",
-  none: "bg-zinc-800 text-zinc-500",
+  fine: "bg-[var(--bg-elevated)] text-[var(--text-3)]",
+  none: "bg-[var(--bg-elevated)] text-[var(--text-3)]",
 };
 
 export function BillsView({ bills, accounts, suggestions }: Props) {
@@ -159,29 +159,29 @@ export function BillsView({ bills, accounts, suggestions }: Props) {
       <div className="mx-auto w-full max-w-4xl">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-medium text-white">Bills</h1>
-            <p className="mt-1 text-sm text-zinc-400">Recurring payments and obligations</p>
+            <h1 className="text-2xl font-medium text-[var(--text-1)]">Bills</h1>
+            <p className="mt-1 text-sm text-[var(--text-3)]">Recurring payments and obligations</p>
           </div>
           <button
             type="button"
             onClick={openAdd}
-            className="rounded-lg bg-white px-4 py-2 text-sm font-medium text-black"
+            className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white"
           >
             Add bill
           </button>
         </div>
 
         <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-3 sm:gap-4">
-          <div className="rounded-xl border border-zinc-800 bg-zinc-900 p-4">
-            <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">Monthly total</p>
-            <p className="mt-2 text-xl font-semibold text-white">{formatUSD(monthlyTotal)}</p>
+          <div className="rounded-xl border border-[var(--border)] bg-[var(--bg-card)] p-4">
+            <p className="text-xs font-medium uppercase tracking-wide text-[var(--text-3)]">Monthly total</p>
+            <p className="mt-2 text-xl font-semibold text-[var(--text-1)]">{formatUSD(monthlyTotal)}</p>
           </div>
-          <div className="rounded-xl border border-zinc-800 bg-zinc-900 p-4">
-            <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">Autopay</p>
+          <div className="rounded-xl border border-[var(--border)] bg-[var(--bg-card)] p-4">
+            <p className="text-xs font-medium uppercase tracking-wide text-[var(--text-3)]">Autopay</p>
             <p className="mt-2 text-xl font-semibold text-emerald-400">{formatUSD(autopayMonthly)}</p>
           </div>
-          <div className="rounded-xl border border-zinc-800 bg-zinc-900 p-4">
-            <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">Manual pay</p>
+          <div className="rounded-xl border border-[var(--border)] bg-[var(--bg-card)] p-4">
+            <p className="text-xs font-medium uppercase tracking-wide text-[var(--text-3)]">Manual pay</p>
             <p className="mt-2 text-xl font-semibold text-amber-400">
               {formatUSD(monthlyTotal - autopayMonthly)}
             </p>
@@ -198,15 +198,15 @@ export function BillsView({ bills, accounts, suggestions }: Props) {
               {suggestions
                 .filter((s) => !dismissedSuggestions.has(s.merchant))
                 .map((s) => (
-                  <div key={s.merchant} className="flex items-center justify-between gap-3 rounded-lg border border-zinc-800 bg-zinc-900 px-4 py-2.5">
+                  <div key={s.merchant} className="flex items-center justify-between gap-3 rounded-lg border border-[var(--border)] bg-[var(--bg-card)] px-4 py-2.5">
                     <div>
-                      <p className="text-sm font-medium text-zinc-200">{s.merchant}</p>
-                      <p className="text-xs text-zinc-500">
+                      <p className="text-sm font-medium text-[var(--text-1)]">{s.merchant}</p>
+                      <p className="text-xs text-[var(--text-3)]">
                         {s.frequency} · {s.occurrences} transactions
                       </p>
                     </div>
                     <div className="flex items-center gap-2">
-                      <span className="text-sm font-semibold text-zinc-100">{formatUSD(s.amount)}</span>
+                      <span className="text-sm font-semibold text-[var(--text-1)]">{formatUSD(s.amount)}</span>
                       <button
                         type="button"
                         onClick={() => addSuggestion(s)}
@@ -218,7 +218,7 @@ export function BillsView({ bills, accounts, suggestions }: Props) {
                       <button
                         type="button"
                         onClick={() => setDismissedSuggestions((prev) => new Set([...prev, s.merchant]))}
-                        className="rounded-lg border border-zinc-700 px-3 py-1 text-xs text-zinc-500 hover:text-zinc-300"
+                        className="rounded-lg border border-[var(--border)] px-3 py-1 text-xs text-[var(--text-3)] hover:text-[var(--text-2)]"
                       >
                         Dismiss
                       </button>
@@ -231,8 +231,8 @@ export function BillsView({ bills, accounts, suggestions }: Props) {
 
         <div className="mt-8 space-y-3">
           {bills.length === 0 ? (
-            <div className="rounded-xl border border-dashed border-zinc-700 p-10 text-center">
-              <p className="text-zinc-500">No bills yet. Add your first recurring payment.</p>
+            <div className="rounded-xl border border-dashed border-[var(--border)] p-10 text-center">
+              <p className="text-[var(--text-3)]">No bills yet. Add your first recurring payment.</p>
             </div>
           ) : (
             bills.map((bill) => {
@@ -244,14 +244,14 @@ export function BillsView({ bills, accounts, suggestions }: Props) {
                 >
                   <div>
                     <div className="flex items-center gap-2">
-                      <p className="font-medium text-zinc-100">{bill.name}</p>
+                      <p className="font-medium text-[var(--text-1)]">{bill.name}</p>
                       {bill.is_autopay && (
                         <span className="rounded-full bg-emerald-900/50 px-2 py-0.5 text-xs text-emerald-400">
                           autopay
                         </span>
                       )}
                     </div>
-                    <div className="mt-1 flex items-center gap-2 text-xs text-zinc-500">
+                    <div className="mt-1 flex items-center gap-2 text-xs text-[var(--text-3)]">
                       <span className={`rounded-full px-2 py-0.5 ${badgeClass[u]}`}>
                         {relativeDate(bill.next_due_date)}
                       </span>
@@ -266,7 +266,7 @@ export function BillsView({ bills, accounts, suggestions }: Props) {
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    <p className="mr-2 text-lg font-semibold text-white">
+                    <p className="mr-2 text-lg font-semibold text-[var(--text-1)]">
                       {formatUSD(Number(bill.amount))}
                     </p>
                     {bill.next_due_date && !bill.is_autopay && (
@@ -274,7 +274,7 @@ export function BillsView({ bills, accounts, suggestions }: Props) {
                         type="button"
                         onClick={() => markPaid(bill)}
                         disabled={paidId === bill.id}
-                        className="rounded-lg border border-zinc-700 px-3 py-1.5 text-xs font-medium text-zinc-300 hover:border-emerald-700 hover:text-emerald-400 disabled:opacity-40"
+                        className="rounded-lg border border-[var(--border)] px-3 py-1.5 text-xs font-medium text-[var(--text-2)] hover:border-emerald-700 hover:text-emerald-400 disabled:opacity-40"
                       >
                         {paidId === bill.id ? "..." : "Mark paid"}
                       </button>
@@ -282,7 +282,7 @@ export function BillsView({ bills, accounts, suggestions }: Props) {
                     <button
                       type="button"
                       onClick={() => openEdit(bill)}
-                      className="rounded-lg border border-zinc-700 px-3 py-1.5 text-xs font-medium text-zinc-400 hover:text-white"
+                      className="rounded-lg border border-[var(--border)] px-3 py-1.5 text-xs font-medium text-[var(--text-2)] hover:text-[var(--text-1)]"
                     >
                       Edit
                     </button>
@@ -290,7 +290,7 @@ export function BillsView({ bills, accounts, suggestions }: Props) {
                       type="button"
                       onClick={() => deleteBill(bill.id)}
                       disabled={deletingId === bill.id}
-                      className="rounded-lg border border-zinc-800 px-3 py-1.5 text-xs font-medium text-zinc-600 hover:border-red-900 hover:text-red-400 disabled:opacity-40"
+                      className="rounded-lg border border-[var(--border)] px-3 py-1.5 text-xs font-medium text-[var(--text-3)] hover:border-red-900 hover:text-red-400 disabled:opacity-40"
                     >
                       {deletingId === bill.id ? "..." : "Delete"}
                     </button>

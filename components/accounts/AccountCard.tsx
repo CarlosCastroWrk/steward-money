@@ -14,10 +14,10 @@ function typeBadgeClasses(type: string): string {
   if (normalized === "checking") return "bg-blue-950 text-blue-300";
   if (normalized === "savings") return "bg-green-950 text-green-300";
   if (normalized === "credit card") return "bg-red-950 text-red-300";
-  if (normalized === "cash" || normalized === "apple cash") return "bg-zinc-800 text-zinc-300";
+  if (normalized === "cash" || normalized === "apple cash") return "bg-[var(--bg-elevated)] text-[var(--text-2)]";
   if (normalized === "trading") return "bg-purple-950 text-purple-300";
   if (normalized === "debt / installment") return "bg-orange-950 text-orange-300";
-  return "bg-zinc-800 text-zinc-300";
+  return "bg-[var(--bg-elevated)] text-[var(--text-2)]";
 }
 
 export function AccountCard({ account }: { account: Account }) {
@@ -77,15 +77,15 @@ export function AccountCard({ account }: { account: Account }) {
     : null;
 
   return (
-    <div className="rounded-xl border border-zinc-800 bg-zinc-900 p-5">
+    <div className="rounded-xl border border-[var(--border)] bg-[var(--bg-card)] p-5">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0 flex-1 space-y-2">
-          <p className="text-base font-medium text-white">{account.name}</p>
-          {account.institution ? <p className="text-sm text-zinc-400">{account.institution}</p> : null}
+          <p className="text-base font-medium text-[var(--text-1)]">{account.name}</p>
+          {account.institution ? <p className="text-sm text-[var(--text-2)]">{account.institution}</p> : null}
           <div className="flex flex-wrap items-center gap-2">
             <span className={`rounded-full px-2 py-1 text-xs ${typeBadgeClasses(account.type)}`}>{account.type}</span>
             {account.is_manual ? (
-              <span className="rounded border border-zinc-700 px-2 py-0.5 text-xs text-zinc-500">Manual</span>
+              <span className="rounded border border-[var(--border)] px-2 py-0.5 text-xs text-[var(--text-3)]">Manual</span>
             ) : null}
           </div>
         </div>
@@ -96,7 +96,7 @@ export function AccountCard({ account }: { account: Account }) {
           <input
             type="number"
             step="any"
-            className="w-full max-w-xs rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-white"
+            className="w-full max-w-xs rounded-lg border border-[var(--border)] bg-[var(--bg-elevated)] px-3 py-2 text-sm text-[var(--text-1)]"
             value={balanceInput}
             onChange={(e) => setBalanceInput(e.target.value)}
             disabled={busy}
@@ -106,7 +106,7 @@ export function AccountCard({ account }: { account: Account }) {
               type="button"
               onClick={saveBalance}
               disabled={busy}
-              className="rounded-lg bg-white px-3 py-2 text-sm font-medium text-black disabled:opacity-50"
+              className="rounded-lg bg-emerald-600 px-3 py-2 text-sm font-medium text-white disabled:opacity-50"
             >
               Save
             </button>
@@ -114,7 +114,7 @@ export function AccountCard({ account }: { account: Account }) {
               type="button"
               onClick={cancelEdit}
               disabled={busy}
-              className="rounded-lg border border-zinc-700 px-3 py-2 text-sm text-zinc-300 disabled:opacity-50"
+              className="rounded-lg border border-[var(--border)] px-3 py-2 text-sm text-[var(--text-2)] disabled:opacity-50"
             >
               Cancel
             </button>
@@ -122,16 +122,16 @@ export function AccountCard({ account }: { account: Account }) {
         </div>
       ) : (
         <>
-          <p className={`mt-4 text-2xl font-semibold ${balanceNum < 0 ? "text-red-400" : "text-white"}`}>
+          <p className={`mt-4 text-2xl font-semibold ${balanceNum < 0 ? "text-red-400" : "text-[var(--text-1)]"}`}>
             {formatCurrency(balanceNum)}
           </p>
-          {lastSyncedLabel ? <p className="mt-2 text-xs text-zinc-500">Last synced {lastSyncedLabel}</p> : null}
+          {lastSyncedLabel ? <p className="mt-2 text-xs text-[var(--text-3)]">Last synced {lastSyncedLabel}</p> : null}
           <div className="mt-4 flex flex-wrap gap-2">
             <button
               type="button"
               onClick={startEdit}
               disabled={busy}
-              className="rounded-lg border border-zinc-700 px-3 py-2 text-sm text-zinc-300 disabled:opacity-50"
+              className="rounded-lg border border-[var(--border)] px-3 py-2 text-sm text-[var(--text-2)] disabled:opacity-50"
             >
               Edit balance
             </button>
@@ -139,11 +139,11 @@ export function AccountCard({ account }: { account: Account }) {
               type="button"
               onClick={deactivate}
               disabled={busy}
-              className="rounded-lg border border-zinc-700 px-3 py-2 text-sm text-zinc-300 disabled:opacity-50"
+              className="rounded-lg border border-[var(--border)] px-3 py-2 text-sm text-[var(--text-2)] disabled:opacity-50"
             >
               Deactivate
             </button>
-            {savedFlash ? <span className="self-center text-sm text-green-400">Saved</span> : null}
+            {savedFlash ? <span className="self-center text-sm text-emerald-400">Saved</span> : null}
           </div>
         </>
       )}

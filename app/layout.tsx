@@ -4,6 +4,7 @@ import { Sidebar } from "@/components/Sidebar";
 import { BottomNav } from "@/components/BottomNav";
 import { Luka } from "@/components/Luka";
 import { NotificationBell } from "@/components/NotificationBell";
+import { ThemeProvider } from "@/components/ThemeProvider";
 import "./globals.css";
 
 const inter = Inter({ subsets: ["latin"], display: "swap" });
@@ -28,21 +29,19 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={inter.className}>
-      <body className="flex min-h-screen bg-[#0b0b12] text-zinc-100 antialiased">
-        <Sidebar />
-        <main className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto bg-[#0b0b12] md:ml-[228px] pb-[calc(5rem+env(safe-area-inset-bottom))] md:pb-0">
-          {children}
-        </main>
-
-        <BottomNav />
-        {/* Mobile-only bell — fixed top-right, hidden on desktop (sidebar has it) */}
-        <div
-          className="fixed right-4 top-[calc(env(safe-area-inset-top)+12px)] z-[52] md:hidden"
-        >
-          <NotificationBell align="right" />
-        </div>
-        <Luka />
+    <html lang="en" className={inter.className} suppressHydrationWarning>
+      <body className="flex min-h-screen bg-[var(--bg)] text-[var(--text-1)] antialiased">
+        <ThemeProvider>
+          <Sidebar />
+          <main className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto bg-[var(--bg)] md:ml-[228px] pb-[calc(5rem+env(safe-area-inset-bottom))] md:pb-0">
+            {children}
+          </main>
+          <BottomNav />
+          <div className="fixed right-4 top-[calc(env(safe-area-inset-top)+12px)] z-[52] md:hidden">
+            <NotificationBell align="right" />
+          </div>
+          <Luka />
+        </ThemeProvider>
       </body>
     </html>
   );

@@ -36,7 +36,7 @@ function TypingDots() {
       {[0, 1, 2].map((i) => (
         <span
           key={i}
-          className="h-1.5 w-1.5 rounded-full bg-zinc-400"
+          className="h-1.5 w-1.5 rounded-full bg-[var(--text-3)]"
           style={{ animation: `lukaDot 1.2s ease-in-out ${i * 0.2}s infinite` }}
         />
       ))}
@@ -59,14 +59,14 @@ function MessageList({
     <div className="flex flex-col gap-3 overflow-y-auto px-4 py-4" style={{ flex: 1 }}>
       {messages.length === 0 && (
         <div className="flex flex-1 flex-col items-center justify-center gap-2 py-8 text-center">
-          <p className="text-sm font-medium text-zinc-300">Hi, I&apos;m Luka.</p>
-          <p className="text-xs text-zinc-500">Ask me anything about your finances.</p>
+          <p className="text-sm font-medium text-[var(--text-1)]">Hi, I&apos;m Luka.</p>
+          <p className="text-xs text-[var(--text-3)]">Ask me anything about your finances.</p>
           <div className="mt-3 flex flex-wrap justify-center gap-2">
             {["How much can I spend today?", "What bills are coming up?", "Add a transaction"].map((s) => (
               <button
                 key={s}
                 onClick={() => sendMessage(s)}
-                className="rounded-full border border-zinc-700 px-3 py-1 text-xs text-zinc-400 transition-colors hover:border-emerald-700 hover:text-emerald-400"
+                className="rounded-full border border-[var(--border)] px-3 py-1 text-xs text-[var(--text-3)] transition-colors hover:border-emerald-700 hover:text-emerald-400"
               >
                 {s}
               </button>
@@ -78,7 +78,7 @@ function MessageList({
         <div key={i} className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}>
           <div
             className={`max-w-[85%] rounded-2xl px-3 py-2 text-sm leading-relaxed ${
-              m.role === "user" ? "rounded-br-sm bg-emerald-700 text-white" : "rounded-bl-sm bg-zinc-800 text-zinc-200"
+              m.role === "user" ? "rounded-br-sm bg-emerald-700 text-white" : "rounded-bl-sm bg-[var(--luka-msg-bg)] text-[var(--text-1)]"
             }`}
             style={{ whiteSpace: "pre-wrap", wordBreak: "break-word" }}
           >
@@ -88,7 +88,7 @@ function MessageList({
       ))}
       {loading && (
         <div className="flex justify-start">
-          <div className="rounded-2xl rounded-bl-sm bg-zinc-800 px-3 py-2">
+          <div className="rounded-2xl rounded-bl-sm bg-[var(--luka-msg-bg)] px-3 py-2">
             <TypingDots />
           </div>
         </div>
@@ -158,8 +158,8 @@ export function Luka() {
   }
 
   const inputArea = (
-    <div className="border-t border-[#ffffff08] px-3 py-3">
-      <div className="flex items-end gap-2 rounded-xl bg-zinc-800 px-3 py-2">
+    <div className="border-t border-[var(--border)] px-3 py-3">
+      <div className="flex items-end gap-2 rounded-xl bg-[var(--luka-msg-bg)] px-3 py-2">
         <textarea
           ref={inputRef}
           value={input}
@@ -167,7 +167,7 @@ export function Luka() {
           onKeyDown={handleKeyDown}
           placeholder="Ask Luka anything…"
           rows={1}
-          className="flex-1 resize-none bg-transparent text-sm text-zinc-100 placeholder-zinc-500 outline-none"
+          className="flex-1 resize-none bg-transparent text-sm text-[var(--text-1)] placeholder-[var(--text-3)] outline-none"
           style={{ maxHeight: 80 }}
         />
         <button
@@ -182,15 +182,15 @@ export function Luka() {
   );
 
   const header = (
-    <div className="flex items-center gap-2.5 border-b border-[#ffffff08] px-4 py-3">
+    <div className="flex items-center gap-2.5 border-b border-[var(--border)] px-4 py-3">
       <div className="flex h-7 w-7 items-center justify-center rounded-full bg-emerald-600">
         <SparkleIcon className="h-4 w-4" />
       </div>
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium text-zinc-100">Luka</p>
-        <p className="text-xs text-[#9898a8]">Your financial co-pilot</p>
+        <p className="text-sm font-medium text-[var(--text-1)]">Luka</p>
+        <p className="text-xs text-[var(--text-3)]">Your financial co-pilot</p>
       </div>
-      <button onClick={() => setOpen(false)} className="text-zinc-500 transition-colors hover:text-zinc-300">
+      <button onClick={() => setOpen(false)} className="text-[var(--text-3)] transition-colors hover:text-[var(--text-1)]">
         <CloseIcon />
       </button>
     </div>
@@ -220,8 +220,8 @@ export function Luka() {
         onClick={() => setOpen((v) => !v)}
         className={`fixed left-1/2 z-[51] -translate-x-1/2 flex items-center gap-2 rounded-full border px-4 py-2 text-xs backdrop-blur-md transition-colors md:hidden ${
           open
-            ? "border-emerald-700/50 bg-[#1e1e2e] text-emerald-400"
-            : "border-[#ffffff10] bg-[#13131f]/90 text-[#9898a8]"
+            ? "border-emerald-700/50 bg-[var(--luka-bg)] text-emerald-400"
+            : "border-[var(--border)] bg-[var(--bg-card)]/90 text-[var(--text-3)]"
         }`}
         style={{ bottom: "calc(env(safe-area-inset-bottom) + 78px)" }}
         aria-label="Open Luka"
@@ -241,11 +241,11 @@ export function Luka() {
       {/* ── MOBILE: bottom sheet ── */}
       {open && (
         <div
-          className="luka-sheet fixed inset-x-0 bottom-0 z-[52] flex flex-col overflow-hidden rounded-t-2xl border-t border-[#ffffff08] bg-[#0c0c14] md:hidden"
+          className="luka-sheet fixed inset-x-0 bottom-0 z-[52] flex flex-col overflow-hidden rounded-t-2xl border-t border-[var(--border)] bg-[var(--luka-bg)] md:hidden"
           style={{ maxHeight: "80vh" }}
         >
           <div className="flex justify-center py-2.5">
-            <div className="h-1 w-10 rounded-full bg-zinc-700" />
+            <div className="h-1 w-10 rounded-full bg-[var(--border)]" />
           </div>
           {header}
           <MessageList messages={messages} loading={loading} sendMessage={sendMessage} messagesEndRef={messagesEndRef} />
@@ -266,7 +266,7 @@ export function Luka() {
 
       {/* ── DESKTOP: floating panel ── */}
       {open && (
-        <div className="luka-panel fixed bottom-24 right-6 z-[51] hidden w-[380px] flex-col overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-900 shadow-2xl shadow-black/60 md:flex" style={{ height: 460 }}>
+        <div className="luka-panel fixed bottom-24 right-6 z-[51] hidden w-[380px] flex-col overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--bg-card)] shadow-2xl shadow-black/60 md:flex" style={{ height: 460 }}>
           {header}
           <MessageList messages={messages} loading={loading} sendMessage={sendMessage} messagesEndRef={messagesEndRef} />
           {inputArea}

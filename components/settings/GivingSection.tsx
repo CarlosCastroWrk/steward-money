@@ -12,7 +12,7 @@ function Toggle({ checked, onChange }: { checked: boolean; onChange: (checked: b
     <label className="inline-flex cursor-pointer items-center gap-3">
       <input type="checkbox" className="peer sr-only" checked={checked} onChange={(e) => onChange(e.target.checked)} />
       <span className="h-6 w-11 rounded-full bg-zinc-700 transition peer-checked:bg-zinc-200">
-        <span className="ml-1 mt-1 block h-4 w-4 rounded-full bg-zinc-300 transition peer-checked:translate-x-5 peer-checked:bg-zinc-900" />
+        <span className="ml-1 mt-1 block h-4 w-4 rounded-full bg-zinc-300 transition peer-checked:translate-x-5 peer-checked:bg-emerald-600" />
       </span>
     </label>
   );

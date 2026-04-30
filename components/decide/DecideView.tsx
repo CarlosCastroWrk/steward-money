@@ -71,13 +71,13 @@ export function DecideView({ result }: Props) {
   return (
     <section className="min-h-screen p-4 md:p-8">
       <div className="mx-auto w-full max-w-2xl">
-        <h1 className="text-2xl font-medium text-white">Decide</h1>
+        <h1 className="text-2xl font-medium text-[var(--text-1)]">Decide</h1>
         <p className="mt-1 text-sm text-zinc-400">
           Enter a purchase amount to see if you can afford it right now.
         </p>
 
         {/* Big input */}
-        <div className="mt-8 flex items-center rounded-2xl border border-zinc-700 bg-zinc-900 px-6 py-5">
+        <div className="mt-8 flex items-center rounded-2xl border border-[var(--border)] bg-[var(--bg-card)] px-6 py-5">
           <span className="text-3xl font-light text-zinc-400">$</span>
           <input
             type="number"
@@ -112,7 +112,7 @@ export function DecideView({ result }: Props) {
 
         {/* Breakdown */}
         {verdict !== "empty" && (
-          <div className="mt-6 rounded-xl border border-zinc-800 bg-zinc-900 p-5">
+          <div className="mt-6 rounded-xl border border-[var(--border)] bg-[var(--bg-card)] p-5">
             <h2 className="mb-4 text-xs font-medium uppercase tracking-wide text-zinc-500">
               The math
             </h2>
@@ -125,7 +125,7 @@ export function DecideView({ result }: Props) {
                 <span className="text-zinc-400">This purchase</span>
                 <span className="font-medium text-red-400">-{formatUSD(amount)}</span>
               </li>
-              <li className="flex justify-between border-t border-zinc-800 pt-3">
+              <li className="flex justify-between border-t border-[var(--border)] pt-3">
                 <span className="text-zinc-300">Left to spend</span>
                 <span
                   className={`font-semibold ${remaining >= 0 ? "text-emerald-400" : "text-red-400"}`}
@@ -149,14 +149,14 @@ export function DecideView({ result }: Props) {
 
         {/* Context panel */}
         <div className="mt-4 grid grid-cols-2 gap-4">
-          <div className="rounded-xl border border-zinc-800 bg-zinc-900 p-4">
+          <div className="rounded-xl border border-[var(--border)] bg-[var(--bg-card)] p-4">
             <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">
               Safe to spend
             </p>
             <p className="mt-2 text-lg font-semibold text-white">{formatUSD(result.safeToSpend)}</p>
             <p className="mt-0.5 text-xs text-zinc-500">After all deductions</p>
           </div>
-          <div className="rounded-xl border border-zinc-800 bg-zinc-900 p-4">
+          <div className="rounded-xl border border-[var(--border)] bg-[var(--bg-card)] p-4">
             <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">
               Emergency buffer
             </p>
@@ -165,7 +165,7 @@ export function DecideView({ result }: Props) {
             </p>
             <p className="mt-0.5 text-xs text-zinc-500">Protected, do not spend</p>
           </div>
-          <div className="rounded-xl border border-zinc-800 bg-zinc-900 p-4">
+          <div className="rounded-xl border border-[var(--border)] bg-[var(--bg-card)] p-4">
             <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">
               Bills before payday
             </p>
@@ -174,7 +174,7 @@ export function DecideView({ result }: Props) {
             </p>
             <p className="mt-0.5 text-xs text-zinc-500">Already reserved</p>
           </div>
-          <div className="rounded-xl border border-zinc-800 bg-zinc-900 p-4">
+          <div className="rounded-xl border border-[var(--border)] bg-[var(--bg-card)] p-4">
             <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">
               Next paycheck
             </p>

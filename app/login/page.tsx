@@ -33,35 +33,35 @@ export default function LoginPage() {
     }
   }
 
-  const INPUT = "w-full rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-3 text-zinc-100 placeholder-zinc-500 outline-none transition focus:border-emerald-700 focus:ring-1 focus:ring-emerald-700/40";
+  const INPUT = "w-full rounded-xl border border-[var(--border)] bg-[var(--bg-elevated)] px-4 py-3 text-[var(--text-1)] placeholder-[var(--text-3)] outline-none transition focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600/40";
 
   return (
-    <section className="flex min-h-screen flex-col items-center justify-center bg-zinc-950 px-6 py-12">
+    <section className="flex min-h-screen flex-col items-center justify-center bg-[var(--bg)] px-6 py-12">
       {/* Logo */}
       <div className="mb-8 flex flex-col items-center gap-3">
         <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-600 shadow-lg shadow-emerald-900/50">
           <span className="text-2xl font-black text-white" style={{ letterSpacing: "-1px" }}>S</span>
         </div>
         <div className="text-center">
-          <h1 className="text-xl font-semibold text-white tracking-tight">Steward Money</h1>
-          <p className="mt-0.5 text-sm text-zinc-500">Your personal financial co-pilot</p>
+          <h1 className="text-xl font-semibold text-[var(--text-1)] tracking-tight">Steward Money</h1>
+          <p className="mt-0.5 text-sm text-[var(--text-3)]">Your personal financial co-pilot</p>
         </div>
       </div>
 
       <div className="w-full max-w-sm">
         {/* Tab switcher */}
-        <div className="mb-6 flex rounded-xl border border-zinc-800 bg-zinc-900 p-1">
+        <div className="mb-6 flex rounded-xl border border-[var(--border)] bg-[var(--bg-card)] p-1">
           <button
             type="button"
             onClick={() => { setMode("signin"); setErrorMessage(null); }}
-            className={`flex-1 rounded-lg py-2 text-sm font-medium transition-colors ${mode === "signin" ? "bg-zinc-700 text-white" : "text-zinc-500 hover:text-zinc-300"}`}
+            className={`flex-1 rounded-lg py-2 text-sm font-medium transition-colors ${mode === "signin" ? "bg-[var(--bg-elevated)] text-[var(--text-1)]" : "text-[var(--text-3)] hover:text-[var(--text-2)]"}`}
           >
             Sign in
           </button>
           <button
             type="button"
             onClick={() => { setMode("signup"); setErrorMessage(null); }}
-            className={`flex-1 rounded-lg py-2 text-sm font-medium transition-colors ${mode === "signup" ? "bg-zinc-700 text-white" : "text-zinc-500 hover:text-zinc-300"}`}
+            className={`flex-1 rounded-lg py-2 text-sm font-medium transition-colors ${mode === "signup" ? "bg-[var(--bg-elevated)] text-[var(--text-1)]" : "text-[var(--text-3)] hover:text-[var(--text-2)]"}`}
           >
             Create account
           </button>
@@ -103,7 +103,7 @@ export default function LoginPage() {
         </form>
 
         {mode === "signup" && (
-          <p className="mt-4 text-center text-xs text-zinc-600">
+          <p className="mt-4 text-center text-xs text-[var(--text-3)]">
             By creating an account you agree to our terms of service.
           </p>
         )}

@@ -28,7 +28,7 @@ export function StepWrapper({
   hideFooter,
 }: StepWrapperProps) {
   return (
-    <div className="mx-auto w-full max-w-[520px] rounded-2xl border border-zinc-800 bg-zinc-900 p-6 shadow-xl">
+    <div className="mx-auto w-full max-w-[520px] rounded-2xl border border-[var(--border)] bg-[var(--bg-card)] p-6 shadow-xl">
       <h2 className="text-xl font-semibold text-white">{title}</h2>
       {subtitle && <p className="mt-1.5 text-sm text-zinc-400 leading-relaxed">{subtitle}</p>}
       <div className="mt-5 space-y-4">{children}</div>

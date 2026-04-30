@@ -38,12 +38,12 @@ export function SettingsView({ settings, incomeSources, accounts, priorities }: 
 
         {/* Header */}
         <div className="mb-6">
-          <h1 className="text-2xl font-semibold tracking-tight text-white">Settings</h1>
-          <p className="mt-1 text-sm text-zinc-500">Your financial rules and preferences.</p>
+          <h1 className="text-2xl font-semibold tracking-tight text-[var(--text-1)]">Settings</h1>
+          <p className="mt-1 text-sm text-[var(--text-3)]">Your financial rules and preferences.</p>
         </div>
 
         {/* Tab row */}
-        <div className="mb-6 flex gap-1 overflow-x-auto rounded-2xl border border-white/[0.06] bg-white/[0.025] p-1.5">
+        <div className="mb-6 flex gap-1 overflow-x-auto rounded-2xl border border-[var(--border)] bg-[var(--bg-card)] p-1.5">
           {TABS.map((t) => (
             <button
               key={t.id}
@@ -51,8 +51,8 @@ export function SettingsView({ settings, incomeSources, accounts, priorities }: 
               onClick={() => setTab(t.id)}
               className={`flex-shrink-0 rounded-xl px-4 py-2 text-[13px] font-medium transition-all duration-150 ${
                 tab === t.id
-                  ? "bg-white/[0.1] text-white shadow-sm"
-                  : "text-zinc-500 hover:text-zinc-300"
+                  ? "bg-[var(--bg-elevated)] text-[var(--text-1)] shadow-sm"
+                  : "text-[var(--text-3)] hover:text-[var(--text-2)]"
               }`}
             >
               {t.label}

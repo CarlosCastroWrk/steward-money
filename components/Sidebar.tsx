@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { LogoMark } from "./Logo";
 import { NotificationBell } from "./NotificationBell";
+import { ThemeToggle } from "./ThemeToggle";
 
 type NavItem = {
   label: string;
@@ -83,14 +84,14 @@ function NavLink({ item, isActive }: { item: NavItem; isActive: boolean }) {
       href={item.href}
       className={`group relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-[13px] font-medium transition-all duration-150 ${
         isActive
-          ? "bg-white/[0.07] text-white"
-          : "text-zinc-500 hover:bg-white/[0.04] hover:text-zinc-300"
+          ? "bg-[var(--bg-elevated)] text-[var(--text-1)]"
+          : "text-[var(--text-3)] hover:bg-[var(--bg-elevated)] hover:text-[var(--text-2)]"
       }`}
     >
       {isActive && (
         <span className="absolute left-0 top-1/2 h-4 w-[3px] -translate-y-1/2 rounded-full bg-emerald-400" />
       )}
-      <span className={isActive ? "text-emerald-400" : "text-zinc-600 group-hover:text-zinc-400"}>
+      <span className={isActive ? "text-emerald-400" : "text-[var(--text-3)] group-hover:text-[var(--text-2)]"}>
         {item.icon}
       </span>
       {item.label}
@@ -106,18 +107,18 @@ export function Sidebar() {
   }
 
   return (
-    <aside className="fixed left-0 top-0 hidden h-screen w-[228px] flex-col border-r border-white/[0.05] bg-[#0b0b12] md:flex">
+    <aside className="fixed left-0 top-0 hidden h-screen w-[228px] flex-col border-r border-[var(--border)] bg-[var(--sidebar-bg)] md:flex">
       {/* Logo */}
       <div className="flex items-center gap-3 px-4 py-5">
         <LogoMark size={30} />
         <div className="flex-1 leading-tight">
-          <p className="text-[14px] font-semibold tracking-tight text-white">Steward</p>
-          <p className="text-[10px] font-medium uppercase tracking-[0.12em] text-zinc-600">Money</p>
+          <p className="text-[14px] font-semibold tracking-tight text-[var(--text-1)]">Steward</p>
+          <p className="text-[10px] font-medium uppercase tracking-[0.12em] text-[var(--text-3)]">Money</p>
         </div>
         <NotificationBell align="right" />
       </div>
 
-      <div className="mx-4 h-px bg-white/[0.05]" />
+      <div className="mx-4 h-px bg-[var(--border)]" />
 
       {/* Main nav */}
       <nav className="flex-1 space-y-0.5 overflow-y-auto px-3 py-4">
@@ -126,10 +127,14 @@ export function Sidebar() {
         ))}
       </nav>
 
-      {/* Settings pinned at bottom */}
-      <div className="mx-4 h-px bg-white/[0.05]" />
+      {/* Settings + theme toggle pinned at bottom */}
+      <div className="mx-4 h-px bg-[var(--border)]" />
       <div className="px-3 py-4">
         <NavLink item={SETTINGS_NAV} isActive={isActive(SETTINGS_NAV.href)} />
+        <div className="mt-2 flex items-center justify-between px-3 py-1">
+          <span className="text-[11px] text-[var(--text-3)]">Appearance</span>
+          <ThemeToggle />
+        </div>
       </div>
     </aside>
   );

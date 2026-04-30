@@ -165,10 +165,10 @@ export default async function DashboardPage() {
 
       {/* Greeting */}
       <header>
-        <h1 className="text-2xl font-bold text-white">
+        <h1 className="text-2xl font-bold text-[var(--text-1)]">
           {getGreeting()}, {displayName}.
         </h1>
-        <p className="mt-0.5 text-sm text-[#9898a8]">{formattedDate}</p>
+        <p className="mt-0.5 text-sm text-[var(--text-3)]">{formattedDate}</p>
       </header>
 
       {/* Alerts */}
@@ -181,7 +181,7 @@ export default async function DashboardPage() {
                 alert.severity === "danger"
                   ? "border-red-900/50 bg-red-950/40 text-red-300"
                   : alert.severity === "info"
-                  ? "border-zinc-700/40 bg-zinc-800/30 text-zinc-400"
+                  ? "border-[var(--border)] bg-[var(--bg-elevated)] text-[var(--text-2)]"
                   : "border-amber-900/50 bg-amber-950/40 text-amber-300"
               }`}
             >
@@ -192,22 +192,22 @@ export default async function DashboardPage() {
       )}
 
       {/* Today's Brief */}
-      <div className="rounded-2xl border border-[#ffffff08] bg-[#13131f] px-4 py-4">
-        <p className="mb-3 text-[10px] font-semibold uppercase tracking-widest text-[#9898a8]">
+      <div className="rounded-2xl border border-[var(--border)] bg-[var(--bg-card)] px-4 py-4">
+        <p className="mb-3 text-[10px] font-semibold uppercase tracking-widest text-[var(--text-3)]">
           Today&apos;s Brief
         </p>
-        <div className="flex items-center divide-x divide-[#ffffff08]">
+        <div className="flex items-center divide-x divide-[var(--border)]">
           <div className="flex-1 pr-4">
-            <p className="text-[10px] uppercase tracking-wide text-[#9898a8]">Liquid Cash</p>
-            <p className="mt-0.5 text-sm font-semibold text-white">{formatUSD(result.liquidTotal)}</p>
+            <p className="text-[10px] uppercase tracking-wide text-[var(--text-3)]">Liquid Cash</p>
+            <p className="mt-0.5 text-sm font-semibold text-[var(--text-1)]">{formatUSD(result.liquidTotal)}</p>
           </div>
           <div className="flex-1 px-4">
-            <p className="text-[10px] uppercase tracking-wide text-[#9898a8]">Due Soon</p>
+            <p className="text-[10px] uppercase tracking-wide text-[var(--text-3)]">Due Soon</p>
             <p className="mt-0.5 text-sm font-semibold text-amber-400">{formatUSD(result.billsDueSoon)}</p>
           </div>
           <div className="flex-1 pl-4">
-            <p className="text-[10px] uppercase tracking-wide text-[#9898a8]">Paycheck</p>
-            <p className="mt-0.5 text-sm font-semibold text-white">{nextPaycheck}</p>
+            <p className="text-[10px] uppercase tracking-wide text-[var(--text-3)]">Paycheck</p>
+            <p className="mt-0.5 text-sm font-semibold text-[var(--text-1)]">{nextPaycheck}</p>
           </div>
         </div>
       </div>
@@ -252,12 +252,12 @@ export default async function DashboardPage() {
       {goals.length > 0 && (
         <section>
           <div className="mb-3 flex items-center justify-between">
-            <h2 className="text-[10px] font-semibold uppercase tracking-widest text-[#9898a8]">Goals</h2>
+            <h2 className="text-[10px] font-semibold uppercase tracking-widest text-[var(--text-3)]">Goals</h2>
             <a href="/goals" className="text-xs text-emerald-400 transition-colors hover:text-emerald-300">
               See all
             </a>
           </div>
-          <div className="overflow-hidden rounded-2xl border border-[#ffffff08] bg-[#13131f] divide-y divide-[#ffffff04]">
+          <div className="overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--bg-card)] divide-y divide-[var(--divider)]">
             {goals.slice(0, 3).map((goal) => {
               const pct =
                 goal.target_amount > 0
@@ -266,13 +266,13 @@ export default async function DashboardPage() {
               return (
                 <div key={goal.id} className="px-4 py-4">
                   <div className="flex items-center justify-between">
-                    <p className="text-sm font-medium text-zinc-100">{goal.name}</p>
-                    <span className="text-xs text-[#9898a8]">{pct}%</span>
+                    <p className="text-sm font-medium text-[var(--text-1)]">{goal.name}</p>
+                    <span className="text-xs text-[var(--text-3)]">{pct}%</span>
                   </div>
-                  <p className="mt-0.5 text-xs text-[#9898a8]">
+                  <p className="mt-0.5 text-xs text-[var(--text-3)]">
                     {formatUSD(goal.current_amount)} of {formatUSD(goal.target_amount)}
                   </p>
-                  <div className="mt-2.5 h-1 w-full rounded-full bg-[#1a1a28]">
+                  <div className="mt-2.5 h-1 w-full rounded-full bg-[var(--bg-elevated)]">
                     <div className="h-1 rounded-full bg-emerald-500 transition-all" style={{ width: `${pct}%` }} />
                   </div>
                 </div>
