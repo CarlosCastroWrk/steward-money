@@ -1,26 +1,29 @@
+function Bone({ className }: { className: string }) {
+  return <div className={`shimmer rounded-lg ${className}`} />;
+}
+
 export default function GoalsLoading() {
   return (
-    <div className="p-8 animate-pulse">
-      <div className="mb-6 h-7 w-24 rounded-lg bg-zinc-800" />
-      <div className="mb-6 grid grid-cols-4 gap-4">
-        {Array.from({ length: 4 }).map((_, i) => (
-          <div key={i} className="rounded-xl border border-zinc-800 bg-zinc-900 p-4">
-            <div className="mb-2 h-3 w-16 rounded bg-zinc-800" />
-            <div className="h-6 w-10 rounded bg-zinc-700" />
-          </div>
-        ))}
+    <div className="space-y-5 px-4 pb-10 pt-5 md:px-8 md:pt-8">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <Bone className="h-7 w-24" />
+        <Bone className="h-8 w-28" />
       </div>
-      <div className="space-y-4">
-        {Array.from({ length: 4 }).map((_, i) => (
-          <div key={i} className="rounded-xl border border-zinc-800 bg-zinc-900 p-5">
-            <div className="mb-3 flex items-center justify-between">
-              <div className="h-4 w-40 rounded bg-zinc-800" />
-              <div className="h-4 w-16 rounded bg-zinc-700" />
+
+      {/* Goals list */}
+      <div className="space-y-3">
+        {[1, 2, 3, 4].map((i) => (
+          <div key={i} className="rounded-2xl border border-[var(--border)] bg-[var(--bg-card)] p-5 space-y-3">
+            <div className="flex items-center justify-between">
+              <Bone className="h-4 w-40" />
+              <Bone className="h-4 w-12" />
             </div>
-            <div className="h-2 w-full rounded-full bg-zinc-800">
-              <div className="h-2 rounded-full bg-zinc-700" style={{ width: `${30 + i * 15}%` }} />
+            <div className="flex items-center justify-between">
+              <Bone className="h-3 w-28" />
+              <Bone className="h-3 w-20" />
             </div>
-            <div className="mt-2 h-3 w-28 rounded bg-zinc-800" />
+            <div className="h-1.5 w-full rounded-full bg-[var(--bg-elevated)]" />
           </div>
         ))}
       </div>

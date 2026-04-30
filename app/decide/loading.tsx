@@ -1,17 +1,29 @@
+function Bone({ className }: { className: string }) {
+  return <div className={`shimmer rounded-lg ${className}`} />;
+}
+
 export default function DecideLoading() {
   return (
-    <div className="p-8 animate-pulse">
-      <div className="mb-2 h-7 w-40 rounded-lg bg-zinc-800" />
-      <div className="mb-8 h-4 w-64 rounded bg-zinc-800" />
-      <div className="mb-6 rounded-2xl border border-zinc-800 bg-zinc-900 p-8 flex flex-col items-center">
-        <div className="mb-3 h-4 w-28 rounded bg-zinc-800" />
-        <div className="h-16 w-48 rounded-xl bg-zinc-700" />
+    <div className="space-y-5 px-4 pb-10 pt-5 md:px-8 md:pt-8">
+      {/* Header */}
+      <div className="space-y-1.5">
+        <Bone className="h-7 w-40" />
+        <Bone className="h-4 w-64" />
       </div>
-      <div className="grid grid-cols-2 gap-4">
-        {Array.from({ length: 4 }).map((_, i) => (
-          <div key={i} className="rounded-xl border border-zinc-800 bg-zinc-900 p-5">
-            <div className="mb-2 h-3 w-24 rounded bg-zinc-800" />
-            <div className="h-6 w-28 rounded bg-zinc-700" />
+
+      {/* Main decision card */}
+      <div className="rounded-2xl border border-[var(--border)] bg-[var(--bg-card)] p-6 flex flex-col items-center gap-3">
+        <Bone className="h-3 w-32" />
+        <Bone className="h-14 w-48" />
+        <Bone className="h-4 w-56" />
+      </div>
+
+      {/* Stats grid */}
+      <div className="grid grid-cols-2 gap-3">
+        {[1, 2, 3, 4].map((i) => (
+          <div key={i} className="rounded-2xl border border-[var(--border)] bg-[var(--bg-card)] p-4 space-y-1.5">
+            <Bone className="h-2.5 w-24" />
+            <Bone className="h-5 w-28" />
           </div>
         ))}
       </div>

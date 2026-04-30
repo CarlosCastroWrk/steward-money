@@ -1,23 +1,39 @@
+function Bone({ className }: { className: string }) {
+  return <div className={`shimmer rounded-lg ${className}`} />;
+}
+
 export default function SubscriptionsLoading() {
   return (
-    <div className="p-8 animate-pulse">
-      <div className="mb-6 h-7 w-32 rounded-lg bg-zinc-800" />
-      <div className="mb-6 grid grid-cols-3 gap-4">
-        {Array.from({ length: 3 }).map((_, i) => (
-          <div key={i} className="rounded-xl border border-zinc-800 bg-zinc-900 p-5">
-            <div className="mb-2 h-3 w-20 rounded bg-zinc-800" />
-            <div className="h-7 w-24 rounded bg-zinc-700" />
-          </div>
-        ))}
+    <div className="space-y-5 px-4 pb-10 pt-5 md:px-8 md:pt-8">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <Bone className="h-7 w-32" />
+        <Bone className="h-8 w-28" />
       </div>
-      <div className="space-y-3">
-        {Array.from({ length: 5 }).map((_, i) => (
-          <div key={i} className="rounded-xl border border-zinc-800 bg-zinc-900 p-4 flex items-center justify-between">
-            <div className="space-y-1.5">
-              <div className="h-4 w-36 rounded bg-zinc-800" />
-              <div className="h-3 w-24 rounded bg-zinc-800" />
+
+      {/* Total card */}
+      <div className="rounded-2xl border border-[var(--border)] bg-[var(--bg-card)] p-4">
+        <div className="flex items-center justify-between">
+          <Bone className="h-2.5 w-28" />
+          <Bone className="h-5 w-20" />
+        </div>
+      </div>
+
+      {/* Subscription rows */}
+      <div className="space-y-2">
+        {[1, 2, 3, 4, 5].map((i) => (
+          <div key={i} className="flex items-center justify-between rounded-2xl border border-[var(--border)] bg-[var(--bg-card)] px-4 py-4">
+            <div className="flex items-center gap-3">
+              <Bone className="h-9 w-9 !rounded-xl" />
+              <div className="space-y-1.5">
+                <Bone className="h-3.5 w-32" />
+                <Bone className="h-3 w-20" />
+              </div>
             </div>
-            <div className="h-5 w-14 rounded bg-zinc-700" />
+            <div className="flex items-center gap-2">
+              <Bone className="h-5 w-12 !rounded-full" />
+              <Bone className="h-4 w-14" />
+            </div>
           </div>
         ))}
       </div>
