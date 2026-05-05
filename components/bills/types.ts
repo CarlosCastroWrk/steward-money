@@ -10,6 +10,8 @@ export type Bill = {
   account_id: string | null;
   notes: string | null;
   created_at: string | null;
+  paid_at: string | null;
+  auto_detected_paid: boolean | null;
 };
 
 export type AccountOption = { id: string; name: string; type: string };

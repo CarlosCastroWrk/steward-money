@@ -7,6 +7,7 @@ import { QuickActionRow } from "@/components/dashboard/QuickActionRow";
 import { LukaMorningBriefing } from "@/components/dashboard/LukaMorningBriefing";
 import { SolomonWord } from "@/components/dashboard/SolomonWord";
 import { SilasInsights } from "@/components/dashboard/SilasInsights";
+import { AllocationCard } from "@/components/dashboard/AllocationCard";
 
 export const metadata: Metadata = {
   title: "Dashboard — Steward Money",
@@ -170,6 +171,11 @@ export default async function DashboardPage() {
           </div>
         ))}
       </div>
+
+      {/* 6b. Allocation card — shown when income is expected */}
+      {result.nextIncomeAmount > 0 && (
+        <AllocationCard income={result.nextIncomeAmount} />
+      )}
 
       {/* 7. Silas sees */}
       <SilasInsights insights={silasResult.data ?? []} />

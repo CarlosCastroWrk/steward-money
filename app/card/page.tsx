@@ -1,0 +1,41 @@
+import { Metadata } from "next";
+import { createClient } from "@/lib/supabase/server";
+import { calculateSafeToSpend } from "@/lib/safe-to-spend";
+import { VirtualCard } from "@/components/card/VirtualCard";
+
+export const metadata: Metadata = { title: "Card" };
+
+export default async function CardPage() {
+  const supabase = createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return null;
+
+  const [safe, settings] = await Promise.all([
+    calculateSafeToSpend(supabase, user.id),
+    supabase.from("user_settings").select("display_name").eq("user_id", user.id).maybeSingle(),
+  ]);
+
+  const displayName = settings.data?.display_name ?? "there";
+
+  return (
+    <div className="px-4 py-6 md:px-8 md:py-8">
+      <div className="mx-auto max-w-lg">
+        <header className="mb-6">
+          <h1 className="text-2xl font-semibold text-white">Steward Card</h1>
+          <p className="mt-1 text-sm text-zinc-500">Spend only what&apos;s been cleared.</p>
+        </header>
+        <VirtualCard
+          safeToSpend={safe.safeToSpend}
+          liquidTotal={safe.liquidTotal}
+          emergencyBuffer={safe.emergencyBuffer}
+          billsDueSoon={safe.billsDueSoon}
+          givingDeducted={safe.givingDeducted}
+          savingsDeducted={safe.savingsDeducted}
+          tradingDeducted={safe.tradingDeducted}
+          weeklyNeedsTotal={safe.weeklyNeedsTotal}
+          displayName={displayName}
+        />
+      </div>
+    </div>
+  );
+}

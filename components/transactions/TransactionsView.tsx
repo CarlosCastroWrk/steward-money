@@ -7,7 +7,9 @@ import { AddTransactionModal } from "./AddTransactionModal";
 import { CATEGORIES } from "./types";
 import type { Transaction, AccountOption } from "./types";
 
-type Props = { transactions: Transaction[]; accounts: AccountOption[] };
+import { formatCategory } from "@/lib/categoryNames";
+
+type Props = { transactions: Transaction[]; accounts: AccountOption[]; plaidConnected: boolean; institutionName: string; serverLastSynced: string | null };
 
 const AVATAR_COLORS = [
   "bg-rose-500", "bg-orange-500", "bg-amber-500", "bg-lime-500",
@@ -63,7 +65,7 @@ function timeSince(isoStr: string): string {
 
 const SYNC_LS_KEY = "steward:lastSynced";
 
-export function TransactionsView({ transactions: initialTransactions, accounts }: Props) {
+export function TransactionsView({ transactions: initialTransactions, accounts, plaidConnected, institutionName, serverLastSynced }: Props) {
   const router = useRouter();
   const [txList, setTxList] = useState<Transaction[]>(initialTransactions);
   const [modalOpen, setModalOpen] = useState(false);
@@ -82,13 +84,15 @@ export function TransactionsView({ transactions: initialTransactions, accounts }
   // Sync prop updates (after router.refresh) into local state
   useEffect(() => { setTxList(initialTransactions); }, [initialTransactions]);
 
-  // Read last-synced from localStorage on mount
+  // Read last-synced from localStorage or server prop
   useEffect(() => {
     try {
       const stored = localStorage.getItem(SYNC_LS_KEY);
-      if (stored) setLastSynced(stored);
-    } catch {}
-  }, []);
+      setLastSynced(stored ?? serverLastSynced);
+    } catch {
+      setLastSynced(serverLastSynced);
+    }
+  }, [serverLastSynced]);
 
   // Auto-dismiss toast
   const showToast = useCallback((msg: string) => {
@@ -169,7 +173,7 @@ export function TransactionsView({ transactions: initialTransactions, accounts }
     const map = new Map<string, number>();
     for (const tx of filtered) {
       if (tx.amount >= 0) continue;
-      const key = tx.category ?? "Other";
+      const key = formatCategory(tx.category);
       map.set(key, (map.get(key) ?? 0) + Math.abs(tx.amount));
     }
     return [...map.entries()].sort((a, b) => b[1] - a[1]);
@@ -235,6 +239,22 @@ export function TransactionsView({ transactions: initialTransactions, accounts }
       )}
 
       <div className="mx-auto w-full max-w-4xl">
+        {/* Plaid status banner */}
+        {plaidConnected ? (
+          <div className="mb-5 flex items-center gap-2.5 rounded-xl border border-green-900/40 bg-green-950/20 px-4 py-3">
+            <span className="h-2 w-2 rounded-full bg-green-400 flex-shrink-0" />
+            <p className="text-sm text-green-400 flex-1">Transactions sync automatically from {institutionName}</p>
+            <p className="text-xs text-zinc-500">{lastSynced ? timeSince(lastSynced) : "Not yet synced"}</p>
+          </div>
+        ) : (
+          <div className="mb-5 flex items-center justify-between gap-3 rounded-xl border border-zinc-700 bg-zinc-900 px-4 py-3">
+            <p className="text-sm text-zinc-400">Connect your bank to sync transactions automatically</p>
+            <a href="/accounts" className="rounded-lg bg-white text-black text-xs font-medium px-3 py-1.5 hover:bg-zinc-100 transition-colors flex-shrink-0">
+              Connect
+            </a>
+          </div>
+        )}
+
         {/* Header */}
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
@@ -399,7 +419,7 @@ export function TransactionsView({ transactions: initialTransactions, accounts }
                               </div>
                               <div className="mt-0.5 flex flex-wrap items-center gap-1.5 text-xs text-[var(--text-3)]">
                                 {tx.category && (
-                                  <span className="rounded-full bg-[var(--bg-elevated)] px-2 py-0.5 text-[var(--text-2)]">{tx.category}</span>
+                                  <span className="rounded-full bg-[var(--bg-elevated)] px-2 py-0.5 text-[var(--text-2)]">{formatCategory(tx.category)}</span>
                                 )}
                                 {tx.is_need === true  && <span className="rounded-full bg-blue-500/10 px-2 py-0.5 text-blue-400">need</span>}
                                 {tx.is_need === false && <span className="rounded-full bg-purple-500/10 px-2 py-0.5 text-purple-400">want</span>}
