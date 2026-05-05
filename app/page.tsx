@@ -8,6 +8,9 @@ import { LukaMorningBriefing } from "@/components/dashboard/LukaMorningBriefing"
 import { SolomonWord } from "@/components/dashboard/SolomonWord";
 import { SilasInsights } from "@/components/dashboard/SilasInsights";
 import { AllocationCard } from "@/components/dashboard/AllocationCard";
+import { MannaCard } from "@/components/dashboard/MannaCard";
+import { EdenMoment } from "@/components/dashboard/EdenMoment";
+import { NovaMessage } from "@/components/dashboard/NovaMessage";
 
 export const metadata: Metadata = {
   title: "Dashboard — Steward Money",
@@ -98,19 +101,28 @@ export default async function DashboardPage() {
 
       {/* 1. Greeting + date */}
       <header>
-        <h1 className="text-2xl font-semibold text-white">
+        <h1 className="text-2xl font-semibold text-[var(--text-1)]">
           {getGreeting()}, {displayName}.
         </h1>
-        <p className="mt-0.5 text-sm text-zinc-500">{formattedDate}</p>
+        <p className="mt-0.5 text-sm text-[var(--text-3)]">{formattedDate}</p>
       </header>
 
-      {/* 2. Luka morning briefing */}
+      {/* 2. Manna — daily bread */}
+      <MannaCard />
+
+      {/* 3. Luka morning briefing */}
       <LukaMorningBriefing data={briefingData} />
 
-      {/* 3. Solomon's word */}
+      {/* 4. Eden — vision & gratitude */}
+      <EdenMoment />
+
+      {/* 5. Nova — forward-looking messages */}
+      <NovaMessage />
+
+      {/* 6. Solomon's word */}
       {solomonResult.data && <SolomonWord report={solomonResult.data} />}
 
-      {/* 4. Argus alerts */}
+      {/* 7. Argus alerts */}
       {alerts.length > 0 && (
         <div className="flex flex-col gap-2">
           {alerts.map((alert) => (
@@ -130,7 +142,7 @@ export default async function DashboardPage() {
         </div>
       )}
 
-      {/* 5. Safe-to-spend hero */}
+      {/* 8. Safe-to-spend hero */}
       <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#3d1f7d] via-[#4a1d96] to-[#2a1f6e] p-6 shadow-2xl shadow-purple-900/40">
         <div className="absolute -right-8 -top-8 h-36 w-36 rounded-full bg-white/5 blur-2xl" />
         <div className="absolute -bottom-8 -left-4 h-28 w-52 rounded-full bg-purple-400/10 blur-2xl" />
@@ -157,54 +169,54 @@ export default async function DashboardPage() {
         </div>
       </div>
 
-      {/* 6. Stats row */}
+      {/* 9. Stats row */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         {[
           { label: "Monthly Bills", value: formatUSD(monthlyBillsTotal), color: "text-red-400" },
           { label: "Subscriptions", value: formatUSD(monthlySubsTotal), color: "text-amber-400" },
-          { label: "Active Goals", value: String(goals.length), color: "text-white" },
-          { label: "Spent This Month", value: formatUSD(totalSpentMonth), color: "text-zinc-300" },
+          { label: "Active Goals", value: String(goals.length), color: "text-[var(--text-1)]" },
+          { label: "Spent This Month", value: formatUSD(totalSpentMonth), color: "text-[var(--text-3)]" },
         ].map((stat) => (
-          <div key={stat.label} className="rounded-xl border border-zinc-800 bg-zinc-900 p-4">
-            <p className="text-[10px] font-medium uppercase tracking-wide text-zinc-500">{stat.label}</p>
+          <div key={stat.label} className="rounded-xl border border-[var(--border)] bg-[var(--bg-card)] p-4">
+            <p className="text-[10px] font-medium uppercase tracking-wide text-[var(--text-3)]">{stat.label}</p>
             <p className={`mt-1 text-xl font-semibold ${stat.color}`}>{stat.value}</p>
           </div>
         ))}
       </div>
 
-      {/* 6b. Allocation card — shown when income is expected */}
+      {/* 10. Allocation card */}
       {result.nextIncomeAmount > 0 && (
         <AllocationCard income={result.nextIncomeAmount} />
       )}
 
-      {/* 7. Silas sees */}
+      {/* 11. Silas sees */}
       <SilasInsights insights={silasResult.data ?? []} />
 
-      {/* 8. Bills due this week */}
+      {/* 12. Bills due this week */}
       <section>
         <div className="mb-3 flex items-center justify-between">
-          <h2 className="text-[10px] font-semibold uppercase tracking-widest text-zinc-500">Bills This Week</h2>
+          <h2 className="text-[10px] font-semibold uppercase tracking-widest text-[var(--text-3)]">Bills This Week</h2>
           <a href="/bills" className="text-xs text-purple-400 transition-colors hover:text-purple-300">See all</a>
         </div>
         {upcomingBills.length === 0 ? (
-          <div className="rounded-xl border border-zinc-800 bg-zinc-900 p-5 text-center">
-            <p className="text-sm text-zinc-500">Nothing due soon. You&apos;re ahead of it.</p>
+          <div className="rounded-xl border border-[var(--border)] bg-[var(--bg-card)] p-5 text-center">
+            <p className="text-sm text-[var(--text-3)]">Nothing due soon. You&apos;re ahead of it.</p>
           </div>
         ) : (
-          <div className="overflow-hidden rounded-xl border border-zinc-800 bg-zinc-900 divide-y divide-zinc-800">
+          <div className="overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--bg-card)] divide-y divide-[var(--border)]">
             {upcomingBills.map((bill) => {
               const isOverdue = bill.next_due_date < today;
               const isDueSoon = !isOverdue && bill.next_due_date <= in3Days;
               return (
                 <div key={bill.id} className="flex items-center justify-between px-4 py-3.5">
                   <div className="min-w-0">
-                    <p className={`text-sm font-medium ${isOverdue ? "text-red-400" : "text-white"}`}>{bill.name}</p>
-                    <p className={`text-xs mt-0.5 ${isOverdue ? "text-red-500" : isDueSoon ? "text-amber-400" : "text-zinc-500"}`}>
+                    <p className={`text-sm font-medium ${isOverdue ? "text-red-400" : "text-[var(--text-1)]"}`}>{bill.name}</p>
+                    <p className={`text-xs mt-0.5 ${isOverdue ? "text-red-500" : isDueSoon ? "text-amber-400" : "text-[var(--text-3)]"}`}>
                       {formatDate(bill.next_due_date)}
-                      {bill.is_autopay && <span className="ml-2 text-zinc-600">Autopay</span>}
+                      {bill.is_autopay && <span className="ml-2 text-[var(--text-3)]">Autopay</span>}
                     </p>
                   </div>
-                  <span className={`text-sm font-semibold ${isOverdue ? "text-red-400" : "text-white"}`}>
+                  <span className={`text-sm font-semibold ${isOverdue ? "text-red-400" : "text-[var(--text-1)]"}`}>
                     {formatUSD(Number(bill.amount))}
                   </span>
                 </div>
@@ -214,19 +226,19 @@ export default async function DashboardPage() {
         )}
       </section>
 
-      {/* 9. Goals */}
+      {/* 13. Goals */}
       <section>
         <div className="mb-3 flex items-center justify-between">
-          <h2 className="text-[10px] font-semibold uppercase tracking-widest text-zinc-500">Goals</h2>
+          <h2 className="text-[10px] font-semibold uppercase tracking-widest text-[var(--text-3)]">Goals</h2>
           <a href="/goals" className="text-xs text-purple-400 transition-colors hover:text-purple-300">See all</a>
         </div>
         {goals.length === 0 ? (
-          <div className="rounded-xl border border-zinc-800 bg-zinc-900 p-5 text-center">
-            <p className="text-sm text-zinc-500">No goals yet. Where do you want to go?</p>
+          <div className="rounded-xl border border-[var(--border)] bg-[var(--bg-card)] p-5 text-center">
+            <p className="text-sm text-[var(--text-3)]">No goals yet. Where do you want to go?</p>
             <a href="/goals" className="mt-2 inline-block text-xs text-purple-400 hover:text-purple-300">Add a goal →</a>
           </div>
         ) : (
-          <div className="overflow-hidden rounded-xl border border-zinc-800 bg-zinc-900 divide-y divide-zinc-800">
+          <div className="overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--bg-card)] divide-y divide-[var(--border)]">
             {goals.slice(0, 3).map((goal) => {
               const pct = goal.target_amount > 0 ? Math.min(100, Math.round((goal.current_amount / goal.target_amount) * 100)) : 0;
               const daysLeft = goal.deadline ? Math.ceil((new Date(goal.deadline).getTime() - Date.now()) / 86_400_000) : null;
@@ -234,20 +246,20 @@ export default async function DashboardPage() {
               return (
                 <div key={goal.id} className="px-4 py-4">
                   <div className="flex items-center justify-between">
-                    <p className="text-sm font-medium text-white">{goal.name}</p>
+                    <p className="text-sm font-medium text-[var(--text-1)]">{goal.name}</p>
                     <div className="flex items-center gap-2">
                       {daysLeft !== null && daysLeft <= 30 && (
                         <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${onTrack ? "bg-green-900/40 text-green-400" : "bg-amber-900/40 text-amber-400"}`}>
                           {daysLeft <= 0 ? "Deadline passed" : `${daysLeft}d left`}
                         </span>
                       )}
-                      <span className="text-xs text-zinc-500">{pct}%</span>
+                      <span className="text-xs text-[var(--text-3)]">{pct}%</span>
                     </div>
                   </div>
-                  <p className="mt-0.5 text-xs text-zinc-500">
+                  <p className="mt-0.5 text-xs text-[var(--text-3)]">
                     {formatUSD(goal.current_amount)} of {formatUSD(goal.target_amount)}
                   </p>
-                  <div className="mt-2.5 h-1.5 w-full rounded-full bg-zinc-800">
+                  <div className="mt-2.5 h-1.5 w-full rounded-full bg-[var(--bg-elevated)]">
                     <div
                       className={`h-1.5 rounded-full transition-all ${pct >= 80 ? "bg-green-500" : pct >= 50 ? "bg-purple-500" : "bg-amber-500"}`}
                       style={{ width: `${pct}%` }}
@@ -260,12 +272,12 @@ export default async function DashboardPage() {
         )}
       </section>
 
-      {/* 10. Quick actions */}
+      {/* 14. Quick actions — includes Council */}
       <QuickActionRow />
 
       {/* Footer — last reviewed */}
       {settingsResult.data?.last_plan_review && (
-        <p className="text-center text-[10px] text-zinc-700">
+        <p className="text-center text-[10px] text-[var(--text-3)]">
           Plan last reviewed: {new Date(settingsResult.data.last_plan_review).toLocaleDateString("en-US", { month: "short", day: "numeric" })} by Kairos
         </p>
       )}

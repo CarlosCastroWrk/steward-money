@@ -49,6 +49,7 @@ const MORE_NAV = [
   { label: "Subscriptions", href: "/subscriptions" },
   { label: "Decide", href: "/decide" },
   { label: "Card", href: "/card" },
+  { label: "Council", href: "/council" },
   { label: "Settings", href: "/settings" },
 ];
 

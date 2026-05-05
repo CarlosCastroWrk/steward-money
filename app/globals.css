@@ -28,37 +28,37 @@
   --color-accent:         #10b981;
   --color-accent-dim:     rgba(16, 185, 129, 0.1);
   --color-green:          #10b981;
-  --font-display: 'Inter', system-ui, -apple-system, sans-serif;
-  --font-body:    'Inter', system-ui, -apple-system, sans-serif;
-  --font-mono:    ui-monospace, 'SF Mono', 'Fira Code', monospace;
+  --font-sans:    var(--font-geist-sans), system-ui, -apple-system, sans-serif;
+  --font-mono:    var(--font-geist-mono), ui-monospace, 'SF Mono', monospace;
+  --font-display: var(--font-display), 'Georgia', serif;
 }
 
 /* ── Dark mode ────────────────────────────────────────────── */
 .dark {
-  --bg:           #0b0b12;
-  --bg-card:      #121219;
-  --bg-elevated:  #1a1a28;
+  --bg:           #0a0a0c;
+  --bg-card:      #16161e;
+  --bg-elevated:  #13131a;
   --border:       rgba(255, 255, 255, 0.06);
   --divider:      rgba(255, 255, 255, 0.03);
-  --text-1:       #f0f0f2;
-  --text-2:       #8e8e9a;
-  --text-3:       #9898a8;
-  --sidebar-bg:   #0b0b12;
-  --luka-bg:      #0c0c14;
-  --luka-msg-bg:  #27272a;
+  --text-1:       #f5f5f7;
+  --text-2:       #a8a8b3;
+  --text-3:       #6b6b78;
+  --sidebar-bg:   #0a0a0c;
+  --luka-bg:      #0d0d12;
+  --luka-msg-bg:  #1c1c26;
 
-  --color-bg:             #0b0b12;
-  --color-bg-card:        #121219;
-  --color-bg-elevated:    #1a1a28;
+  --color-bg:             #0a0a0c;
+  --color-bg-card:        #16161e;
+  --color-bg-elevated:    #13131a;
   --color-border:         rgba(255, 255, 255, 0.06);
   --color-border-hover:   rgba(255, 255, 255, 0.10);
-  --color-text-primary:   #f0f0f2;
-  --color-text-secondary: #8e8e9a;
-  --color-text-muted:     #5c5c6a;
-  --color-text-faint:     #3e3e4a;
-  --color-accent:         #10b981;
-  --color-accent-dim:     rgba(16, 185, 129, 0.12);
-  --color-green:          #10b981;
+  --color-text-primary:   #f5f5f7;
+  --color-text-secondary: #a8a8b3;
+  --color-text-muted:     #6b6b78;
+  --color-text-faint:     #4a4a55;
+  --color-accent:         #34d399;
+  --color-accent-dim:     rgba(52, 211, 153, 0.12);
+  --color-green:          #34d399;
 }
 
 /* ── Custom scrollbar ─────────────────────────────────────── */

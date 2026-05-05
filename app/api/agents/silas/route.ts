@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { saveAgentMemory } from "@/lib/agent-memory";
 
 type Insight = {
   user_id: string;
@@ -154,7 +155,13 @@ export async function POST(req: NextRequest) {
   const insights = await runSilas(supabase, user.id);
 
   await supabase.from("pulse_insights").update({ is_active: false }).eq("user_id", user.id).eq("is_dismissed", false);
-  if (insights.length > 0) await supabase.from("pulse_insights").insert(insights);
+  if (insights.length > 0) {
+    await supabase.from("pulse_insights").insert(insights);
+    await saveAgentMemory(supabase, user.id, "silas",
+      `Detected ${insights.length} pattern(s): ${insights.map((i) => i.insight_type).join(", ")}`,
+      6
+    );
+  }
 
   return NextResponse.json({ ok: true, insights });
 }

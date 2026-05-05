@@ -1,0 +1,46 @@
+export const TOKENS = {
+  bg: {
+    base: "#0a0a0c",
+    elevated: "#13131a",
+    card: "#16161e",
+    cardHover: "#1c1c26",
+    inset: "#0d0d12",
+  },
+  border: {
+    subtle: "#1f1f2a",
+    default: "#26263340",
+    strong: "#33334080",
+  },
+  text: {
+    primary: "#f5f5f7",
+    secondary: "#a8a8b3",
+    tertiary: "#6b6b78",
+    muted: "#4a4a55",
+  },
+  accent: {
+    primary: "#7c5cff",
+    primaryDeep: "#5b3fd9",
+    gold: "#d4a857",
+    green: "#34d399",
+    red: "#f87171",
+    amber: "#fbbf24",
+    blue: "#60a5fa",
+    teal: "#2dd4bf",
+  },
+  agent: {
+    luka: "#7c5cff",
+    argus: "#60a5fa",
+    solomon: "#d4a857",
+    silas: "#2dd4bf",
+    kairos: "#34d399",
+    eden: "#ec4899",
+    iron: "#f87171",
+    nova: "#a78bfa",
+    echo: "#94a3b8",
+    manna: "#fbbf24",
+  },
+  shadow: {
+    card: "0 1px 0 rgba(255,255,255,0.04) inset, 0 8px 24px rgba(0,0,0,0.3)",
+    elevated: "0 1px 0 rgba(255,255,255,0.06) inset, 0 16px 48px rgba(0,0,0,0.5)",
+  },
+};

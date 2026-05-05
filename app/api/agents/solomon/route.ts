@@ -3,6 +3,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { scoreStewardship } from "@/lib/stewardship";
+import { saveAgentMemory } from "@/lib/agent-memory";
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
@@ -117,6 +118,11 @@ async function runSolomon(supabase: ReturnType<typeof createClient>, userId: str
   } else {
     await supabase.from("weekly_reports").insert(fullReport);
   }
+
+  await saveAgentMemory(supabase, userId, "solomon",
+    `Week of ${weekStartStr}: stewardship score ${stewardship_score}/100. ${livedWithinProvision ? "Lived within provision." : "Exceeded provision."} ${givingHonored ? "Giving honored." : "Giving not yet honored."} Top spend: ${topCategories[0]?.category ?? "n/a"}.`,
+    7
+  );
 
   return fullReport;
 }

@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { calculateSafeToSpend } from "@/lib/safe-to-spend";
 import { advanceStaleIncomeDates } from "@/lib/income";
+import { saveAgentMemory } from "@/lib/agent-memory";
 
 type AlertInput = {
   user_id: string;
@@ -136,6 +137,13 @@ export async function POST(req: NextRequest) {
       const { data } = await supabase.from("alerts").insert(alert).select().single();
       if (data) inserted.push(data);
     }
+  }
+
+  if (inserted.length > 0) {
+    await saveAgentMemory(supabase, user.id, "argus",
+      `Raised ${inserted.length} alert(s): ${inserted.map((a) => a.alert_type).join(", ")}`,
+      inserted.some((a) => a.severity === "danger") ? 8 : 6
+    );
   }
 
   return NextResponse.json({ ok: true, count: inserted.length, alerts: inserted });

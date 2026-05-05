@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { saveAgentMemory } from "@/lib/agent-memory";
 
 type KairosEvent = {
   user_id: string;
@@ -86,6 +87,10 @@ export async function POST(req: NextRequest) {
   if (events.length > 0) {
     await supabase.from("life_events").insert(events);
     await supabase.from("user_settings").update({ kairos_pending: true }).eq("user_id", user.id);
+    await saveAgentMemory(supabase, user.id, "kairos",
+      `Detected ${events.length} life event(s): ${events.map((e) => e.event_type).join(", ")}. Plan review pending.`,
+      9
+    );
   }
 
   return NextResponse.json({ ok: true, events_detected: events.length, events });

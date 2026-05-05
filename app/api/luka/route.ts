@@ -3,6 +3,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import { createClient } from "@/lib/supabase/server";
 import { calculateSafeToSpend } from "@/lib/safe-to-spend";
 import { advanceIncomeDate } from "@/lib/income";
+import { summarizeAgentMemoriesForLuka } from "@/lib/agent-memory";
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
@@ -312,13 +313,14 @@ export async function POST(req: NextRequest) {
     messages: Array<{ role: "user" | "assistant"; content: string }>;
   };
 
-  const [settingsResult, safeResult, alertsResult, insightsResult, solomonResult, kairosResult] = await Promise.all([
+  const [settingsResult, safeResult, alertsResult, insightsResult, solomonResult, kairosResult, agentMemoryContext] = await Promise.all([
     supabase.from("user_settings").select("*").eq("user_id", user.id).maybeSingle(),
     calculateSafeToSpend(supabase, user.id),
     supabase.from("alerts").select("message, severity").eq("user_id", user.id).eq("is_read", false).limit(4),
     supabase.from("pulse_insights").select("insight_text").eq("user_id", user.id).eq("is_active", true).eq("is_dismissed", false).limit(2),
     supabase.from("weekly_reports").select("solomon_word, stewardship_score").eq("user_id", user.id).order("created_at", { ascending: false }).limit(1).maybeSingle(),
     supabase.from("user_settings").select("kairos_pending").eq("user_id", user.id).maybeSingle(),
+    summarizeAgentMemoriesForLuka(supabase, user.id),
   ]);
 
   const settings = settingsResult.data;
@@ -355,7 +357,7 @@ export async function POST(req: NextRequest) {
   const system = `You are Luka, the personal finance co-pilot for Steward Money. You are speaking with ${displayName}, a ${lifeStage} whose main financial goal is ${mainGoal}.
 
 Today is ${today}.
-
+${agentMemoryContext ? `\n${agentMemoryContext}\n` : ""}
 Current snapshot:
 - Safe to spend: ${fmt(safeResult.safeToSpend)}
 - Liquid cash: ${fmt(safeResult.liquidTotal)}

@@ -41,12 +41,22 @@ function ShieldIcon() {
   );
 }
 
+function CouncilIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5">
+      <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" />
+      <circle cx="9" cy="7" r="4" />
+      <path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75" />
+    </svg>
+  );
+}
+
 const ACTIONS = [
   { lines: ["Add", "Transaction"], href: "/transactions", Icon: PlusIcon, ring: "text-emerald-400" },
   { lines: ["Add", "Bill"], href: "/bills", Icon: ReceiptIcon, ring: "text-violet-400" },
   { lines: ["Add", "Goal"], href: "/goals", Icon: FlagIcon, ring: "text-blue-400" },
-  { lines: ["Accounts", ""], href: "/accounts", Icon: CardIcon, ring: "text-amber-400" },
   { lines: ["Before I", "Spend"], href: "/decide", Icon: ShieldIcon, ring: "text-rose-400" },
+  { lines: ["The", "Council"], href: "/council", Icon: CouncilIcon, ring: "text-purple-400" },
 ];
 
 export function QuickActionRow() {

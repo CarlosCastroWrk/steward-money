@@ -8,7 +8,13 @@ const config: Config = {
     "./lib/**/*.{js,ts,jsx,tsx,mdx}"
   ],
   theme: {
-    extend: {}
+    extend: {
+      fontFamily: {
+        sans: ["var(--font-geist-sans)", "system-ui", "-apple-system", "sans-serif"],
+        mono: ["var(--font-geist-mono)", "ui-monospace", "SF Mono", "monospace"],
+        display: ["var(--font-display)", "Georgia", "serif"],
+      },
+    },
   },
   plugins: []
 };
