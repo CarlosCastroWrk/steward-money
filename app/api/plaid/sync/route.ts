@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { plaidClient } from "@/lib/plaid";
 import { cleanName, mapCategory, inferIsNeed } from "@/lib/plaid-utils";
@@ -35,7 +35,7 @@ async function autoDetectBillPayments(
   }
 }
 
-export async function POST() {
+export async function POST(req: NextRequest) {
   const supabase = createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -44,8 +44,13 @@ export async function POST() {
   if (!items?.length) return NextResponse.json({ accounts_updated: 0, transactions_synced: 0 });
 
   const now = new Date().toISOString();
+  const body = await req.text().catch(() => "");
+  let parsedBody: Record<string, unknown> = {};
+  try { parsedBody = body ? JSON.parse(body) : {}; } catch { /* ignore */ }
+  const deep = parsedBody.deep === true;
+
   const endDate = new Date().toISOString().split("T")[0];
-  const startDate = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
+  const startDate = new Date(Date.now() - (deep ? 90 : 30) * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
 
   const { data: savedAccounts } = await supabase.from("accounts").select("id, plaid_account_id").eq("user_id", user.id).not("plaid_account_id", "is", null);
   const accountIdMap = Object.fromEntries((savedAccounts ?? []).map((a) => [a.plaid_account_id, a.id]));

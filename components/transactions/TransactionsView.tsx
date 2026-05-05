@@ -205,16 +205,20 @@ export function TransactionsView({ transactions: initialTransactions, accounts, 
     setDeletingId(null);
   }
 
-  async function syncNow() {
+  async function syncNow(deep = false) {
     setSyncing(true);
     try {
-      const res = await fetch("/api/plaid/sync", { method: "POST" });
+      const res = await fetch("/api/plaid/sync", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ deep }),
+      });
       if (res.ok) {
         const now = new Date().toISOString();
         localStorage.setItem(SYNC_LS_KEY, now);
         setLastSynced(now);
         router.refresh();
-        showToast("Sync complete");
+        showToast(deep ? "Deep sync complete — 90 days loaded" : "Sync complete");
       }
     } finally {
       setSyncing(false);
@@ -267,8 +271,9 @@ export function TransactionsView({ transactions: initialTransactions, accounts, 
             {/* Last synced + sync button */}
             <button
               type="button"
-              onClick={syncNow}
+              onClick={() => syncNow(false)}
               disabled={syncing}
+              title="Sync last 30 days"
               className="flex items-center gap-1.5 rounded-xl border border-[var(--border)] px-3 py-2 text-xs text-[var(--text-3)] transition hover:border-emerald-700/40 hover:text-emerald-400 disabled:opacity-50"
             >
               <svg
@@ -279,6 +284,17 @@ export function TransactionsView({ transactions: initialTransactions, accounts, 
               </svg>
               {lastSynced ? timeSince(lastSynced) : "Sync"}
             </button>
+            {plaidConnected && (
+              <button
+                type="button"
+                onClick={() => syncNow(true)}
+                disabled={syncing}
+                title="Pull 90 days of history"
+                className="rounded-xl border border-[var(--border)] px-3 py-2 text-xs text-[var(--text-3)] transition hover:border-purple-700/40 hover:text-purple-400 disabled:opacity-50"
+              >
+                90d
+              </button>
+            )}
             <button
               type="button"
               onClick={() => { setEditing(null); setModalOpen(true); }}
