@@ -23,6 +23,13 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(homeUrl);
   }
 
+  // Always use the new onboarding flow
+  if (pathname === "/onboarding") {
+    const v2Url = request.nextUrl.clone();
+    v2Url.pathname = "/onboarding/v2";
+    return NextResponse.redirect(v2Url);
+  }
+
   const { data: settings } = await supabase
     .from("user_settings")
     .select("onboarding_completed")

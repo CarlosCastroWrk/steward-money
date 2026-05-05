@@ -1,18 +1,18 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useCallback, useEffect, useState } from "react";
+import { usePlaidLink, PlaidLinkOnSuccess } from "react-plaid-link";
 import { createClient } from "@/lib/supabase/client";
 
 type Screen = "welcome" | "step1" | "step2" | "step3";
 
 const LIFE_STAGES = [
-  { id: "student",       label: "Student",        emoji: "🎓" },
-  { id: "early_career",  label: "Early career",   emoji: "🚀" },
-  { id: "established",   label: "Established",    emoji: "💼" },
-  { id: "family",        label: "Building family", emoji: "🏠" },
-  { id: "entrepreneur",  label: "Entrepreneur",   emoji: "⚡" },
-  { id: "other",         label: "Other",          emoji: "✨" },
+  { id: "student",      label: "Student",         emoji: "🎓" },
+  { id: "early_career", label: "Early career",    emoji: "🚀" },
+  { id: "established",  label: "Established",     emoji: "💼" },
+  { id: "family",       label: "Building family", emoji: "🏠" },
+  { id: "entrepreneur", label: "Entrepreneur",    emoji: "⚡" },
+  { id: "other",        label: "Other",           emoji: "✨" },
 ];
 
 const GOAL_PRESETS = [
@@ -31,37 +31,41 @@ interface FormState {
   goal: string;
 }
 
+async function saveAndComplete(form: FormState): Promise<void> {
+  const supabase = createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) { window.location.href = "/login"; return; }
+
+  await supabase.from("user_settings").upsert({
+    user_id: user.id,
+    display_name: form.name.trim() || null,
+    life_stage: form.lifeStage || "other",
+    main_goal: form.goal.trim() || null,
+    onboarding_completed: true,
+    onboarding_version: "v2",
+    emergency_buffer: 500,
+    giving_enabled: false,
+    giving_value: 10,
+    savings_value: 10,
+    weekly_groceries_min: 100,
+    weekly_gas_min: 40,
+    weekly_eating_out_cap: 60,
+    weekly_misc_cap: 50,
+  }, { onConflict: "user_id" });
+
+  // Hard navigation so middleware reads fresh onboarding_completed from DB
+  window.location.href = "/";
+}
+
 export default function OnboardingV2() {
-  const router = useRouter();
   const [screen, setScreen] = useState<Screen>("welcome");
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState<FormState>({ name: "", lifeStage: "", goal: "" });
 
   async function finishOnboarding() {
     setSaving(true);
-    const supabase = createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) { router.push("/login"); return; }
-
-    await supabase.from("user_settings").upsert({
-      user_id: user.id,
-      display_name: form.name.trim() || null,
-      life_stage: form.lifeStage || "other",
-      main_goal: form.goal.trim() || null,
-      onboarding_completed: true,
-      onboarding_version: "v2",
-      emergency_buffer: 500,
-      giving_enabled: false,
-      giving_value: 10,
-      savings_value: 10,
-      weekly_groceries_min: 100,
-      weekly_gas_min: 40,
-      weekly_eating_out_cap: 60,
-      weekly_misc_cap: 50,
-    }, { onConflict: "user_id" });
-
-    router.push("/");
-    router.refresh();
+    await saveAndComplete(form);
+    // saveAndComplete does a hard redirect; setSaving stays true until redirect
   }
 
   if (screen === "welcome") {
@@ -90,7 +94,7 @@ export default function OnboardingV2() {
 
   if (screen === "step1") {
     return (
-      <div className="flex min-h-screen flex-col bg-[var(--bg)] px-6 py-12">
+      <div className="flex min-h-screen flex-col bg-[var(--bg)] px-6 pt-12">
         <StepHeader step={1} total={3} onBack={() => setScreen("welcome")} />
         <div className="mx-auto w-full max-w-sm flex-1 pt-8">
           <h2 className="text-2xl font-bold tracking-tight text-[var(--text-primary)]">Who are you?</h2>
@@ -98,7 +102,7 @@ export default function OnboardingV2() {
 
           <div className="mt-8 space-y-5">
             <div>
-              <label className="block text-[11px] font-semibold uppercase tracking-widest text-[var(--text-muted)] mb-2">
+              <label className="mb-2 block text-[11px] font-semibold uppercase tracking-widest text-[var(--text-muted)]">
                 Your name
               </label>
               <input
@@ -112,7 +116,7 @@ export default function OnboardingV2() {
             </div>
 
             <div>
-              <label className="block text-[11px] font-semibold uppercase tracking-widest text-[var(--text-muted)] mb-2">
+              <label className="mb-2 block text-[11px] font-semibold uppercase tracking-widest text-[var(--text-muted)]">
                 Where are you at?
               </label>
               <div className="grid grid-cols-2 gap-2">
@@ -121,7 +125,7 @@ export default function OnboardingV2() {
                     key={stage.id}
                     type="button"
                     onClick={() => setForm((f) => ({ ...f, lifeStage: stage.id }))}
-                    className={`flex items-center gap-2.5 rounded-xl border px-4 py-3 text-left text-sm transition-all ${
+                    className={`flex items-center gap-2.5 rounded-xl border px-4 py-3 text-left transition-all ${
                       form.lifeStage === stage.id
                         ? "border-[var(--accent)] bg-[var(--accent)]/10 text-[var(--text-primary)]"
                         : "border-[var(--border-default)] bg-[var(--bg-card)] text-[var(--text-secondary)] hover:border-[var(--border-strong)]"
@@ -136,7 +140,7 @@ export default function OnboardingV2() {
           </div>
         </div>
 
-        <div className="mx-auto w-full max-w-sm pb-6">
+        <div className="mx-auto w-full max-w-sm" style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 1.5rem)" }}>
           <button
             type="button"
             onClick={() => setScreen("step2")}
@@ -152,7 +156,7 @@ export default function OnboardingV2() {
 
   if (screen === "step2") {
     return (
-      <div className="flex min-h-screen flex-col bg-[var(--bg)] px-6 py-12">
+      <div className="flex min-h-screen flex-col bg-[var(--bg)] px-6 pt-12">
         <StepHeader step={2} total={3} onBack={() => setScreen("step1")} />
         <div className="mx-auto w-full max-w-sm flex-1 pt-8">
           <h2 className="text-2xl font-bold tracking-tight text-[var(--text-primary)]">Connect your bank</h2>
@@ -161,14 +165,15 @@ export default function OnboardingV2() {
           </p>
 
           <div className="mt-8 space-y-3">
-            <PlaidConnectButton />
+            <PlaidConnectButton onConnected={() => setScreen("step3")} />
 
             <button
               type="button"
-              onClick={() => setScreen("step3")}
-              className="w-full rounded-xl border border-[var(--border-default)] py-3.5 text-sm text-[var(--text-muted)] transition-all hover:text-[var(--text-secondary)]"
+              onClick={finishOnboarding}
+              disabled={saving}
+              className="w-full rounded-xl border border-[var(--border-default)] py-3.5 text-sm text-[var(--text-muted)] transition-all hover:text-[var(--text-secondary)] disabled:opacity-40"
             >
-              Skip for now
+              {saving ? "Saving…" : "Skip for now"}
             </button>
           </div>
 
@@ -182,7 +187,7 @@ export default function OnboardingV2() {
 
   // step3
   return (
-    <div className="flex min-h-screen flex-col bg-[var(--bg)] px-6 py-12">
+    <div className="flex min-h-screen flex-col bg-[var(--bg)] px-6 pt-12">
       <StepHeader step={3} total={3} onBack={() => setScreen("step2")} />
       <div className="mx-auto w-full max-w-sm flex-1 pt-8">
         <h2 className="text-2xl font-bold tracking-tight text-[var(--text-primary)]">
@@ -221,7 +226,10 @@ export default function OnboardingV2() {
         </div>
       </div>
 
-      <div className="mx-auto w-full max-w-sm space-y-3 pb-6">
+      <div
+        className="mx-auto w-full max-w-sm space-y-3"
+        style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 1.5rem)" }}
+      >
         <button
           type="button"
           onClick={finishOnboarding}
@@ -235,7 +243,7 @@ export default function OnboardingV2() {
             type="button"
             onClick={finishOnboarding}
             disabled={saving}
-            className="w-full text-center text-xs text-[var(--text-dim)] hover:text-[var(--text-muted)] transition-colors"
+            className="w-full text-center text-xs text-[var(--text-dim)] transition-colors hover:text-[var(--text-muted)]"
           >
             Skip and set later
           </button>
@@ -255,7 +263,7 @@ function StepHeader({ step, total, onBack }: { step: number; total: number; onBa
           className="flex h-8 w-8 items-center justify-center rounded-full text-[var(--text-muted)] transition-colors hover:bg-[var(--bg-card)] hover:text-[var(--text-secondary)]"
         >
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-            <path d="M10 3L5 8l5 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+            <path d="M10 3L5 8l5 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
         </button>
         <div className="flex gap-1.5">
@@ -263,71 +271,99 @@ function StepHeader({ step, total, onBack }: { step: number; total: number; onBa
             <div
               key={i}
               className={`h-1 rounded-full transition-all duration-300 ${
-                i + 1 === step ? "w-6 bg-[var(--accent)]" : i + 1 < step ? "w-3 bg-[var(--accent)]/40" : "w-3 bg-[var(--border-default)]"
+                i + 1 === step
+                  ? "w-6 bg-[var(--accent)]"
+                  : i + 1 < step
+                  ? "w-3 bg-[var(--accent)]/40"
+                  : "w-3 bg-[var(--border-default)]"
               }`}
             />
           ))}
         </div>
-        <span className="text-xs text-[var(--text-dim)]">{step}/{total}</span>
+        <span className="text-xs text-[var(--text-dim)]">
+          {step}/{total}
+        </span>
       </div>
     </div>
   );
 }
 
-function PlaidConnectButton() {
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+function PlaidConnectButton({ onConnected }: { onConnected: () => void }) {
+  const [linkToken, setLinkToken] = useState<string | null>(null);
+  const [fetchError, setFetchError] = useState("");
+  const [syncing, setSyncing] = useState(false);
+  const [connected, setConnected] = useState(false);
 
-  async function handleConnect() {
-    setLoading(true);
-    setError("");
-    try {
-      const tokenRes = await fetch("/api/plaid/create-link-token", { method: "POST" });
-      if (!tokenRes.ok) throw new Error("Could not start bank connection");
-      const { link_token } = await tokenRes.json();
+  useEffect(() => {
+    fetch("/api/plaid/create-link-token", { method: "POST" })
+      .then((r) => r.json())
+      .then((d) => {
+        if (d.link_token) {
+          setLinkToken(d.link_token);
+        } else {
+          setFetchError("Could not initialize bank connection.");
+        }
+      })
+      .catch(() => setFetchError("Could not reach server. You can skip and connect later."));
+  }, []);
 
-      const { open } = await import("react-plaid-link").then((m) => ({ open: m.usePlaidLink }));
-      // Plaid Link is initialized via script — we'll open directly
-      const script = document.createElement("script");
-      script.src = "https://cdn.plaid.com/link/v2/stable/link-initialize.js";
-      script.onload = () => {
-        const plaid = (window as Window & typeof globalThis & { Plaid: { create: (cfg: unknown) => { open: () => void } } }).Plaid;
-        const handler = plaid.create({
-          token: link_token,
-          onSuccess: async (public_token: string) => {
-            await fetch("/api/plaid/exchange-token", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ public_token }),
-            });
-            setLoading(false);
-          },
-          onExit: () => setLoading(false),
+  const onSuccess = useCallback<PlaidLinkOnSuccess>(
+    async (publicToken, metadata) => {
+      setSyncing(true);
+      setFetchError("");
+      try {
+        const res = await fetch("/api/plaid/exchange-token", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            public_token: publicToken,
+            institution_name: metadata.institution?.name ?? null,
+            institution_id: metadata.institution?.institution_id ?? null,
+          }),
         });
-        handler.open();
-      };
-      document.head.appendChild(script);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Connection failed");
-      setLoading(false);
-    }
+        if (!res.ok) {
+          const d = await res.json().catch(() => ({}));
+          throw new Error(d.error ?? "Exchange failed");
+        }
+        setConnected(true);
+        onConnected();
+      } catch (e) {
+        setFetchError(e instanceof Error ? e.message : "Something went wrong. You can skip and try later.");
+      } finally {
+        setSyncing(false);
+      }
+    },
+    [onConnected]
+  );
+
+  const { open, ready } = usePlaidLink({ token: linkToken ?? "", onSuccess });
+
+  if (connected) {
+    return (
+      <div className="flex items-center gap-2.5 rounded-xl border border-[var(--color-income)]/30 bg-[var(--color-income)]/10 px-4 py-3.5">
+        <span className="h-2 w-2 rounded-full bg-[var(--color-income)] flex-shrink-0" />
+        <p className="text-sm text-[var(--text-primary)]">Bank connected!</p>
+      </div>
+    );
   }
 
   return (
-    <div>
+    <div className="space-y-2">
       <button
         type="button"
-        onClick={handleConnect}
-        disabled={loading}
-        className="w-full rounded-2xl bg-[var(--accent)] py-3.5 text-[15px] font-semibold text-white shadow-lg shadow-[var(--accent)]/30 transition-all hover:bg-[var(--accent-deep)] disabled:opacity-40 active:scale-[0.98] flex items-center justify-center gap-2"
+        onClick={() => open()}
+        disabled={!ready || syncing || !linkToken}
+        className="flex w-full items-center justify-center gap-2 rounded-2xl bg-[var(--accent)] py-3.5 text-[15px] font-semibold text-white shadow-lg shadow-[var(--accent)]/30 transition-all hover:bg-[var(--accent-deep)] disabled:opacity-40 active:scale-[0.98]"
       >
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <rect x="2" y="5" width="20" height="14" rx="2"/>
-          <line x1="2" y1="10" x2="22" y2="10"/>
+          <rect x="2" y="5" width="20" height="14" rx="2" />
+          <line x1="2" y1="10" x2="22" y2="10" />
         </svg>
-        {loading ? "Connecting…" : "Connect my bank"}
+        {syncing ? "Connecting…" : !linkToken && !fetchError ? "Loading…" : "Connect my bank"}
       </button>
-      {error && <p className="mt-2 text-center text-xs text-[var(--color-expense)]">{error}</p>}
+      {fetchError && (
+        <p className="text-center text-xs text-[var(--color-expense)]">{fetchError}</p>
+      )}
     </div>
   );
 }
