@@ -1,3 +1,5 @@
+import { Metadata } from "next";
+export const metadata: Metadata = { title: "Bills" };
 import { createClient } from "@/lib/supabase/server";
 import { BillsView } from "@/components/bills/BillsView";
 

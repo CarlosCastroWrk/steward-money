@@ -173,7 +173,7 @@ export function Luka() {
         <button
           onClick={() => sendMessage(input)}
           disabled={!input.trim() || loading}
-          className="mb-0.5 flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full bg-emerald-600 text-white transition-opacity disabled:opacity-40"
+          className="mb-0.5 flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full bg-purple-600 text-white transition-opacity disabled:opacity-40"
         >
           <SendIcon />
         </button>
@@ -183,7 +183,7 @@ export function Luka() {
 
   const header = (
     <div className="flex items-center gap-2.5 border-b border-[var(--border)] px-4 py-3">
-      <div className="flex h-7 w-7 items-center justify-center rounded-full bg-emerald-600">
+      <div className="flex h-7 w-7 items-center justify-center rounded-full bg-purple-600">
         <SparkleIcon className="h-4 w-4" />
       </div>
       <div className="flex-1 min-w-0">
@@ -220,7 +220,7 @@ export function Luka() {
         onClick={() => setOpen((v) => !v)}
         className={`fixed left-1/2 z-[51] -translate-x-1/2 flex items-center gap-2 rounded-full border px-4 py-2 text-xs backdrop-blur-md transition-colors md:hidden ${
           open
-            ? "border-emerald-700/50 bg-[var(--luka-bg)] text-emerald-400"
+            ? "border-purple-700/50 bg-[var(--luka-bg)] text-purple-400"
             : "border-[var(--border)] bg-[var(--bg-card)]/90 text-[var(--text-3)]"
         }`}
         style={{ bottom: "calc(env(safe-area-inset-bottom) + 78px)" }}
@@ -258,7 +258,7 @@ export function Luka() {
       {/* ── DESKTOP: floating button ── */}
       <button
         onClick={() => setOpen((v) => !v)}
-        className="fixed bottom-6 right-6 z-[51] hidden h-12 w-12 items-center justify-center rounded-full bg-emerald-600 shadow-lg shadow-emerald-900/40 transition-transform hover:scale-105 active:scale-95 md:flex"
+        className="fixed bottom-6 right-6 z-[51] hidden h-12 w-12 items-center justify-center rounded-full bg-purple-600 shadow-lg shadow-purple-900/40 transition-transform hover:scale-105 active:scale-95 md:flex"
         aria-label="Open Luka"
       >
         {open ? <CloseIcon /> : <SparkleIcon />}

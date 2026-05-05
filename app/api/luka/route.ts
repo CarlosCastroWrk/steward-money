@@ -9,7 +9,7 @@ const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 const TOOLS: Anthropic.Tool[] = [
   {
     name: "read_financial_summary",
-    description: "Get the user's current financial overview: account balances, safe-to-spend, upcoming bills, active goals, income sources, and recent transactions.",
+    description: "Get the user's current financial overview: account balances, safe-to-spend, upcoming bills, active goals, income sources, recent transactions, Argus alerts, and latest Silas insight.",
     input_schema: { type: "object", properties: {}, required: [] },
   },
   {
@@ -104,7 +104,7 @@ const TOOLS: Anthropic.Tool[] = [
   },
   {
     name: "update_settings",
-    description: "Update user settings: display_name, emergency_buffer, giving_pct, savings_pct, weekly_needs_budget, trading_pct.",
+    description: "Update user settings: display_name, emergency_buffer, giving_pct, savings_pct, weekly_needs_budget, trading_pct, life_stage, main_goal.",
     input_schema: {
       type: "object",
       properties: {
@@ -114,8 +114,21 @@ const TOOLS: Anthropic.Tool[] = [
         savings_pct: { type: "number" },
         weekly_needs_budget: { type: "number" },
         trading_pct: { type: "number" },
+        life_stage: { type: "string" },
+        main_goal: { type: "string" },
       },
       required: [],
+    },
+  },
+  {
+    name: "trigger_kairos",
+    description: "Trigger a Kairos life-change review when the user mentions a significant life change (new job, moving, major expense, etc).",
+    input_schema: {
+      type: "object",
+      properties: {
+        reason: { type: "string", description: "Brief description of the life change detected" },
+      },
+      required: ["reason"],
     },
   },
 ];
@@ -141,26 +154,32 @@ async function executeTool(
   try {
     switch (name) {
       case "read_financial_summary": {
-        const [accounts, bills, goals, income, settings, recentTx, safe] = await Promise.all([
+        const [accounts, bills, goals, income, settings, recentTx, safe, alerts, insights] = await Promise.all([
           supabase.from("accounts").select("name, type, current_balance").eq("user_id", userId).eq("is_active", true),
           supabase.from("bills").select("name, amount, frequency, next_due_date, is_autopay").eq("user_id", userId).order("next_due_date", { ascending: true }),
           supabase.from("goals").select("name, target_amount, current_amount, deadline").eq("user_id", userId),
-          supabase.from("income_sources").select("name, amount, frequency, next_date").eq("user_id", userId).eq("is_active", true),
+          supabase.from("income_sources").select("name, amount, frequency, next_date, next_expected_date").eq("user_id", userId).eq("is_active", true),
           supabase.from("user_settings").select("*").eq("user_id", userId).maybeSingle(),
           supabase.from("transactions").select("date, merchant, amount, category").eq("user_id", userId).order("date", { ascending: false }).limit(10),
           calculateSafeToSpend(supabase, userId),
+          supabase.from("alerts").select("message, severity, alert_type").eq("user_id", userId).eq("is_read", false).limit(4),
+          supabase.from("pulse_insights").select("insight_text, insight_type").eq("user_id", userId).eq("is_active", true).eq("is_dismissed", false).limit(2),
         ]);
         return {
           result: {
             safe_to_spend: safe.safeToSpend,
             liquid_cash: safe.liquidTotal,
+            emergency_buffer: safe.emergencyBuffer,
             next_paycheck: safe.nextIncomeDate,
+            next_paycheck_amount: safe.nextIncomeAmount,
             accounts: accounts.data,
             bills: bills.data,
             goals: goals.data,
             income_sources: income.data,
             settings: settings.data,
             recent_transactions: recentTx.data,
+            active_alerts: alerts.data,
+            silas_insights: insights.data,
           },
           refreshNeeded: false,
         };
@@ -224,7 +243,8 @@ async function executeTool(
       case "add_income_source": {
         const { error } = await supabase.from("income_sources").insert({
           user_id: userId, name: input.name, amount: input.amount,
-          frequency: input.frequency, next_date: input.next_date, is_active: true, is_variable: false,
+          frequency: input.frequency, next_date: input.next_date,
+          next_expected_date: input.next_date, is_active: true, is_variable: false,
         });
         if (error) return { result: { error: error.message }, refreshNeeded: false };
         return { result: { success: true, message: `Income source "${input.name}" added` }, refreshNeeded: true };
@@ -242,25 +262,37 @@ async function executeTool(
       }
 
       case "mark_income_received": {
-        const { data: sources } = await supabase.from("income_sources").select("id, name, next_date, frequency").eq("user_id", userId).eq("is_active", true);
+        const { data: sources } = await supabase.from("income_sources").select("id, name, next_date, next_expected_date, frequency").eq("user_id", userId).eq("is_active", true);
         const query = String(input.income_name).toLowerCase();
         const src = (sources ?? []).find((s) => s.name.toLowerCase().includes(query));
         if (!src) return { result: { error: `No income source found matching "${input.income_name}"` }, refreshNeeded: false };
-        if (!src.next_date) return { result: { error: "Income source has no date" }, refreshNeeded: false };
-        const next = advanceIncomeDate(src.next_date, src.frequency);
-        await supabase.from("income_sources").update({ next_date: next }).eq("id", src.id);
+        const currentDate = src.next_date || src.next_expected_date;
+        if (!currentDate) return { result: { error: "Income source has no date" }, refreshNeeded: false };
+        const next = advanceIncomeDate(currentDate, src.frequency);
+        await supabase.from("income_sources").update({ next_date: next, next_expected_date: next }).eq("id", src.id);
         return { result: { success: true, message: `"${src.name}" marked received. Next: ${next}` }, refreshNeeded: true };
       }
 
       case "update_settings": {
         const fields: Record<string, unknown> = {};
-        const allowed = ["display_name", "emergency_buffer", "giving_pct", "savings_pct", "weekly_needs_budget", "trading_pct"];
+        const allowed = ["display_name", "emergency_buffer", "giving_pct", "savings_pct", "weekly_needs_budget", "trading_pct", "life_stage", "main_goal"];
         for (const key of allowed) {
           if (input[key] !== undefined) fields[key] = input[key];
         }
         if (Object.keys(fields).length === 0) return { result: { error: "No valid fields to update" }, refreshNeeded: false };
         await supabase.from("user_settings").update(fields).eq("user_id", userId);
         return { result: { success: true, updated: Object.keys(fields) }, refreshNeeded: true };
+      }
+
+      case "trigger_kairos": {
+        const reason = String(input.reason ?? "User reported a life change");
+        await supabase.from("life_events").insert({
+          user_id: userId,
+          event_type: "user_triggered",
+          event_description: reason,
+        });
+        await supabase.from("user_settings").update({ kairos_pending: true }).eq("user_id", userId);
+        return { result: { success: true, message: "Kairos review triggered. I'll lead with this next time." }, refreshNeeded: true };
       }
 
       default:
@@ -280,24 +312,70 @@ export async function POST(req: NextRequest) {
     messages: Array<{ role: "user" | "assistant"; content: string }>;
   };
 
-  const settings = await supabase.from("user_settings").select("display_name").eq("user_id", user.id).maybeSingle();
-  const displayName = settings.data?.display_name ?? "there";
+  const [settingsResult, safeResult, alertsResult, insightsResult, solomonResult, kairosResult] = await Promise.all([
+    supabase.from("user_settings").select("*").eq("user_id", user.id).maybeSingle(),
+    calculateSafeToSpend(supabase, user.id),
+    supabase.from("alerts").select("message, severity").eq("user_id", user.id).eq("is_read", false).limit(4),
+    supabase.from("pulse_insights").select("insight_text").eq("user_id", user.id).eq("is_active", true).eq("is_dismissed", false).limit(2),
+    supabase.from("weekly_reports").select("solomon_word, stewardship_score").eq("user_id", user.id).order("created_at", { ascending: false }).limit(1).maybeSingle(),
+    supabase.from("user_settings").select("kairos_pending").eq("user_id", user.id).maybeSingle(),
+  ]);
+
+  const settings = settingsResult.data;
+  const displayName = settings?.display_name ?? "there";
+  const lifeStage = settings?.life_stage ?? "young adult";
+  const mainGoal = settings?.main_goal ?? "financial stability";
   const today = new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric" });
 
-  const system = `Your name is Luka, a personal finance AI assistant for Steward Money.
+  const fmt = (n: number) => new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(n);
 
-Today is ${today}. The user's name is ${displayName}.
+  const activeAlerts = (alertsResult.data ?? []).map((a) => `• ${a.message}`).join("\n") || "None";
+  const silasInsights = (insightsResult.data ?? []).map((i) => `• ${i.insight_text}`).join("\n") || "Not enough data yet";
+  const solomonWord = solomonResult.data?.solomon_word ?? "No report yet this week";
+  const kairoPending = kairosResult.data?.kairos_pending ?? false;
 
-Personality:
-- Friendly and direct — like a smart friend who knows their finances inside out
-- Never judgmental about spending choices
-- Always use real dollar amounts from their actual data
-- Be concise but complete. No fluff.
-- When asked about numbers, always call read_financial_summary first — never guess
-- Before any destructive or permanent change, confirm with the user
-- After completing an action, give a brief, clear confirmation
+  const nextIncomeDate = safeResult.nextIncomeDate
+    ? new Date(safeResult.nextIncomeDate).toLocaleDateString("en-US", { month: "short", day: "numeric" })
+    : "Not set";
 
-You have tools to read data and take actions. Use them naturally as part of conversation.`;
+  const { data: billsDueThisWeek } = await supabase
+    .from("bills")
+    .select("name, amount, next_due_date")
+    .eq("user_id", user.id)
+    .gte("next_due_date", new Date().toISOString().split("T")[0])
+    .lte("next_due_date", new Date(Date.now() + 7 * 86_400_000).toISOString().split("T")[0]);
+
+  const billsList = (billsDueThisWeek ?? []).map((b) => `  ${b.name}: ${fmt(Number(b.amount))} due ${b.next_due_date}`).join("\n") || "None this week";
+
+  let kairosOpener = "";
+  if (kairoPending) {
+    kairosOpener = `\n\nIMPORTANT: Kairos has flagged a life change pending review. Lead your FIRST response with: "Hey ${displayName} — looks like something shifted. Want me to review your financial plan and suggest updates?" Then wait for their response before continuing normally.`;
+  }
+
+  const system = `You are Luka, the personal finance co-pilot for Steward Money. You are speaking with ${displayName}, a ${lifeStage} whose main financial goal is ${mainGoal}.
+
+Today is ${today}.
+
+Current snapshot:
+- Safe to spend: ${fmt(safeResult.safeToSpend)}
+- Liquid cash: ${fmt(safeResult.liquidTotal)}
+- Emergency buffer: ${fmt(safeResult.emergencyBuffer)}
+- Next paycheck: ${nextIncomeDate} — ${fmt(safeResult.nextIncomeAmount)}
+- Bills due this week:
+${billsList}
+- Active Argus alerts:
+${activeAlerts}
+- Latest Silas insight:
+${silasInsights}
+- Solomon's word this week: ${solomonWord}
+- Life stage: ${lifeStage}
+- Giving enabled: ${settings?.giving_enabled ? `yes (${settings.giving_value}%)` : "no"}
+
+You manage money as a steward — giving comes first, every dollar has a purpose, wisdom guides every decision. Be direct. Be specific. Sound like a smart friend, not a banker. Never quote scripture unless asked. But let stewardship principles guide your recommendations.
+
+When asked to take action, use your tools. When asked a question, answer with real numbers. When opening proactively, lead with what matters most.
+
+If the user mentions a significant life change (new job, moving, relationship change, major purchase), use the trigger_kairos tool and acknowledge the change warmly.${kairosOpener}`;
 
   const messages: Anthropic.MessageParam[] = clientMessages.map((m) => ({
     role: m.role,
@@ -310,7 +388,7 @@ You have tools to read data and take actions. Use them naturally as part of conv
   while (iterations < 6) {
     iterations++;
     const response = await anthropic.messages.create({
-      model: "claude-sonnet-4-5",
+      model: "claude-sonnet-4-6",
       max_tokens: 1024,
       system,
       messages,

@@ -5,12 +5,16 @@ import { BottomNav } from "@/components/BottomNav";
 import { Luka } from "@/components/Luka";
 import { NotificationBell } from "@/components/NotificationBell";
 import { ThemeProvider } from "@/components/ThemeProvider";
+import { ToastProvider } from "@/components/Toast";
 import "./globals.css";
 
 const inter = Inter({ subsets: ["latin"], display: "swap" });
 
 export const metadata: Metadata = {
-  title: "Steward Money",
+  title: {
+    default: "Steward Money",
+    template: "%s — Steward Money",
+  },
   description: "Your personal financial co-pilot",
   appleWebApp: {
     capable: true,
@@ -32,15 +36,17 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en" className={inter.className} suppressHydrationWarning>
       <body className="flex min-h-screen bg-[var(--bg)] text-[var(--text-1)] antialiased">
         <ThemeProvider>
-          <Sidebar />
-          <main className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto bg-[var(--bg)] md:ml-[228px] pb-[calc(5rem+env(safe-area-inset-bottom))] md:pb-0">
-            {children}
-          </main>
-          <BottomNav />
-          <div className="fixed right-4 top-[calc(env(safe-area-inset-top)+12px)] z-[52] md:hidden">
-            <NotificationBell align="right" />
-          </div>
-          <Luka />
+          <ToastProvider>
+            <Sidebar />
+            <main className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto bg-[var(--bg)] md:ml-[228px] pb-[calc(5rem+env(safe-area-inset-bottom))] md:pb-0">
+              {children}
+            </main>
+            <BottomNav />
+            <div className="fixed right-4 top-[calc(env(safe-area-inset-top)+12px)] z-[52] md:hidden">
+              <NotificationBell align="right" />
+            </div>
+            <Luka />
+          </ToastProvider>
         </ThemeProvider>
       </body>
     </html>

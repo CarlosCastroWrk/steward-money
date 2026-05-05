@@ -1,3 +1,5 @@
+import { Metadata } from "next";
+export const metadata: Metadata = { title: "Settings" };
 import { createClient } from "@/lib/supabase/server";
 import { advanceStaleIncomeDates } from "@/lib/income";
 import { SettingsView } from "@/components/settings/SettingsView";

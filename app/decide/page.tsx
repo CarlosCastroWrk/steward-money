@@ -1,3 +1,5 @@
+import { Metadata } from "next";
+export const metadata: Metadata = { title: "Decide" };
 import { createClient } from "@/lib/supabase/server";
 import { calculateSafeToSpend } from "@/lib/safe-to-spend";
 import { DecideView } from "@/components/decide/DecideView";

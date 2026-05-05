@@ -1,0 +1,2 @@
+-- pulse_insights, life_events, weekly_reports tables
+-- Applied via Supabase MCP on 2026-05-05

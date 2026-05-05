@@ -1,6 +1,18 @@
 {
   "crons": [
     {
+      "path": "/api/agents/argus",
+      "schedule": "0 8 * * *"
+    },
+    {
+      "path": "/api/agents/solomon",
+      "schedule": "0 9 * * 0"
+    },
+    {
+      "path": "/api/agents/silas",
+      "schedule": "0 9 * * 0"
+    },
+    {
       "path": "/api/monitor",
       "schedule": "0 8 * * *"
     }

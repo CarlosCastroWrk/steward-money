@@ -1,0 +1,3 @@
+-- kairos_pending, last_plan_review on user_settings
+-- agent, alert_type on alerts
+-- Applied via Supabase MCP on 2026-05-05

@@ -1,3 +1,5 @@
+import { Metadata } from "next";
+export const metadata: Metadata = { title: "Accounts" };
 import { createClient } from "@/lib/supabase/server";
 import { AccountsView } from "@/components/accounts/AccountsView";
 import type { Account, PlaidItem } from "@/components/accounts/types";
