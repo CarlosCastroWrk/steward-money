@@ -11,6 +11,7 @@ import { AllocationCard } from "@/components/dashboard/AllocationCard";
 import { MannaCard } from "@/components/dashboard/MannaCard";
 import { EdenMoment } from "@/components/dashboard/EdenMoment";
 import { NovaMessage } from "@/components/dashboard/NovaMessage";
+import { CalendarCard } from "@/components/dashboard/CalendarCard";
 
 export const metadata: Metadata = {
   title: "Dashboard — Steward Money",
@@ -119,7 +120,10 @@ export default async function DashboardPage() {
       {/* 5. Nova — forward-looking messages */}
       <NovaMessage />
 
-      {/* 6. Solomon's word */}
+      {/* 6. Calendar — financial events this week */}
+      <CalendarCard />
+
+      {/* 7. Solomon's word */}
       {solomonResult.data && <SolomonWord report={solomonResult.data} />}
 
       {/* 7. Argus alerts */}

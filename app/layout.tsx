@@ -8,6 +8,7 @@ import { Luka } from "@/components/Luka";
 import { NotificationBell } from "@/components/NotificationBell";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { ToastProvider } from "@/components/Toast";
+import { SessionGuard } from "@/components/security/SessionGuard";
 import "./globals.css";
 
 const instrumentSerif = Instrument_Serif({
@@ -32,7 +33,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#059669",
+  themeColor: "#7857ff",
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,
@@ -58,6 +59,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               <NotificationBell align="right" />
             </div>
             <Luka />
+            <SessionGuard />
           </ToastProvider>
         </ThemeProvider>
       </body>

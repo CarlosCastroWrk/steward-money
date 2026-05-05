@@ -5,7 +5,7 @@ export async function middleware(request: NextRequest) {
   const { response, supabase, user } = await updateSession(request);
   const pathname = request.nextUrl.pathname;
   const isLoginPage = pathname === "/login";
-  const isOnboardingPage = pathname === "/onboarding";
+  const isOnboardingPage = pathname.startsWith("/onboarding");
 
   if (!user) {
     if (isLoginPage) {
@@ -33,7 +33,7 @@ export async function middleware(request: NextRequest) {
 
   if (!onboardingCompleted && !isOnboardingPage) {
     const onboardingUrl = request.nextUrl.clone();
-    onboardingUrl.pathname = "/onboarding";
+    onboardingUrl.pathname = "/onboarding/v2";
     return NextResponse.redirect(onboardingUrl);
   }
 

@@ -10,16 +10,20 @@ import { NeedsSection } from "./NeedsSection";
 import { IncomeSection } from "./IncomeSection";
 import { PrioritySection } from "./PrioritySection";
 import { AccountsSection } from "./AccountsSection";
+import { SecuritySection } from "./SecuritySection";
+import { CalendarSection } from "./CalendarSection";
 import type { UserSettingsData, IncomeSourceRow, AccountRow, PriorityRow } from "./types";
 
-type Tab = "profile" | "rules" | "income" | "priorities" | "accounts";
+type Tab = "profile" | "rules" | "income" | "priorities" | "accounts" | "integrations" | "security";
 
 const TABS: { id: Tab; label: string }[] = [
-  { id: "profile",    label: "Profile"     },
-  { id: "rules",      label: "Budget Rules" },
-  { id: "income",     label: "Income"      },
-  { id: "priorities", label: "Priorities"  },
-  { id: "accounts",   label: "Accounts"    },
+  { id: "profile",      label: "Profile"      },
+  { id: "rules",        label: "Budget Rules" },
+  { id: "income",       label: "Income"       },
+  { id: "priorities",   label: "Priorities"   },
+  { id: "accounts",     label: "Accounts"     },
+  { id: "integrations", label: "Integrations" },
+  { id: "security",     label: "Security"     },
 ];
 
 interface Props {
@@ -82,6 +86,12 @@ export function SettingsView({ settings, incomeSources, accounts, priorities }: 
           )}
           {tab === "accounts" && (
             <AccountsSection initialAccounts={accounts} />
+          )}
+          {tab === "integrations" && (
+            <CalendarSection />
+          )}
+          {tab === "security" && (
+            <SecuritySection />
           )}
         </div>
 

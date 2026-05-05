@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import Anthropic from "@anthropic-ai/sdk";
 import { calculateSafeToSpend } from "@/lib/safe-to-spend";
 import { summarizeAgentMemoriesForLuka } from "@/lib/agent-memory";
+import { checkRateLimit } from "@/lib/rate-limit";
 
 const anthropic = new Anthropic();
 
@@ -26,6 +27,14 @@ export async function POST(req: NextRequest) {
   const supabase = createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const rl = checkRateLimit(user.id, "/api/agents/council");
+  if (!rl.allowed) {
+    return NextResponse.json(
+      { error: "Council is resting. Try again soon." },
+      { status: 429, headers: { "Retry-After": String(Math.ceil((rl.retryAfterMs ?? 60000) / 1000)) } }
+    );
+  }
 
   const { question } = await req.json();
   if (!question) return NextResponse.json({ error: "question required" }, { status: 400 });

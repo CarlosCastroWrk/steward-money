@@ -4,6 +4,8 @@ import { createClient } from "@/lib/supabase/server";
 import { calculateSafeToSpend } from "@/lib/safe-to-spend";
 import { advanceIncomeDate } from "@/lib/income";
 import { summarizeAgentMemoriesForLuka } from "@/lib/agent-memory";
+import { checkRateLimit } from "@/lib/rate-limit";
+import { getIncompleteSetup } from "@/lib/progressive-setup";
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
@@ -131,6 +133,11 @@ const TOOLS: Anthropic.Tool[] = [
       },
       required: ["reason"],
     },
+  },
+  {
+    name: "get_progressive_setup",
+    description: "Get a list of setup items the user hasn't completed yet — things like adding income, connecting a bank, setting goals. Use this when the user seems new or asks what to do first.",
+    input_schema: { type: "object", properties: {}, required: [] },
   },
 ];
 
@@ -296,6 +303,11 @@ async function executeTool(
         return { result: { success: true, message: "Kairos review triggered. I'll lead with this next time." }, refreshNeeded: true };
       }
 
+      case "get_progressive_setup": {
+        const items = await getIncompleteSetup(supabase, userId);
+        return { result: { incomplete_items: items, count: items.length }, refreshNeeded: false };
+      }
+
       default:
         return { result: { error: `Unknown tool: ${name}` }, refreshNeeded: false };
     }
@@ -308,6 +320,14 @@ export async function POST(req: NextRequest) {
   const supabase = createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const rl = checkRateLimit(user.id, "/api/luka");
+  if (!rl.allowed) {
+    return NextResponse.json(
+      { error: "Too many messages. Take a breath." },
+      { status: 429, headers: { "Retry-After": String(Math.ceil((rl.retryAfterMs ?? 60000) / 1000)) } }
+    );
+  }
 
   const { messages: clientMessages } = await req.json() as {
     messages: Array<{ role: "user" | "assistant"; content: string }>;
