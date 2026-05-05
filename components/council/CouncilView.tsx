@@ -138,7 +138,7 @@ export function CouncilView() {
       {/* Results */}
       {result && !loading && (
         <div className="space-y-4">
-          <p className="text-xs text-[var(--text-3)] italic">"{result.question}"</p>
+          <p className="text-xs text-[var(--text-3)] italic">&ldquo;{result.question}&rdquo;</p>
 
           {/* Agent responses */}
           <div className="space-y-3">

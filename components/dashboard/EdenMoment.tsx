@@ -29,6 +29,8 @@ export function EdenMoment() {
       .then((r) => r.json())
       .then((d) => setData(d))
       .finally(() => setLoading(false));
+  // dismissKey is a stable date string — intentionally excluded from deps
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   async function getReflection() {
@@ -83,7 +85,7 @@ export function EdenMoment() {
       </div>
 
       {data.vision && (
-        <p className="text-xs text-[var(--text-3)] italic mb-3">"{data.vision}"</p>
+        <p className="text-xs text-[var(--text-3)] italic mb-3">&ldquo;{data.vision}&rdquo;</p>
       )}
 
       {reflection ? (
