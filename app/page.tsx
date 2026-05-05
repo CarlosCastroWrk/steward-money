@@ -58,6 +58,8 @@ export default async function DashboardPage() {
     alertsResult,
     solomonResult,
     silasResult,
+    upcomingExpensesWeekResult,
+    upcomingExpensesMonthResult,
   ] = await Promise.all([
     calculateSafeToSpend(supabase, user.id),
     supabase.from("goals").select("id, name, target_amount, current_amount, deadline").eq("user_id", user.id).order("priority", { ascending: true }),
@@ -70,6 +72,8 @@ export default async function DashboardPage() {
     supabase.from("alerts").select("id, message, severity, alert_type").eq("user_id", user.id).eq("is_read", false).order("created_at", { ascending: false }).limit(4),
     supabase.from("weekly_reports").select("solomon_word, stewardship_score, week_start, lived_within_provision, giving_honored").eq("user_id", user.id).order("created_at", { ascending: false }).limit(1).maybeSingle(),
     supabase.from("pulse_insights").select("id, insight_text, insight_type").eq("user_id", user.id).eq("is_active", true).eq("is_dismissed", false).order("confidence_score", { ascending: false }).limit(2),
+    supabase.from("upcoming_expenses").select("id, name, amount, expense_date").eq("user_id", user.id).eq("is_paid", false).gte("expense_date", today).lte("expense_date", sevenDaysOut).order("expense_date", { ascending: true }),
+    supabase.from("upcoming_expenses").select("amount").eq("user_id", user.id).eq("is_paid", false).gte("expense_date", monthStart),
   ]);
 
   const goals = goalsResult.data ?? [];
@@ -77,7 +81,9 @@ export default async function DashboardPage() {
   const upcomingBills = upcomingBillsResult.data ?? [];
   const alerts = alertsResult.data ?? [];
 
-  const monthlyBillsTotal = (allBillsResult.data ?? []).reduce((s, b) => s + toMonthly(Number(b.amount), b.frequency), 0);
+  const monthlyRecurringTotal = (allBillsResult.data ?? []).reduce((s, b) => s + toMonthly(Number(b.amount), b.frequency), 0);
+  const monthlyUpcomingTotal = (upcomingExpensesMonthResult.data ?? []).reduce((s, e) => s + Number(e.amount), 0);
+  const monthlyBillsTotal = monthlyRecurringTotal + monthlyUpcomingTotal;
   const monthlyIncome = (incomeTransactionsResult.data ?? []).reduce((s, t) => s + Number(t.amount), 0);
   const totalSpentMonth = (spendingRes.data ?? []).reduce((s, t) => s + Math.abs(Number(t.amount)), 0);
   const monthlySubsTotal = (subsResult.data ?? []).filter((s) => s.status === "keep").reduce((s, sub) => s + Number(sub.amount), 0);
@@ -176,7 +182,7 @@ export default async function DashboardPage() {
       {/* 9. Stats row */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         {[
-          { label: "Monthly Bills", value: formatUSD(monthlyBillsTotal), color: "text-red-400" },
+          { label: "Monthly Expenses", value: formatUSD(monthlyBillsTotal), color: "text-red-400" },
           { label: "Subscriptions", value: formatUSD(monthlySubsTotal), color: "text-amber-400" },
           { label: "Active Goals", value: String(goals.length), color: "text-[var(--text-1)]" },
           { label: "Spent This Month", value: formatUSD(totalSpentMonth), color: "text-[var(--text-3)]" },
@@ -196,13 +202,13 @@ export default async function DashboardPage() {
       {/* 11. Silas sees */}
       <SilasInsights insights={silasResult.data ?? []} />
 
-      {/* 12. Bills due this week */}
+      {/* 12. Expenses this week */}
       <section>
         <div className="mb-3 flex items-center justify-between">
-          <h2 className="text-[10px] font-semibold uppercase tracking-widest text-[var(--text-3)]">Bills This Week</h2>
+          <h2 className="text-[10px] font-semibold uppercase tracking-widest text-[var(--text-3)]">Expenses This Week</h2>
           <a href="/bills" className="text-xs text-purple-400 transition-colors hover:text-purple-300">See all</a>
         </div>
-        {upcomingBills.length === 0 ? (
+        {upcomingBills.length === 0 && (upcomingExpensesWeekResult.data ?? []).length === 0 ? (
           <div className="rounded-xl border border-[var(--border)] bg-[var(--bg-card)] p-5 text-center">
             <p className="text-sm text-[var(--text-3)]">Nothing due soon. You&apos;re ahead of it.</p>
           </div>
@@ -223,6 +229,21 @@ export default async function DashboardPage() {
                   <span className={`text-sm font-semibold ${isOverdue ? "text-red-400" : "text-[var(--text-1)]"}`}>
                     {formatUSD(Number(bill.amount))}
                   </span>
+                </div>
+              );
+            })}
+            {(upcomingExpensesWeekResult.data ?? []).map((exp) => {
+              const diff = Math.ceil((new Date(exp.expense_date + "T00:00:00").getTime() - Date.now()) / 86400000);
+              const isClose = diff <= 3;
+              return (
+                <div key={exp.id} className="flex items-center justify-between px-4 py-3.5">
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-[var(--text-1)]">{exp.name}</p>
+                    <p className={`text-xs mt-0.5 ${isClose ? "text-amber-400" : "text-[var(--text-3)]"}`}>
+                      {formatDate(exp.expense_date)} · one-time
+                    </p>
+                  </div>
+                  <span className="text-sm font-semibold text-[var(--text-1)]">{formatUSD(Number(exp.amount))}</span>
                 </div>
               );
             })}

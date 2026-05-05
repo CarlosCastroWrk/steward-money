@@ -9,7 +9,7 @@ import { Home, CreditCard, ArrowLeftRight, FileText, LayoutGrid } from "lucide-r
 const PRIMARY_NAV = [
   { label: "Home",         href: "/",            icon: <Home size={22} strokeWidth={1.6} /> },
   { label: "Transactions", href: "/transactions", icon: <ArrowLeftRight size={22} strokeWidth={1.6} /> },
-  { label: "Bills",        href: "/bills",        icon: <FileText size={22} strokeWidth={1.6} /> },
+  { label: "Expenses",     href: "/bills",        icon: <FileText size={22} strokeWidth={1.6} /> },
   { label: "Accounts",     href: "/accounts",     icon: <CreditCard size={22} strokeWidth={1.6} /> },
 ];
 

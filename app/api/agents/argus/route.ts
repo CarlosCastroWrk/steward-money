@@ -37,14 +37,14 @@ async function runArgus(supabase: ReturnType<typeof createClient>, userId: strin
 
   const alerts: AlertInput[] = [];
 
-  // Check 1 — Overdue bills
+  // Check 1 — Overdue expenses
   for (const b of billsRes.data ?? []) {
     if (b.next_due_date && b.next_due_date < today) {
       alerts.push({ user_id: userId, type: "overdue_bill", alert_type: "overdue_bill", message: `${b.name} is overdue — ${fmt(b.amount)}`, severity: "danger", agent: "argus" });
     }
   }
 
-  // Check 2 — Bills due within 3 days
+  // Check 2 — Expenses due within 3 days
   for (const b of billsRes.data ?? []) {
     if (b.next_due_date && !b.is_autopay && b.next_due_date >= today && b.next_due_date <= in3Days) {
       const daysLeft = Math.ceil((new Date(b.next_due_date).getTime() - Date.now()) / 86_400_000);

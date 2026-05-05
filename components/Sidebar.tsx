@@ -28,7 +28,7 @@ const PRIMARY_NAV: NavItem[] = [
   { label: "Dashboard",     href: "/",             icon: <Home size={16} strokeWidth={1.6} /> },
   { label: "Accounts",      href: "/accounts",     icon: <CreditCard size={16} strokeWidth={1.6} /> },
   { label: "Transactions",  href: "/transactions", icon: <ArrowLeftRight size={16} strokeWidth={1.6} /> },
-  { label: "Bills",         href: "/bills",        icon: <FileText size={16} strokeWidth={1.6} /> },
+  { label: "Expenses",      href: "/bills",        icon: <FileText size={16} strokeWidth={1.6} /> },
   { label: "Subscriptions", href: "/subscriptions",icon: <RefreshCw size={16} strokeWidth={1.6} /> },
   { label: "Goals",         href: "/goals",        icon: <Target size={16} strokeWidth={1.6} /> },
   { label: "Decide",        href: "/decide",       icon: <Scale size={16} strokeWidth={1.6} /> },

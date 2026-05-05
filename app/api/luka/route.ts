@@ -12,7 +12,7 @@ const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 const TOOLS: Anthropic.Tool[] = [
   {
     name: "read_financial_summary",
-    description: "Get the user's current financial overview: account balances, safe-to-spend, upcoming bills, active goals, income sources, recent transactions, Argus alerts, and latest Silas insight.",
+    description: "Get the user's current financial overview: account balances, safe-to-spend, upcoming expenses, active goals, income sources, recent transactions, Argus alerts, and latest Silas insight.",
     input_schema: { type: "object", properties: {}, required: [] },
   },
   {
@@ -31,7 +31,7 @@ const TOOLS: Anthropic.Tool[] = [
   },
   {
     name: "add_bill",
-    description: "Create a new recurring bill.",
+    description: "Create a new recurring expense.",
     input_schema: {
       type: "object",
       properties: {
@@ -89,10 +89,10 @@ const TOOLS: Anthropic.Tool[] = [
   },
   {
     name: "mark_bill_paid",
-    description: "Mark a bill as paid and advance its next due date.",
+    description: "Mark a recurring expense as paid and advance its next due date.",
     input_schema: {
       type: "object",
-      properties: { bill_name: { type: "string", description: "Bill name (partial match OK)" } },
+      properties: { bill_name: { type: "string", description: "Expense name (partial match OK)" } },
       required: ["bill_name"],
     },
   },
