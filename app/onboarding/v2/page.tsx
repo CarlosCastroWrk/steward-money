@@ -288,11 +288,12 @@ function StepHeader({ step, total, onBack }: { step: number; total: number; onBa
   );
 }
 
+// Outer shell: fetches the link token, then hands it to PlaidLinkReady.
+// Keeping these separate ensures usePlaidLink is never called with token="",
+// which prevents it from initializing properly in react-plaid-link v4.
 function PlaidConnectButton({ onConnected }: { onConnected: () => void }) {
   const [linkToken, setLinkToken] = useState<string | null>(null);
   const [fetchError, setFetchError] = useState("");
-  const [syncing, setSyncing] = useState(false);
-  const [connected, setConnected] = useState(false);
 
   useEffect(() => {
     fetch("/api/plaid/create-link-token", { method: "POST" })
@@ -307,10 +308,47 @@ function PlaidConnectButton({ onConnected }: { onConnected: () => void }) {
       .catch(() => setFetchError("Could not reach server. You can skip and connect later."));
   }, []);
 
+  if (fetchError) {
+    return (
+      <div className="space-y-2">
+        <button
+          type="button"
+          disabled
+          className="flex w-full items-center justify-center gap-2 rounded-2xl bg-[var(--accent)] py-3.5 text-[15px] font-semibold text-white opacity-40"
+        >
+          Connect my bank
+        </button>
+        <p className="text-center text-xs text-[var(--color-expense)]">{fetchError}</p>
+      </div>
+    );
+  }
+
+  if (!linkToken) {
+    return (
+      <button
+        type="button"
+        disabled
+        className="flex w-full items-center justify-center gap-2 rounded-2xl bg-[var(--accent)] py-3.5 text-[15px] font-semibold text-white opacity-40"
+      >
+        Loading…
+      </button>
+    );
+  }
+
+  return <PlaidLinkReady token={linkToken} onConnected={onConnected} />;
+}
+
+// Inner component: only rendered once a valid token exists.
+// usePlaidLink gets a real token on first call and becomes ready immediately.
+function PlaidLinkReady({ token, onConnected }: { token: string; onConnected: () => void }) {
+  const [syncing, setSyncing] = useState(false);
+  const [error, setError] = useState("");
+  const [connected, setConnected] = useState(false);
+
   const onSuccess = useCallback<PlaidLinkOnSuccess>(
     async (publicToken, metadata) => {
       setSyncing(true);
-      setFetchError("");
+      setError("");
       try {
         const res = await fetch("/api/plaid/exchange-token", {
           method: "POST",
@@ -328,7 +366,7 @@ function PlaidConnectButton({ onConnected }: { onConnected: () => void }) {
         setConnected(true);
         onConnected();
       } catch (e) {
-        setFetchError(e instanceof Error ? e.message : "Something went wrong. You can skip and try later.");
+        setError(e instanceof Error ? e.message : "Something went wrong. You can skip and try later.");
       } finally {
         setSyncing(false);
       }
@@ -336,12 +374,12 @@ function PlaidConnectButton({ onConnected }: { onConnected: () => void }) {
     [onConnected]
   );
 
-  const { open, ready } = usePlaidLink({ token: linkToken ?? "", onSuccess });
+  const { open, ready } = usePlaidLink({ token, onSuccess });
 
   if (connected) {
     return (
       <div className="flex items-center gap-2.5 rounded-xl border border-[var(--color-income)]/30 bg-[var(--color-income)]/10 px-4 py-3.5">
-        <span className="h-2 w-2 rounded-full bg-[var(--color-income)] flex-shrink-0" />
+        <span className="h-2 w-2 flex-shrink-0 rounded-full bg-[var(--color-income)]" />
         <p className="text-sm text-[var(--text-primary)]">Bank connected!</p>
       </div>
     );
@@ -352,18 +390,16 @@ function PlaidConnectButton({ onConnected }: { onConnected: () => void }) {
       <button
         type="button"
         onClick={() => open()}
-        disabled={!ready || syncing || !linkToken}
+        disabled={!ready || syncing}
         className="flex w-full items-center justify-center gap-2 rounded-2xl bg-[var(--accent)] py-3.5 text-[15px] font-semibold text-white shadow-lg shadow-[var(--accent)]/30 transition-all hover:bg-[var(--accent-deep)] disabled:opacity-40 active:scale-[0.98]"
       >
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <rect x="2" y="5" width="20" height="14" rx="2" />
           <line x1="2" y1="10" x2="22" y2="10" />
         </svg>
-        {syncing ? "Connecting…" : !linkToken && !fetchError ? "Loading…" : "Connect my bank"}
+        {syncing ? "Connecting…" : ready ? "Connect my bank" : "Preparing…"}
       </button>
-      {fetchError && (
-        <p className="text-center text-xs text-[var(--color-expense)]">{fetchError}</p>
-      )}
+      {error && <p className="text-center text-xs text-[var(--color-expense)]">{error}</p>}
     </div>
   );
 }
