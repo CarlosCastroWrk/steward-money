@@ -84,6 +84,14 @@ export function TransactionsView({ transactions: initialTransactions, accounts, 
   // Sync prop updates (after router.refresh) into local state
   useEffect(() => { setTxList(initialTransactions); }, [initialTransactions]);
 
+  // Self-heal: if server returned empty but Plaid is connected, fetch client-side
+  useEffect(() => {
+    if (initialTransactions.length === 0 && plaidConnected) {
+      loadTransactionsFromClient();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // Read last-synced from localStorage or server prop
   useEffect(() => {
     try {
@@ -205,6 +213,19 @@ export function TransactionsView({ transactions: initialTransactions, accounts, 
     setDeletingId(null);
   }
 
+  async function loadTransactionsFromClient() {
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+    const { data } = await supabase
+      .from("transactions")
+      .select("id, user_id, account_id, date, merchant, amount, category, is_need, is_recurring, is_pending, notes, is_manual, plaid_transaction_id, created_at")
+      .eq("user_id", user.id)
+      .order("date", { ascending: false })
+      .order("created_at", { ascending: false });
+    if (data) setTxList(data as Transaction[]);
+  }
+
   async function syncNow(deep = false) {
     setSyncing(true);
     try {
@@ -217,7 +238,7 @@ export function TransactionsView({ transactions: initialTransactions, accounts, 
         const now = new Date().toISOString();
         localStorage.setItem(SYNC_LS_KEY, now);
         setLastSynced(now);
-        router.refresh();
+        await loadTransactionsFromClient();
         showToast(deep ? "Deep sync complete — 90 days loaded" : "Sync complete");
       }
     } finally {
