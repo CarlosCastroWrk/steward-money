@@ -12,9 +12,10 @@ import { PrioritySection } from "./PrioritySection";
 import { AccountsSection } from "./AccountsSection";
 import { SecuritySection } from "./SecuritySection";
 import { CalendarSection } from "./CalendarSection";
+import { PlaidDiagnosticSection } from "./PlaidDiagnosticSection";
 import type { UserSettingsData, IncomeSourceRow, AccountRow, PriorityRow } from "./types";
 
-type Tab = "profile" | "rules" | "income" | "priorities" | "accounts" | "integrations" | "security";
+type Tab = "profile" | "rules" | "income" | "priorities" | "accounts" | "integrations" | "diagnostics" | "security";
 
 const TABS: { id: Tab; label: string }[] = [
   { id: "profile",      label: "Profile"      },
@@ -23,6 +24,7 @@ const TABS: { id: Tab; label: string }[] = [
   { id: "priorities",   label: "Priorities"   },
   { id: "accounts",     label: "Accounts"     },
   { id: "integrations", label: "Integrations" },
+  { id: "diagnostics",  label: "Diagnostics"  },
   { id: "security",     label: "Security"     },
 ];
 
@@ -89,6 +91,9 @@ export function SettingsView({ settings, incomeSources, accounts, priorities }: 
           )}
           {tab === "integrations" && (
             <CalendarSection />
+          )}
+          {tab === "diagnostics" && (
+            <PlaidDiagnosticSection />
           )}
           {tab === "security" && (
             <SecuritySection />

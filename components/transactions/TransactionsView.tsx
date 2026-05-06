@@ -9,7 +9,7 @@ import type { Transaction, AccountOption } from "./types";
 
 import { formatCategory } from "@/lib/categoryNames";
 
-type Props = { transactions: Transaction[]; accounts: AccountOption[]; plaidConnected: boolean; institutionName: string; serverLastSynced: string | null };
+type Props = { transactions: Transaction[]; accounts: AccountOption[]; plaidConnected: boolean; institutionName: string; serverLastSynced: string | null; isSandbox?: boolean };
 
 const AVATAR_COLORS = [
   "bg-rose-500", "bg-orange-500", "bg-amber-500", "bg-lime-500",
@@ -65,7 +65,7 @@ function timeSince(isoStr: string): string {
 
 const SYNC_LS_KEY = "steward:lastSynced";
 
-export function TransactionsView({ transactions: initialTransactions, accounts, plaidConnected, institutionName, serverLastSynced }: Props) {
+export function TransactionsView({ transactions: initialTransactions, accounts, plaidConnected, institutionName, serverLastSynced, isSandbox = false }: Props) {
   const router = useRouter();
   const [txList, setTxList] = useState<Transaction[]>(initialTransactions);
   const [modalOpen, setModalOpen] = useState(false);
@@ -264,6 +264,14 @@ export function TransactionsView({ transactions: initialTransactions, accounts, 
       )}
 
       <div className="mx-auto w-full max-w-4xl">
+        {/* Sandbox warning */}
+        {isSandbox && (
+          <div className="mb-3 flex items-start gap-2.5 rounded-xl border border-amber-700/40 bg-amber-900/10 px-4 py-3">
+            <span className="h-2 w-2 mt-1.5 rounded-full bg-amber-400 flex-shrink-0" />
+            <p className="text-sm text-amber-400">Currently in Plaid sandbox mode — you're seeing test data only. Real transactions require Plaid production approval.</p>
+          </div>
+        )}
+
         {/* Plaid status banner */}
         {plaidConnected ? (
           <div className="mb-5 flex items-center gap-2.5 rounded-xl border border-green-900/40 bg-green-950/20 px-4 py-3">

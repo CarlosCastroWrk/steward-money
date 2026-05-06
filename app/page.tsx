@@ -12,6 +12,7 @@ import { MannaCard } from "@/components/dashboard/MannaCard";
 import { EdenMoment } from "@/components/dashboard/EdenMoment";
 import { NovaMessage } from "@/components/dashboard/NovaMessage";
 import { CalendarCard } from "@/components/dashboard/CalendarCard";
+import { TalkToLukaButton } from "@/components/dashboard/TalkToLukaButton";
 
 export const metadata: Metadata = {
   title: "Dashboard — Steward Money",
@@ -117,7 +118,10 @@ export default async function DashboardPage() {
       {/* 2. Manna — daily bread */}
       <MannaCard />
 
-      {/* 3. Luka morning briefing */}
+      {/* 3. Talk to Luka — voice mode */}
+      <TalkToLukaButton />
+
+      {/* 4. Luka morning briefing */}
       <LukaMorningBriefing data={briefingData} />
 
       {/* 4. Eden — vision & gratitude */}

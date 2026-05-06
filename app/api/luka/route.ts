@@ -404,6 +404,20 @@ If the user mentions a significant life change (new job, moving, relationship ch
     content: m.content,
   }));
 
+  const TOOL_LABELS: Record<string, string> = {
+    add_bill:             "Added recurring expense",
+    add_goal:             "Created savings goal",
+    add_transaction:      "Logged transaction",
+    add_income_source:    "Added income source",
+    mark_bill_paid:       "Marked expense paid",
+    mark_income_received: "Marked income received",
+    update_settings:      "Updated settings",
+    trigger_kairos:       "Triggered Kairos review",
+  };
+
+  type ActionRecord = { tool: string; label: string; detail: string };
+  const actions: ActionRecord[] = [];
+
   let refreshNeeded = false;
   let iterations = 0;
 
@@ -419,7 +433,7 @@ If the user mentions a significant life change (new job, moving, relationship ch
 
     if (response.stop_reason === "end_turn" || response.stop_reason === "max_tokens") {
       const text = response.content.find((c) => c.type === "text");
-      return NextResponse.json({ reply: text?.text ?? "…", refreshNeeded });
+      return NextResponse.json({ reply: text?.text ?? "…", refreshNeeded, actions });
     }
 
     if (response.stop_reason === "tool_use") {
@@ -431,6 +445,11 @@ If the user mentions a significant life change (new job, moving, relationship ch
             block.name, block.input as Record<string, unknown>, user.id, supabase
           );
           if (needs) refreshNeeded = true;
+          // Track write actions for transparency cards
+          if (TOOL_LABELS[block.name]) {
+            const detail = (result as { message?: string })?.message ?? "";
+            actions.push({ tool: block.name, label: TOOL_LABELS[block.name], detail });
+          }
           toolResults.push({ type: "tool_result", tool_use_id: block.id, content: JSON.stringify(result) });
         }
       }
@@ -438,5 +457,5 @@ If the user mentions a significant life change (new job, moving, relationship ch
     }
   }
 
-  return NextResponse.json({ reply: "I ran into an issue processing that. Try again.", refreshNeeded: false });
+  return NextResponse.json({ reply: "I ran into an issue processing that. Try again.", refreshNeeded: false, actions: [] });
 }

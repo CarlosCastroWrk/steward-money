@@ -26,6 +26,8 @@ export default async function TransactionsPage() {
     if (acct?.institution) institutionName = acct.institution;
   }
 
+  const plaidEnv = process.env.PLAID_ENV ?? "sandbox";
+
   return (
     <TransactionsView
       transactions={txRes.data ?? []}
@@ -33,6 +35,7 @@ export default async function TransactionsPage() {
       plaidConnected={plaidConnected}
       institutionName={institutionName}
       serverLastSynced={lastSynced}
+      isSandbox={plaidEnv === "sandbox"}
     />
   );
 }
