@@ -14,13 +14,12 @@ const PRIMARY_NAV = [
 ];
 
 const MORE_NAV = [
-  { label: "Goals",         href: "/goals" },
-  { label: "Subscriptions", href: "/subscriptions" },
-  { label: "Decide",        href: "/decide" },
-  { label: "Card",          href: "/card" },
-  { label: "Council",       href: "/council" },
-  { label: "Agents",        href: "/debug/agents" },
-  { label: "Settings",      href: "/settings" },
+  { label: "Goals",    href: "/goals" },
+  { label: "Decide",   href: "/decide" },
+  { label: "Card",     href: "/card" },
+  { label: "Council",  href: "/council" },
+  { label: "Agents",   href: "/debug/agents" },
+  { label: "Settings", href: "/settings" },
 ];
 
 export function BottomNav() {

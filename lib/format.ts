@@ -6,6 +6,15 @@ export function formatUSD(value: number): string {
   }).format(value);
 }
 
+export function formatUSDCents(value: number): string {
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(value);
+}
+
 export function formatDate(dateStr: string | null | undefined): string {
   if (!dateStr) return "—";
   const today = new Date();

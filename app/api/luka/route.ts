@@ -139,6 +139,59 @@ const TOOLS: Anthropic.Tool[] = [
     description: "Get a list of setup items the user hasn't completed yet — things like adding income, connecting a bank, setting goals. Use this when the user seems new or asks what to do first.",
     input_schema: { type: "object", properties: {}, required: [] },
   },
+  {
+    name: "update_account_purpose",
+    description: "Tag a bank account with its purpose (e.g., 'everyday spending', 'emergency fund', 'bills only', 'savings', 'investing').",
+    input_schema: {
+      type: "object",
+      properties: {
+        account_name: { type: "string", description: "Partial account name to match" },
+        purpose: { type: "string", description: "Purpose label for the account" },
+      },
+      required: ["account_name", "purpose"],
+    },
+  },
+  {
+    name: "save_personal_rule",
+    description: "Save a personal financial rule the user has stated (e.g., 'never spend more than $50 on eating out per week', 'always pay credit card in full'). Use this when the user states a rule or principle they want to follow.",
+    input_schema: {
+      type: "object",
+      properties: {
+        rule_text: { type: "string", description: "The rule as the user stated it" },
+        category: { type: "string", description: "Category: spending, saving, giving, debt, or general" },
+      },
+      required: ["rule_text"],
+    },
+  },
+  {
+    name: "bulk_setup",
+    description: "Apply multiple setup actions at once. Use during onboarding when the user shares several pieces of info in one message.",
+    input_schema: {
+      type: "object",
+      properties: {
+        settings: {
+          type: "object",
+          description: "Settings fields to update (same as update_settings)",
+          properties: {
+            display_name: { type: "string" },
+            emergency_buffer: { type: "number" },
+            giving_pct: { type: "number" },
+            savings_pct: { type: "number" },
+            weekly_needs_budget: { type: "number" },
+            trading_pct: { type: "number" },
+            life_stage: { type: "string" },
+            main_goal: { type: "string" },
+          },
+        },
+        rules: {
+          type: "array",
+          items: { type: "string" },
+          description: "Personal financial rules to save",
+        },
+      },
+      required: [],
+    },
+  },
 ];
 
 function advanceBillDate(dateStr: string, freq: string): string {
@@ -308,6 +361,39 @@ async function executeTool(
         return { result: { incomplete_items: items, count: items.length }, refreshNeeded: false };
       }
 
+      case "update_account_purpose": {
+        const accountName = String(input.account_name ?? "").toLowerCase();
+        const purpose = String(input.purpose ?? "");
+        const { data: accounts } = await supabase.from("accounts").select("id, name").eq("user_id", userId).eq("is_active", true);
+        const match = (accounts ?? []).find((a) => a.name.toLowerCase().includes(accountName));
+        if (!match) return { result: { error: `No account found matching "${input.account_name}"` }, refreshNeeded: false };
+        await supabase.from("accounts").update({ purpose }).eq("id", match.id).eq("user_id", userId);
+        return { result: { success: true, message: `${match.name} tagged as: ${purpose}` }, refreshNeeded: true };
+      }
+
+      case "save_personal_rule": {
+        const ruleText = String(input.rule_text ?? "");
+        const category = String(input.category ?? "general");
+        if (!ruleText) return { result: { error: "rule_text is required" }, refreshNeeded: false };
+        await supabase.from("personal_rules").insert({ user_id: userId, rule_text: ruleText, category });
+        return { result: { success: true, message: `Rule saved: "${ruleText}"` }, refreshNeeded: false };
+      }
+
+      case "bulk_setup": {
+        const settings = input.settings as Record<string, unknown> | undefined;
+        const rules = input.rules as string[] | undefined;
+        const updates: Record<string, unknown> = {};
+        if (settings) {
+          const allowed = ["display_name","emergency_buffer","giving_pct","savings_pct","weekly_needs_budget","trading_pct","life_stage","main_goal"];
+          for (const k of allowed) if (settings[k] !== undefined) updates[k] = settings[k];
+          if (Object.keys(updates).length > 0) await supabase.from("user_settings").update(updates).eq("user_id", userId);
+        }
+        if (rules && rules.length > 0) {
+          await supabase.from("personal_rules").insert(rules.map((r) => ({ user_id: userId, rule_text: r, category: "general" })));
+        }
+        return { result: { success: true, settings_updated: Object.keys(updates), rules_saved: rules?.length ?? 0 }, refreshNeeded: Object.keys(updates).length > 0 };
+      }
+
       default:
         return { result: { error: `Unknown tool: ${name}` }, refreshNeeded: false };
     }
@@ -329,9 +415,11 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const { messages: clientMessages } = await req.json() as {
+  const body = await req.json() as {
     messages: Array<{ role: "user" | "assistant"; content: string }>;
+    setup_mode?: boolean;
   };
+  const { messages: clientMessages, setup_mode: setupMode = false } = body;
 
   const [settingsResult, safeResult, alertsResult, insightsResult, solomonResult, kairosResult, agentMemoryContext] = await Promise.all([
     supabase.from("user_settings").select("*").eq("user_id", user.id).maybeSingle(),
@@ -374,7 +462,33 @@ export async function POST(req: NextRequest) {
     kairosOpener = `\n\nIMPORTANT: Kairos has flagged a life change pending review. Lead your FIRST response with: "Hey ${displayName} — looks like something shifted. Want me to review your financial plan and suggest updates?" Then wait for their response before continuing normally.`;
   }
 
-  const system = `You are Luka, the personal finance co-pilot for Steward Money. You are speaking with ${displayName}, a ${lifeStage} whose main financial goal is ${mainGoal}.
+  const system = setupMode
+    ? `You are Luka, the personal finance co-pilot for Steward Money. You are in SETUP MODE helping ${displayName} configure their financial profile.
+
+Today is ${today}.
+
+Your job: guide the user through financial setup in a friendly, conversational way — one topic at a time. Cover these in order if not already set:
+1. Their name and life stage (student, early career, family, etc.)
+2. Their #1 financial goal right now
+3. Monthly income and paycheck frequency
+4. Major monthly expenses (rent/mortgage, car, utilities)
+5. Emergency buffer target (how many months of expenses to protect)
+6. Whether they want to allocate to giving, savings, or investing — and what %
+
+As you learn each piece, use your tools to save it immediately (update_settings, save_personal_rule, bulk_setup). After each save, confirm what was saved and move to the next topic.
+
+Be warm and encouraging. Keep responses short — one question at a time. Never ask more than one thing per message. Don't mention the tools to the user.
+
+Current state:
+- Display name: ${settings?.display_name ?? "not set"}
+- Life stage: ${settings?.life_stage ?? "not set"}
+- Main goal: ${settings?.main_goal ?? "not set"}
+- Emergency buffer: ${settings?.emergency_buffer ? fmt(settings.emergency_buffer) : "not set"}
+- Giving: ${settings?.giving_enabled ? `${settings.giving_value}%` : "not set"}
+- Savings %: ${settings?.savings_pct ?? "not set"}
+
+Use update_settings and save_personal_rule to save what you learn. Use bulk_setup when the user gives multiple pieces of info at once.`
+    : `You are Luka, the personal finance co-pilot for Steward Money. You are speaking with ${displayName}, a ${lifeStage} whose main financial goal is ${mainGoal}.
 
 Today is ${today}.
 ${agentMemoryContext ? `\n${agentMemoryContext}\n` : ""}
@@ -405,14 +519,17 @@ If the user mentions a significant life change (new job, moving, relationship ch
   }));
 
   const TOOL_LABELS: Record<string, string> = {
-    add_bill:             "Added recurring expense",
-    add_goal:             "Created savings goal",
-    add_transaction:      "Logged transaction",
-    add_income_source:    "Added income source",
-    mark_bill_paid:       "Marked expense paid",
-    mark_income_received: "Marked income received",
-    update_settings:      "Updated settings",
-    trigger_kairos:       "Triggered Kairos review",
+    add_bill:               "Added recurring expense",
+    add_goal:               "Created savings goal",
+    add_transaction:        "Logged transaction",
+    add_income_source:      "Added income source",
+    mark_bill_paid:         "Marked expense paid",
+    mark_income_received:   "Marked income received",
+    update_settings:        "Updated settings",
+    trigger_kairos:         "Triggered Kairos review",
+    update_account_purpose: "Tagged account purpose",
+    save_personal_rule:     "Saved personal rule",
+    bulk_setup:             "Setup applied",
   };
 
   type ActionRecord = { tool: string; label: string; detail: string };

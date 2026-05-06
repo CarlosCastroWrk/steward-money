@@ -2,6 +2,7 @@ import { Metadata } from "next";
 import { createClient } from "@/lib/supabase/server";
 import { calculateSafeToSpend } from "@/lib/safe-to-spend";
 import { VirtualCard } from "@/components/card/VirtualCard";
+import { DecisionHub } from "@/components/card/DecisionHub";
 
 export const metadata: Metadata = { title: "Card" };
 
@@ -10,9 +11,15 @@ export default async function CardPage() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return null;
 
-  const [safe, settings] = await Promise.all([
+  const [safe, settings, decisionsRes] = await Promise.all([
     calculateSafeToSpend(supabase, user.id),
     supabase.from("user_settings").select("display_name").eq("user_id", user.id).maybeSingle(),
+    supabase
+      .from("spending_decisions")
+      .select("id, description, amount, verdict, reason, created_at")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false })
+      .limit(10),
   ]);
 
   const displayName = settings.data?.display_name ?? "there";
@@ -34,6 +41,11 @@ export default async function CardPage() {
           tradingDeducted={safe.tradingDeducted}
           weeklyNeedsTotal={safe.weeklyNeedsTotal}
           displayName={displayName}
+        />
+        <DecisionHub
+          safeToSpend={safe.safeToSpend}
+          weeklyNeedsTotal={safe.weeklyNeedsTotal}
+          recentDecisions={decisionsRes.data ?? []}
         />
       </div>
     </div>

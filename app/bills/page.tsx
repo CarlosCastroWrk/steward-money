@@ -66,7 +66,7 @@ export default async function ExpensesPage() {
   const monthEnd = new Date(today.getFullYear(), today.getMonth() + 1, 0).toISOString().split("T")[0];
 
   const [billsRes, accountsRes, txRes, upcomingRes, incomeRes, silasRes] = await Promise.all([
-    supabase.from("bills").select("id, user_id, name, amount, due_day, frequency, is_autopay, next_due_date, account_id, notes, category, created_at, paid_at, auto_detected_paid").eq("user_id", user.id).order("next_due_date", { ascending: true, nullsFirst: false }),
+    supabase.from("bills").select("id, user_id, name, amount, due_day, frequency, is_autopay, next_due_date, account_id, notes, category, created_at, paid_at, auto_detected_paid, is_subscription, subscription_status, value_score").eq("user_id", user.id).order("next_due_date", { ascending: true, nullsFirst: false }),
     supabase.from("accounts").select("id, name, type").eq("user_id", user.id).eq("is_active", true),
     supabase.from("transactions").select("id, merchant, amount, date, category").eq("user_id", user.id).lt("amount", 0).eq("is_manual", false).gte("date", startDate).order("date", { ascending: false }),
     supabase.from("upcoming_expenses").select("id, user_id, name, amount, expense_date, category, notes, is_saving, saved_amount, created_at, is_paid").eq("user_id", user.id).order("expense_date", { ascending: true }),

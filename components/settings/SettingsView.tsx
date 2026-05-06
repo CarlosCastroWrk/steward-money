@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { LukaSetupMode } from "@/components/luka/LukaSetupMode";
 import { ProfileSection } from "./ProfileSection";
 import { GivingSection } from "./GivingSection";
 import { BufferSection } from "./BufferSection";
@@ -37,16 +38,27 @@ interface Props {
 
 export function SettingsView({ settings, incomeSources, accounts, priorities }: Props) {
   const [tab, setTab] = useState<Tab>("profile");
+  const [setupOpen, setSetupOpen] = useState(false);
 
   return (
     <section className="min-h-screen p-4 md:p-8">
       <div className="mx-auto w-full max-w-2xl">
 
         {/* Header */}
-        <div className="mb-6">
-          <h1 className="text-2xl font-semibold tracking-tight text-[var(--text-1)]">Settings</h1>
-          <p className="mt-1 text-sm text-[var(--text-3)]">Your financial rules and preferences.</p>
+        <div className="mb-6 flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-semibold tracking-tight text-[var(--text-1)]">Settings</h1>
+            <p className="mt-1 text-sm text-[var(--text-3)]">Your financial rules and preferences.</p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setSetupOpen(true)}
+            className="flex items-center gap-1.5 rounded-xl border border-purple-700/40 bg-purple-900/20 px-3 py-2 text-[13px] font-medium text-purple-400 transition hover:bg-purple-900/30"
+          >
+            <span className="text-xs">✦</span> Setup with Luka
+          </button>
         </div>
+        {setupOpen && <LukaSetupMode onClose={() => setSetupOpen(false)} />}
 
         {/* Tab row */}
         <div className="mb-6 flex gap-1 overflow-x-auto rounded-2xl border border-[var(--border)] bg-[var(--bg-card)] p-1.5">

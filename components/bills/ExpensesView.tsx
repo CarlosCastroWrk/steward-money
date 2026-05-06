@@ -81,7 +81,7 @@ const PLAID_CATEGORY_MAP: Record<string, string> = {
 // ─── Utilities ────────────────────────────────────────────────────────────────
 
 function fmt(v: number) {
-  return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(v);
+  return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(v);
 }
 
 function getStatus(bill: Bill): BillStatus {
@@ -163,6 +163,7 @@ export function ExpensesView({
   const [prefill, setPrefill] = useState<RecurringPrefill | undefined>(undefined);
 
   // Recurring tab state
+  const [recurringFilter, setRecurringFilter] = useState<"all" | "bills" | "subscriptions">("all");
   const [paidId, setPaidId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
@@ -278,7 +279,12 @@ export function ExpensesView({
   // ── Derived values ─────────────────────────────────────────────────────────
 
   const STATUS_ORDER: Record<BillStatus, number> = { overdue: 0, "due-soon": 1, unpaid: 2, paid: 3 };
-  const sortedBills = [...bills].sort((a, b) => STATUS_ORDER[getStatus(a)] - STATUS_ORDER[getStatus(b)]);
+  const filteredBills = bills.filter((b) => {
+    if (recurringFilter === "bills") return !b.is_subscription;
+    if (recurringFilter === "subscriptions") return b.is_subscription;
+    return true;
+  });
+  const sortedBills = [...filteredBills].sort((a, b) => STATUS_ORDER[getStatus(a)] - STATUS_ORDER[getStatus(b)]);
   const unpaidBills = sortedBills.filter((b) => getStatus(b) !== "paid");
   const paidBills = sortedBills.filter((b) => getStatus(b) === "paid");
 
@@ -454,6 +460,24 @@ export function ExpensesView({
         {activeTab === "recurring" && (
           <div className="mt-4 space-y-3">
 
+            {/* Filter chips */}
+            <div className="flex gap-2">
+              {(["all", "bills", "subscriptions"] as const).map((f) => (
+                <button
+                  key={f}
+                  type="button"
+                  onClick={() => setRecurringFilter(f)}
+                  className={`rounded-full px-3.5 py-1.5 text-[12px] font-medium transition-colors ${
+                    recurringFilter === f
+                      ? "bg-[var(--accent)] text-white"
+                      : "border border-[var(--border-default)] bg-[var(--bg-elevated)] text-[var(--text-muted)] hover:text-[var(--text-secondary)]"
+                  }`}
+                >
+                  {f.charAt(0).toUpperCase() + f.slice(1)}
+                </button>
+              ))}
+            </div>
+
             {/* Silas insights */}
             {silasInsights.filter((i) => !dismissedInsights.has(i.id)).slice(0, 1).map((insight) => (
               <div key={insight.id} className="flex items-start justify-between gap-2 rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-card)] px-4 py-3.5">
@@ -472,7 +496,8 @@ export function ExpensesView({
             {/* Detected recurring charges */}
             {suggestions.filter((s) => !dismissedSuggestions.has(s.merchant)).length > 0 && (
               <div className="rounded-2xl border border-[var(--color-warning)]/20 bg-[var(--color-warning)]/5 p-4">
-                <p className="mb-3 text-[10px] font-semibold uppercase tracking-widest text-[var(--color-warning)]">Detected recurring charges</p>
+                <p className="mb-1 text-[10px] font-semibold uppercase tracking-widest text-[var(--color-warning)]">Recurring charges we found</p>
+                <p className="mb-3 text-xs text-[var(--text-muted)]">We spotted these in your transactions. Add the ones you want to track.</p>
                 <div className="space-y-2">
                   {suggestions.filter((s) => !dismissedSuggestions.has(s.merchant)).map((s) => (
                     <div key={s.merchant} className="flex items-center justify-between gap-3 rounded-xl border border-[var(--border-default)] bg-[var(--bg-card)] px-4 py-3">

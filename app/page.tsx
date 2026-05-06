@@ -2,8 +2,9 @@ import { Metadata } from "next";
 import { calculateSafeToSpend } from "@/lib/safe-to-spend";
 import { advanceStaleIncomeDates } from "@/lib/income";
 import { createClient } from "@/lib/supabase/server";
-import { formatUSD, formatDate } from "@/lib/format";
+import { formatUSD, formatUSDCents, formatDate } from "@/lib/format";
 import { QuickActionRow } from "@/components/dashboard/QuickActionRow";
+import { GreetingHeader } from "@/components/dashboard/GreetingHeader";
 import { LukaMorningBriefing } from "@/components/dashboard/LukaMorningBriefing";
 import { SolomonWord } from "@/components/dashboard/SolomonWord";
 import { SilasInsights } from "@/components/dashboard/SilasInsights";
@@ -17,14 +18,6 @@ import { TalkToLukaButton } from "@/components/dashboard/TalkToLukaButton";
 export const metadata: Metadata = {
   title: "Dashboard — Steward Money",
 };
-
-function getGreeting() {
-  const h = new Date().getHours();
-  if (h >= 5 && h <= 11) return "Good morning";
-  if (h >= 12 && h <= 16) return "Good afternoon";
-  if (h >= 17 && h <= 20) return "Good evening";
-  return "Hey";
-}
 
 function toMonthly(amount: number, freq: string): number {
   switch (freq) {
@@ -67,7 +60,7 @@ export default async function DashboardPage() {
     supabase.from("user_settings").select("display_name, life_stage, main_goal, last_plan_review").eq("user_id", user.id).maybeSingle(),
     supabase.from("bills").select("id, name, amount, next_due_date, is_autopay").eq("user_id", user.id).not("next_due_date", "is", null).gte("next_due_date", today).lte("next_due_date", sevenDaysOut).order("next_due_date", { ascending: true }),
     supabase.from("bills").select("name, amount, frequency, next_due_date").eq("user_id", user.id),
-    supabase.from("subscriptions").select("amount, status").eq("user_id", user.id),
+    supabase.from("bills").select("amount, subscription_status").eq("user_id", user.id).eq("is_subscription", true),
     supabase.from("transactions").select("category, amount").eq("user_id", user.id).lt("amount", 0).gte("date", monthStart),
     supabase.from("transactions").select("amount").eq("user_id", user.id).gt("amount", 0).gte("date", monthStart),
     supabase.from("alerts").select("id, message, severity, alert_type").eq("user_id", user.id).eq("is_read", false).order("created_at", { ascending: false }).limit(4),
@@ -87,12 +80,10 @@ export default async function DashboardPage() {
   const monthlyBillsTotal = monthlyRecurringTotal + monthlyUpcomingTotal;
   const monthlyIncome = (incomeTransactionsResult.data ?? []).reduce((s, t) => s + Number(t.amount), 0);
   const totalSpentMonth = (spendingRes.data ?? []).reduce((s, t) => s + Math.abs(Number(t.amount)), 0);
-  const monthlySubsTotal = (subsResult.data ?? []).filter((s) => s.status === "keep").reduce((s, sub) => s + Number(sub.amount), 0);
+  const monthlySubsTotal = (subsResult.data ?? []).filter((s) => s.subscription_status === "keep" || s.subscription_status == null).reduce((s, sub) => s + Number(sub.amount), 0);
 
   const in3Days = new Date(Date.now() + 3 * 86_400_000).toISOString().split("T")[0];
   const billsDueThisWeekList = upcomingBills.map((b) => ({ name: b.name, amount: Number(b.amount) }));
-
-  const formattedDate = new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" });
 
   const briefingData = {
     safeToSpend: result.safeToSpend,
@@ -108,12 +99,7 @@ export default async function DashboardPage() {
     <div className="space-y-5 px-4 pb-10 pt-5 md:space-y-6 md:px-8 md:pt-8">
 
       {/* 1. Greeting + date */}
-      <header>
-        <h1 className="text-2xl font-semibold text-[var(--text-1)]">
-          {getGreeting()}, {displayName}.
-        </h1>
-        <p className="mt-0.5 text-sm text-[var(--text-3)]">{formattedDate}</p>
-      </header>
+      <GreetingHeader displayName={displayName} />
 
       {/* 2. Manna — daily bread */}
       <MannaCard />
@@ -231,7 +217,7 @@ export default async function DashboardPage() {
                     </p>
                   </div>
                   <span className={`text-sm font-semibold ${isOverdue ? "text-red-400" : "text-[var(--text-1)]"}`}>
-                    {formatUSD(Number(bill.amount))}
+                    {formatUSDCents(Number(bill.amount))}
                   </span>
                 </div>
               );
@@ -247,7 +233,7 @@ export default async function DashboardPage() {
                       {formatDate(exp.expense_date)} · one-time
                     </p>
                   </div>
-                  <span className="text-sm font-semibold text-[var(--text-1)]">{formatUSD(Number(exp.amount))}</span>
+                  <span className="text-sm font-semibold text-[var(--text-1)]">{formatUSDCents(Number(exp.amount))}</span>
                 </div>
               );
             })}

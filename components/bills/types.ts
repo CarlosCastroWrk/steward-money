@@ -13,6 +13,9 @@ export type Bill = {
   created_at: string | null;
   paid_at: string | null;
   auto_detected_paid: boolean | null;
+  is_subscription: boolean | null;
+  subscription_status: string | null;
+  value_score: number | null;
 };
 
 export type AccountOption = { id: string; name: string; type: string };

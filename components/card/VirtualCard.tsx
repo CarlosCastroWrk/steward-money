@@ -68,7 +68,7 @@ export function VirtualCard({
     if (isNaN(amt) || amt <= 0) return;
     if (amt <= safeToSpend) {
       setVerdict("good");
-      setVerdictDetail(`You&apos;re covered. ${formatUSD(safeToSpend - amt)} left after this.`);
+      setVerdictDetail(`You're covered. ${formatUSD(safeToSpend - amt)} left after this.`);
     } else if (amt <= safeToSpend + weeklyNeedsTotal) {
       setVerdict("tight");
       setVerdictDetail(`Exceeds safe-to-spend by ${formatUSD(amt - safeToSpend)} — would dip into needs reserve.`);
