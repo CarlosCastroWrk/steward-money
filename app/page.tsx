@@ -3,7 +3,6 @@ import { calculateSafeToSpend } from "@/lib/safe-to-spend";
 import { advanceStaleIncomeDates } from "@/lib/income";
 import { createClient } from "@/lib/supabase/server";
 import { formatUSD, formatUSDCents, formatDate } from "@/lib/format";
-import { QuickActionRow } from "@/components/dashboard/QuickActionRow";
 import { GreetingHeader } from "@/components/dashboard/GreetingHeader";
 import { AllocationCard } from "@/components/dashboard/AllocationCard";
 
@@ -30,6 +29,7 @@ export default async function DashboardPage() {
 
   const today = new Date().toISOString().split("T")[0];
   const sevenDaysOut = new Date(Date.now() + 7 * 86_400_000).toISOString().split("T")[0];
+  const sevenDaysAgo = new Date(Date.now() - 7 * 86_400_000).toISOString().split("T")[0];
   const monthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split("T")[0];
 
   const [
@@ -43,6 +43,7 @@ export default async function DashboardPage() {
     alertsResult,
     upcomingExpensesWeekResult,
     upcomingExpensesMonthResult,
+    recentTxResult,
   ] = await Promise.all([
     calculateSafeToSpend(supabase, user.id),
     supabase.from("goals").select("id, name, target_amount, current_amount, deadline").eq("user_id", user.id).order("priority", { ascending: true }),
@@ -54,6 +55,7 @@ export default async function DashboardPage() {
     supabase.from("alerts").select("id, message, severity, alert_type").eq("user_id", user.id).eq("is_read", false).order("created_at", { ascending: false }).limit(2),
     supabase.from("upcoming_expenses").select("id, name, amount, expense_date").eq("user_id", user.id).eq("is_paid", false).gte("expense_date", today).lte("expense_date", sevenDaysOut).order("expense_date", { ascending: true }),
     supabase.from("upcoming_expenses").select("amount").eq("user_id", user.id).eq("is_paid", false).gte("expense_date", monthStart),
+    supabase.from("transactions").select("id, merchant, amount, date, category").eq("user_id", user.id).gte("date", sevenDaysAgo).order("date", { ascending: false }).limit(5),
   ]);
 
   const goals = goalsResult.data ?? [];
@@ -68,6 +70,7 @@ export default async function DashboardPage() {
   const monthlySubsTotal = (subsResult.data ?? []).filter((s) => s.subscription_status === "keep" || s.subscription_status == null).reduce((s, sub) => s + Number(sub.amount), 0);
 
   const in3Days = new Date(Date.now() + 3 * 86_400_000).toISOString().split("T")[0];
+  const recentTx = recentTxResult.data ?? [];
 
   return (
     <div className="space-y-5 px-4 pb-10 pt-5 md:space-y-6 md:px-8 md:pt-8">
@@ -240,8 +243,43 @@ export default async function DashboardPage() {
         )}
       </section>
 
-      {/* 8. Quick actions */}
-      <QuickActionRow />
+      {/* 8. Recent activity */}
+      <section>
+        <div className="mb-3 flex items-center justify-between">
+          <div>
+            <h2 className="text-[10px] font-semibold uppercase tracking-widest text-[var(--text-3)]">Recent Activity</h2>
+            <p className="text-[10px] text-[var(--text-3)] mt-0.5">Last 7 days</p>
+          </div>
+          <a href="/transactions" className="text-xs text-purple-400 transition-colors hover:text-purple-300">See all</a>
+        </div>
+        {recentTx.length === 0 ? (
+          <div className="rounded-xl border border-[var(--border)] bg-[var(--bg-card)] p-5 text-center">
+            <p className="text-sm text-[var(--text-3)]">Nothing this week yet — your activity will show here.</p>
+          </div>
+        ) : (
+          <div className="overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--bg-card)] divide-y divide-[var(--border)]">
+            {recentTx.map((tx) => {
+              const isIncome = Number(tx.amount) > 0;
+              return (
+                <div key={tx.id} className="flex items-center justify-between px-4 py-3.5 gap-3">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className={`h-7 w-7 flex-shrink-0 rounded-full flex items-center justify-center text-[10px] font-bold ${isIncome ? "bg-green-500/15 text-green-500" : "bg-[var(--bg-elevated)] text-[var(--text-3)]"}`}>
+                      {isIncome ? "+" : tx.category?.slice(0, 1).toUpperCase() ?? "?"}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-[var(--text-1)] truncate">{tx.merchant ?? (isIncome ? "Income" : "Transaction")}</p>
+                      <p className="text-xs text-[var(--text-3)] mt-0.5">{formatDate(tx.date)}{tx.category ? ` · ${tx.category}` : ""}</p>
+                    </div>
+                  </div>
+                  <span className={`text-sm font-semibold flex-shrink-0 ${isIncome ? "text-[var(--color-income)]" : "text-[var(--color-expense)]"}`}>
+                    {isIncome ? "+" : ""}{formatUSDCents(Math.abs(Number(tx.amount)))}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </section>
 
       {settingsResult.data?.last_plan_review && (
         <p className="text-center text-[10px] text-[var(--text-3)]">

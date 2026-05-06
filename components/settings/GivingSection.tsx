@@ -11,8 +11,8 @@ function Toggle({ checked, onChange }: { checked: boolean; onChange: (checked: b
   return (
     <label className="inline-flex cursor-pointer items-center gap-3">
       <input type="checkbox" className="peer sr-only" checked={checked} onChange={(e) => onChange(e.target.checked)} />
-      <span className="h-6 w-11 rounded-full bg-zinc-700 transition peer-checked:bg-zinc-200">
-        <span className="ml-1 mt-1 block h-4 w-4 rounded-full bg-zinc-300 transition peer-checked:translate-x-5 peer-checked:bg-emerald-600" />
+      <span className="h-6 w-11 rounded-full bg-[var(--border-strong)] transition peer-checked:bg-emerald-500">
+        <span className="ml-1 mt-1 block h-4 w-4 rounded-full bg-[var(--text-dim)] transition peer-checked:translate-x-5 peer-checked:bg-white" />
       </span>
     </label>
   );
@@ -42,22 +42,22 @@ export function GivingSection({ initialData }: { initialData: UserSettingsData |
     <SettingSection title="Giving" description="Set whether and how giving is protected.">
       <div className="space-y-4">
         <div className="flex items-center justify-between">
-          <p className="text-sm text-zinc-300">Enable giving</p>
+          <p className="text-sm text-[var(--text-secondary)]">Enable giving</p>
           <Toggle checked={giving_enabled} onChange={setGivingEnabled} />
         </div>
         {giving_enabled ? (
           <>
             <div className="grid grid-cols-2 gap-2">
-              <button type="button" onClick={() => setGivingType("percentage")} className={`rounded-lg border px-3 py-2 text-sm ${giving_type === "percentage" ? "bg-white text-black" : "border-zinc-700 text-zinc-300"}`}>Percentage</button>
-              <button type="button" onClick={() => setGivingType("fixed")} className={`rounded-lg border px-3 py-2 text-sm ${giving_type === "fixed" ? "bg-white text-black" : "border-zinc-700 text-zinc-300"}`}>Fixed amount</button>
+              <button type="button" onClick={() => setGivingType("percentage")} className={`rounded-lg border px-3 py-2 text-sm transition-colors ${giving_type === "percentage" ? "border-[var(--accent)] bg-[var(--accent)]/10 text-[var(--accent)]" : "border-[var(--border-default)] bg-[var(--bg-elevated)] text-[var(--text-secondary)]"}`}>Percentage</button>
+              <button type="button" onClick={() => setGivingType("fixed")} className={`rounded-lg border px-3 py-2 text-sm transition-colors ${giving_type === "fixed" ? "border-[var(--accent)] bg-[var(--accent)]/10 text-[var(--accent)]" : "border-[var(--border-default)] bg-[var(--bg-elevated)] text-[var(--text-secondary)]"}`}>Fixed amount</button>
             </div>
             <div className="relative max-w-sm">
-              {giving_type === "fixed" ? <span className="absolute left-3 top-2 text-zinc-400">$</span> : null}
+              {giving_type === "fixed" ? <span className="absolute left-3 top-2 text-[var(--text-muted)]">$</span> : null}
               <input type="number" className={`${INPUT_CLASS} ${giving_type === "fixed" ? "pl-7" : "pr-8"}`} value={giving_value} onChange={(e) => setGivingValue(Number(e.target.value))} />
-              {giving_type === "percentage" ? <span className="absolute right-3 top-2 text-zinc-400">%</span> : null}
+              {giving_type === "percentage" ? <span className="absolute right-3 top-2 text-[var(--text-muted)]">%</span> : null}
             </div>
             <div className="flex items-center justify-between">
-              <p className="text-sm text-zinc-300">Protect giving - always deduct this before anything else</p>
+              <p className="text-sm text-[var(--text-secondary)]">Protect giving — always deduct this before anything else</p>
               <Toggle checked={giving_protected} onChange={setGivingProtected} />
             </div>
           </>

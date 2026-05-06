@@ -28,7 +28,7 @@ export function BufferSection({ initialData }: { initialData: UserSettingsData |
     <SettingSection title="Emergency buffer" description="This stays protected from daily spending.">
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
         {[100, 250, 500, 1000].map((value) => (
-          <button key={value} type="button" onClick={() => setEmergencyBuffer(value)} className={`rounded-lg border px-3 py-2 text-sm ${emergency_buffer === value ? "border-white bg-white text-black" : "border-zinc-700 text-zinc-300"}`}>
+          <button key={value} type="button" onClick={() => setEmergencyBuffer(value)} className={`rounded-lg border px-3 py-2 text-sm transition-colors ${emergency_buffer === value ? "border-[var(--accent)] bg-[var(--accent)] text-white" : "border-[var(--border-default)] bg-[var(--bg-elevated)] text-[var(--text-secondary)] hover:border-[var(--border-strong)]"}`}>
             ${value.toLocaleString()}
           </button>
         ))}

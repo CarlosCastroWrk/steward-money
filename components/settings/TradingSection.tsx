@@ -36,7 +36,7 @@ export function TradingSection({ initialData }: { initialData: UserSettingsData 
     <SettingSection title="Trading rule">
       <div className="space-y-2 max-w-xl">
         {OPTIONS.map((option) => (
-          <button key={option.value} type="button" onClick={() => setTradingRule(option.value)} className={`w-full rounded-lg border px-3 py-2 text-left text-sm ${trading_rule === option.value ? "border-white bg-white text-black" : "border-zinc-700 text-zinc-300"}`}>
+          <button key={option.value} type="button" onClick={() => setTradingRule(option.value)} className={`w-full rounded-lg border px-3 py-2 text-left text-sm transition-colors ${trading_rule === option.value ? "border-[var(--accent)] bg-[var(--accent)]/10 text-[var(--accent)]" : "border-[var(--border-default)] bg-[var(--bg-elevated)] text-[var(--text-secondary)] hover:border-[var(--border-strong)]"}`}>
             {option.label}
           </button>
         ))}
@@ -47,7 +47,7 @@ export function TradingSection({ initialData }: { initialData: UserSettingsData 
           <input type="number" className={INPUT_CLASS} value={trading_value} onChange={(e) => setTradingValue(Number(e.target.value))} />
         </div>
       ) : null}
-      <div className="mt-4 rounded-lg border border-amber-700 bg-amber-950 p-4 text-sm text-amber-200">
+      <div className="mt-4 rounded-lg border border-amber-500/30 bg-amber-500/8 p-4 text-sm text-amber-700 dark:text-amber-300">
         Trading money should never come from bill money, grocery money, or any funds needed before your next paycheck. The app will warn you if a trading contribution would reduce your safe-to-spend below your emergency buffer.
       </div>
       <div className="mt-4"><SaveButton onClick={handleSave} status={status} /></div>

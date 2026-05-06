@@ -40,10 +40,10 @@ export function PrioritySection({ initialPriorities }: { initialPriorities: Prio
       <div className="space-y-2">
         {priorities.map((category, index) => (
           <div key={category} className="flex items-center justify-between rounded-lg border border-[var(--border)] p-3">
-            <p className="text-sm text-zinc-200">{index + 1}. {category}</p>
+            <p className="text-sm text-[var(--text-primary)]">{index + 1}. {category}</p>
             <div className="flex gap-2">
-              <button type="button" disabled={index === 0} onClick={() => move(index, -1)} className="rounded border border-zinc-700 px-2 py-1 text-zinc-300 disabled:opacity-40">↑</button>
-              <button type="button" disabled={index === priorities.length - 1} onClick={() => move(index, 1)} className="rounded border border-zinc-700 px-2 py-1 text-zinc-300 disabled:opacity-40">↓</button>
+              <button type="button" disabled={index === 0} onClick={() => move(index, -1)} className="rounded border border-[var(--border-default)] px-2 py-1 text-[var(--text-secondary)] disabled:opacity-40">↑</button>
+              <button type="button" disabled={index === priorities.length - 1} onClick={() => move(index, 1)} className="rounded border border-[var(--border-default)] px-2 py-1 text-[var(--text-secondary)] disabled:opacity-40">↓</button>
             </div>
           </div>
         ))}

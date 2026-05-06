@@ -12,7 +12,7 @@ function MoneyField({ label, value, onChange }: { label: string; value: number; 
     <div>
       <label className={LABEL_CLASS}>{label}</label>
       <div className="relative">
-        <span className="absolute left-3 top-2 text-zinc-400">$</span>
+        <span className="absolute left-3 top-2 text-[var(--text-muted)]">$</span>
         <input type="number" className={`${INPUT_CLASS} pl-7`} value={value} onChange={(e) => onChange(Number(e.target.value))} />
       </div>
     </div>
@@ -47,7 +47,7 @@ export function NeedsSection({ initialData }: { initialData: UserSettingsData | 
         <MoneyField label="Eating out / coffee (weekly cap)" value={weekly_eating_out_cap} onChange={setEatingOut} />
         <MoneyField label="Miscellaneous (weekly cap)" value={weekly_misc_cap} onChange={setMisc} />
       </div>
-      <p className="mt-3 text-sm text-zinc-400">These amounts are subtracted from your safe-to-spend as guaranteed weekly needs.</p>
+      <p className="mt-3 text-sm text-[var(--text-muted)]">These amounts are subtracted from your safe-to-spend as guaranteed weekly needs.</p>
       <div className="mt-4"><SaveButton onClick={handleSave} status={status} /></div>
     </SettingSection>
   );

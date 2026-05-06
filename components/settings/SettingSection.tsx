@@ -10,13 +10,13 @@ interface SettingSectionProps {
 
 export function SettingSection({ title, description, children }: SettingSectionProps) {
   return (
-    <section className="mb-4 rounded-2xl border border-white/[0.06] bg-white/[0.025] p-5">
+    <section className="mb-4 rounded-2xl border border-[var(--border-default)] bg-[var(--bg-card)] p-5">
       <div className="mb-4">
-        <h2 className="text-[15px] font-semibold text-zinc-100">
+        <h2 className="text-[15px] font-semibold text-[var(--text-primary)]">
           {title}
         </h2>
         {description ? (
-          <p className="mt-0.5 text-[12px] text-zinc-500">
+          <p className="mt-0.5 text-[12px] text-[var(--text-muted)]">
             {description}
           </p>
         ) : null}

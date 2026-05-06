@@ -70,20 +70,20 @@ export function AccountsSection({ initialAccounts }: { initialAccounts: AccountR
           <div key={account.id} className="rounded-lg border border-[var(--border)] p-3">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
-                <p className="text-sm text-zinc-200">{account.name} {account.institution ? `(${account.institution})` : ""}</p>
-                <p className="text-sm text-zinc-400">{account.type} - {formatCurrency(account.current_balance)}</p>
+                <p className="text-sm text-[var(--text-primary)]">{account.name} {account.institution ? `(${account.institution})` : ""}</p>
+                <p className="text-sm text-[var(--text-muted)]">{account.type} - {formatCurrency(account.current_balance)}</p>
               </div>
               <div className="flex items-center gap-2">
-                <span className="rounded-full bg-[var(--bg-elevated)] px-2 py-1 text-xs text-zinc-400">Manual</span>
-                <button type="button" onClick={() => startEditBalance(account)} className="rounded-lg border border-zinc-700 px-3 py-1 text-sm text-zinc-300">Edit balance</button>
-                <button type="button" onClick={() => deactivate(account.id)} className="rounded-lg border border-zinc-700 px-3 py-1 text-sm text-zinc-300">Deactivate</button>
+                <span className="rounded-full bg-[var(--bg-elevated)] px-2 py-1 text-xs text-[var(--text-muted)]">Manual</span>
+                <button type="button" onClick={() => startEditBalance(account)} className="rounded-lg border border-[var(--border-default)] px-3 py-1 text-sm text-[var(--text-secondary)]">Edit balance</button>
+                <button type="button" onClick={() => deactivate(account.id)} className="rounded-lg border border-[var(--border-default)] px-3 py-1 text-sm text-[var(--text-secondary)]">Deactivate</button>
               </div>
             </div>
             {editingId === account.id ? (
               <div className="mt-3 flex flex-wrap items-center gap-2">
                 <input type="number" className={`${INPUT_CLASS} max-w-xs`} value={balanceDraft} onChange={(e) => setBalanceDraft(Number(e.target.value))} />
-                <button type="button" onClick={() => saveBalance(account.id)} className="rounded-lg bg-white px-3 py-2 text-sm font-medium text-black">Save</button>
-                <button type="button" onClick={() => setEditingId(null)} className="rounded-lg border border-zinc-700 px-3 py-2 text-sm text-zinc-300">Cancel</button>
+                <button type="button" onClick={() => saveBalance(account.id)} className="rounded-lg bg-[var(--accent)] px-3 py-2 text-sm font-medium text-white">Save</button>
+                <button type="button" onClick={() => setEditingId(null)} className="rounded-lg border border-[var(--border-default)] px-3 py-2 text-sm text-[var(--text-secondary)]">Cancel</button>
               </div>
             ) : null}
           </div>
@@ -110,14 +110,14 @@ export function AccountsSection({ initialAccounts }: { initialAccounts: AccountR
             </div>
           </div>
           <div className="flex gap-2">
-            <button type="button" onClick={handleAdd} className="rounded-lg bg-white px-3 py-2 text-sm font-medium text-black">Save changes</button>
-            <button type="button" onClick={() => { setShowAddForm(false); setDraft(EMPTY_DRAFT); }} className="rounded-lg border border-zinc-700 px-3 py-2 text-sm text-zinc-300">Cancel</button>
+            <button type="button" onClick={handleAdd} className="rounded-lg bg-[var(--accent)] px-3 py-2 text-sm font-medium text-white">Save changes</button>
+            <button type="button" onClick={() => { setShowAddForm(false); setDraft(EMPTY_DRAFT); }} className="rounded-lg border border-[var(--border-default)] px-3 py-2 text-sm text-[var(--text-secondary)]">Cancel</button>
           </div>
         </div>
       ) : (
-        <button type="button" onClick={() => setShowAddForm(true)} className="mt-4 rounded-lg border border-zinc-700 px-4 py-2 text-sm text-zinc-300">Add account</button>
+        <button type="button" onClick={() => setShowAddForm(true)} className="mt-4 rounded-lg border border-[var(--border-default)] px-4 py-2 text-sm text-[var(--text-secondary)]">Add account</button>
       )}
-      <p className="mt-4 text-sm text-zinc-500">Bank connection via Plaid will be available in a future update.</p>
+      <p className="mt-4 text-sm text-[var(--text-muted)]">Bank connection via Plaid will be available in a future update.</p>
     </SettingSection>
   );
 }

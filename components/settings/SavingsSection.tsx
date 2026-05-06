@@ -37,7 +37,7 @@ export function SavingsSection({ initialData }: { initialData: UserSettingsData 
     <SettingSection title="Savings rule">
       <div className="space-y-2 max-w-xl">
         {OPTIONS.map((option) => (
-          <button key={option.value} type="button" onClick={() => setSavingsRule(option.value)} className={`w-full rounded-lg border px-3 py-2 text-left text-sm ${savings_rule === option.value ? "border-white bg-white text-black" : "border-zinc-700 text-zinc-300"}`}>
+          <button key={option.value} type="button" onClick={() => setSavingsRule(option.value)} className={`w-full rounded-lg border px-3 py-2 text-left text-sm transition-colors ${savings_rule === option.value ? "border-[var(--accent)] bg-[var(--accent)]/10 text-[var(--accent)]" : "border-[var(--border-default)] bg-[var(--bg-elevated)] text-[var(--text-secondary)] hover:border-[var(--border-strong)]"}`}>
             {option.label}
           </button>
         ))}

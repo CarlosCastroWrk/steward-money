@@ -161,22 +161,22 @@ export function PulseView() {
     <div className="space-y-6 px-4 pb-10 pt-5 md:px-8 md:pt-8">
 
       {/* Header */}
-      <div className="flex items-start justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold text-[var(--text-primary)]">Pulse</h1>
-          <p className="mt-0.5 text-sm text-[var(--text-muted)]">Your financial reflection — refreshed daily</p>
-          <p className="mt-0.5 text-xs text-[var(--text-muted)]">{today}</p>
+      <div>
+        <h1 className="text-2xl font-semibold text-[var(--text-primary)] pr-10 md:pr-0">Pulse</h1>
+        <p className="mt-0.5 text-sm text-[var(--text-muted)]">Your financial reflection — refreshed daily</p>
+        <div className="mt-2 flex items-center justify-between">
+          <p className="text-xs text-[var(--text-muted)]">{today}</p>
+          <button
+            onClick={refreshAll}
+            disabled={refreshing || loading}
+            className="flex items-center gap-1.5 rounded-xl border border-[var(--border-default)] bg-[var(--bg-elevated)] px-3 py-2 text-xs font-medium text-[var(--text-secondary)] transition-all hover:border-[var(--border-strong)] disabled:opacity-50"
+          >
+            <svg className={`h-3.5 w-3.5 ${refreshing ? "animate-spin" : ""}`} fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+            {refreshing ? "Refreshing…" : "Refresh all"}
+          </button>
         </div>
-        <button
-          onClick={refreshAll}
-          disabled={refreshing || loading}
-          className="flex items-center gap-1.5 rounded-xl border border-[var(--border-default)] bg-[var(--bg-elevated)] px-3 py-2 text-xs font-medium text-[var(--text-secondary)] transition-all hover:border-[var(--border-strong)] disabled:opacity-50"
-        >
-          <svg className={`h-3.5 w-3.5 ${refreshing ? "animate-spin" : ""}`} fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-          </svg>
-          {refreshing ? "Refreshing…" : "Refresh all"}
-        </button>
       </div>
 
       {loading && (

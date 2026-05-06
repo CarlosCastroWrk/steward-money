@@ -182,20 +182,20 @@ export function IncomeSection({ initialSources }: { initialSources: IncomeSource
               />
             ) : (
               <div className="flex flex-wrap items-center justify-between gap-3">
-                <p className="text-sm text-zinc-200">{sourceDisplay(source)}</p>
+                <p className="text-sm text-[var(--text-primary)]">{sourceDisplay(source)}</p>
                 <div className="flex gap-2">
                   <button
                     type="button"
                     onClick={() => handleMarkReceived(source)}
                     disabled={receivingId === source.id}
-                    className="rounded-lg border border-emerald-800 px-3 py-1 text-sm text-emerald-400 disabled:opacity-40"
+                    className="rounded-lg border border-emerald-500/40 px-3 py-1 text-sm text-emerald-500 disabled:opacity-40"
                   >
                     {receivingId === source.id ? "..." : "Mark received"}
                   </button>
                   <button
                     type="button"
                     onClick={() => beginEdit(source)}
-                    className="rounded-lg border border-zinc-700 px-3 py-1 text-sm text-zinc-300"
+                    className="rounded-lg border border-[var(--border-default)] px-3 py-1 text-sm text-[var(--text-secondary)]"
                   >
                     Edit
                   </button>
@@ -204,14 +204,14 @@ export function IncomeSection({ initialSources }: { initialSources: IncomeSource
                       <button
                         type="button"
                         onClick={() => handleRemove(source.id)}
-                        className="rounded-lg border border-red-700 px-3 py-1 text-sm text-red-300"
+                        className="rounded-lg border border-red-500/40 px-3 py-1 text-sm text-red-500"
                       >
                         Confirm remove
                       </button>
                       <button
                         type="button"
                         onClick={() => setConfirmDeleteId(null)}
-                        className="rounded-lg border border-zinc-700 px-3 py-1 text-sm text-zinc-300"
+                        className="rounded-lg border border-[var(--border-default)] px-3 py-1 text-sm text-[var(--text-secondary)]"
                       >
                         Cancel
                       </button>
@@ -220,7 +220,7 @@ export function IncomeSection({ initialSources }: { initialSources: IncomeSource
                     <button
                       type="button"
                       onClick={() => setConfirmDeleteId(source.id)}
-                      className="rounded-lg border border-zinc-700 px-3 py-1 text-sm text-zinc-300"
+                      className="rounded-lg border border-[var(--border-default)] px-3 py-1 text-sm text-[var(--text-secondary)]"
                     >
                       Remove
                     </button>
@@ -246,7 +246,7 @@ export function IncomeSection({ initialSources }: { initialSources: IncomeSource
         <button
           type="button"
           onClick={() => { setDraft(EMPTY_DRAFT); setShowAddForm(true); }}
-          className="mt-4 rounded-lg border border-zinc-700 px-4 py-2 text-sm text-zinc-300"
+          className="mt-4 rounded-lg border border-[var(--border-default)] px-4 py-2 text-sm text-[var(--text-secondary)]"
         >
           Add income source
         </button>
@@ -293,8 +293,8 @@ function IncomeDraftForm({
       {/* Variable income toggle */}
       <div className="flex items-center justify-between rounded-lg border border-[var(--border)] px-3 py-2">
         <div>
-          <p className="text-sm text-zinc-200">Variable income</p>
-          <p className="text-xs text-zinc-500">
+          <p className="text-sm text-[var(--text-primary)]">Variable income</p>
+          <p className="text-xs text-[var(--text-muted)]">
             Estimate earnings from hourly rate × weekly hours
           </p>
         </div>
@@ -302,7 +302,7 @@ function IncomeDraftForm({
           type="button"
           onClick={() => patch({ is_variable: !draft.is_variable })}
           className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
-            draft.is_variable ? "bg-purple-600" : "bg-zinc-700"
+            draft.is_variable ? "bg-[var(--accent)]" : "bg-[var(--border-strong)]"
           }`}
         >
           <span
@@ -391,7 +391,7 @@ function IncomeDraftForm({
 
       {/* Recurring toggle */}
       <div className="flex items-center justify-between">
-        <label className="text-sm text-zinc-400">Recurring</label>
+        <label className="text-sm text-[var(--text-muted)]">Recurring</label>
         <input
           type="checkbox"
           checked={draft.is_recurring}
@@ -404,14 +404,14 @@ function IncomeDraftForm({
           type="button"
           onClick={onSave}
           disabled={!canSave}
-          className="rounded-lg bg-white px-3 py-2 text-sm font-medium text-black disabled:opacity-40"
+          className="rounded-lg bg-[var(--accent)] px-3 py-2 text-sm font-medium text-white disabled:opacity-40"
         >
           {saveLabel}
         </button>
         <button
           type="button"
           onClick={onCancel}
-          className="rounded-lg border border-zinc-700 px-3 py-2 text-sm text-zinc-300"
+          className="rounded-lg border border-[var(--border-default)] px-3 py-2 text-sm text-[var(--text-secondary)]"
         >
           Cancel
         </button>

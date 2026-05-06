@@ -52,6 +52,6 @@ export interface PriorityRow {
 }
 
 export const INPUT_CLASS =
-  "w-full rounded-xl border border-white/[0.08] bg-white/[0.04] px-3.5 py-2.5 text-sm text-zinc-100 placeholder-zinc-600 transition focus:border-emerald-500/50 focus:bg-white/[0.06] focus:outline-none";
+  "w-full rounded-xl border border-[var(--border-default)] bg-[var(--bg-inset)] px-3.5 py-2.5 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-dim)] transition focus:border-[var(--accent)] focus:outline-none";
 export const LABEL_CLASS =
-  "mb-1.5 block text-[10px] font-medium uppercase tracking-[0.08em] text-zinc-500";
+  "mb-1.5 block text-[10px] font-medium uppercase tracking-[0.08em] text-[var(--text-muted)]";

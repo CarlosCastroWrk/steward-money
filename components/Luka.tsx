@@ -463,16 +463,16 @@ export function Luka() {
           0%, 80%, 100% { opacity: 0.3; transform: scale(0.8); }
           40% { opacity: 1; transform: scale(1); }
         }
-        @keyframes lukaSlideUp {
-          from { opacity: 0; transform: translateY(12px) scale(0.97); }
-          to   { opacity: 1; transform: translateY(0) scale(1); }
+        @keyframes lukaSlideIn {
+          from { opacity: 0; transform: translateX(24px); }
+          to   { opacity: 1; transform: translateX(0); }
         }
-        @keyframes lukaSheetUp {
-          from { transform: translateY(100%); }
-          to   { transform: translateY(0); }
+        @keyframes lukaFadeIn {
+          from { opacity: 0; }
+          to   { opacity: 1; }
         }
-        .luka-panel { animation: lukaSlideUp 0.18s cubic-bezier(0.16,1,0.3,1) both; }
-        .luka-sheet { animation: lukaSheetUp 0.24s cubic-bezier(0.16,1,0.3,1) both; }
+        .luka-panel { animation: lukaSlideIn 0.2s cubic-bezier(0.16,1,0.3,1) both; }
+        .luka-sheet { animation: lukaFadeIn 0.18s cubic-bezier(0.16,1,0.3,1) both; }
       `}</style>
 
       {/* Voice mode overlay */}
@@ -501,20 +501,15 @@ export function Luka() {
         />
       )}
 
-      {/* ── MOBILE: bottom sheet ── */}
+      {/* ── MOBILE: full-screen chat ── */}
       {open && (
         <div
-          className="luka-sheet fixed inset-x-0 bottom-0 z-[52] flex flex-col overflow-hidden rounded-t-2xl border-t border-[var(--border)] bg-[var(--luka-bg)] md:hidden"
-          style={{ maxHeight: "85vh" }}
+          className="luka-sheet fixed inset-0 z-[52] flex flex-col overflow-hidden bg-[var(--luka-bg)] md:hidden"
+          style={{ paddingTop: "env(safe-area-inset-top)", paddingBottom: "env(safe-area-inset-bottom)" }}
         >
-          <div className="flex justify-center py-2.5">
-            <div className="h-1 w-10 rounded-full bg-[var(--border)]" />
-          </div>
           {header}
           {messageListEl}
-          <div style={{ paddingBottom: "env(safe-area-inset-bottom)" }}>
-            {inputArea}
-          </div>
+          {inputArea}
         </div>
       )}
 
@@ -527,13 +522,19 @@ export function Luka() {
         {open ? <CloseIcon /> : <SparkleIcon />}
       </button>
 
-      {/* ── DESKTOP: floating panel ── */}
+      {/* ── DESKTOP: full-height side panel ── */}
       {open && (
-        <div className="luka-panel fixed bottom-24 right-6 z-[51] hidden w-[380px] flex-col overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--bg-card)] shadow-2xl shadow-black/60 md:flex" style={{ height: 520 }}>
-          {header}
-          {messageListEl}
-          {inputArea}
-        </div>
+        <>
+          <div
+            className="fixed inset-0 z-[50] hidden bg-black/30 md:block"
+            onClick={() => setOpen(false)}
+          />
+          <div className="luka-panel fixed top-0 right-0 z-[51] hidden h-screen w-[520px] flex-col overflow-hidden border-l border-[var(--border)] bg-[var(--luka-bg)] shadow-2xl shadow-black/40 md:flex">
+            {header}
+            {messageListEl}
+            {inputArea}
+          </div>
+        </>
       )}
     </>
   );
