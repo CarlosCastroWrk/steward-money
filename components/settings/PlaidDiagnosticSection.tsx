@@ -90,7 +90,7 @@ export function PlaidDiagnosticSection() {
 
           {result.is_sandbox && (
             <p className="text-xs text-amber-400 bg-amber-400/10 border border-amber-700/30 rounded-xl px-3 py-2">
-              Running in sandbox mode — you'll see test data only. Real transactions require Plaid production approval.
+              Running in sandbox mode — you&apos;ll see test data only. Real transactions require Plaid production approval.
             </p>
           )}
 

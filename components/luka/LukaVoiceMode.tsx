@@ -6,10 +6,8 @@ import { useRouter } from "next/navigation";
 type OrbState = "idle" | "listening" | "thinking" | "speaking";
 type Exchange = { question: string; answer: string };
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function getSR(): any | null {
   if (typeof window === "undefined") return null;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return (window as any).SpeechRecognition ?? (window as any).webkitSpeechRecognition ?? null;
 }
 
@@ -92,7 +90,6 @@ export function LukaVoiceMode({ onClose }: { onClose: () => void }) {
   const [exchanges, setExchanges] = useState<Exchange[]>([]);
   const [currentQuestion, setCurrentQuestion] = useState("");
   const router = useRouter();
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const recognitionRef = useRef<any>(null);
   const synthRef = useRef<SpeechSynthesisUtterance | null>(null);
 
@@ -148,9 +145,7 @@ export function LukaVoiceMode({ onClose }: { onClose: () => void }) {
     rec.lang = "en-US";
     rec.continuous = false;
     rec.interimResults = true;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     rec.onresult = (e: any) => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const transcript = Array.from(e.results as any[]).map((r: any) => r[0].transcript).join("");
       setCurrentQuestion(transcript);
     };

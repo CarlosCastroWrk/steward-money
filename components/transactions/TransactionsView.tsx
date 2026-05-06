@@ -268,7 +268,7 @@ export function TransactionsView({ transactions: initialTransactions, accounts, 
         {isSandbox && (
           <div className="mb-3 flex items-start gap-2.5 rounded-xl border border-amber-700/40 bg-amber-900/10 px-4 py-3">
             <span className="h-2 w-2 mt-1.5 rounded-full bg-amber-400 flex-shrink-0" />
-            <p className="text-sm text-amber-400">Currently in Plaid sandbox mode — you're seeing test data only. Real transactions require Plaid production approval.</p>
+            <p className="text-sm text-amber-400">Currently in Plaid sandbox mode — you&apos;re seeing test data only. Real transactions require Plaid production approval.</p>
           </div>
         )}
 

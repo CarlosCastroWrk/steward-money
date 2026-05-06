@@ -181,17 +181,14 @@ function MessageList({
 
 // ── Voice recognition hook ─────────────────────────────────────────────────
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AnyRecognition = any;
 
 function getSpeechRecognitionClass(): AnyRecognition | null {
   if (typeof window === "undefined") return null;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return (window as any).SpeechRecognition ?? (window as any).webkitSpeechRecognition ?? null;
 }
 
 function useSpeechRecognition(onResult: (text: string) => void, onEnd: () => void) {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const recognitionRef = useRef<any>(null);
   const [listening, setListening] = useState(false);
   const [supported, setSupported] = useState(false);
@@ -207,9 +204,7 @@ function useSpeechRecognition(onResult: (text: string) => void, onEnd: () => voi
     rec.lang = "en-US";
     rec.continuous = false;
     rec.interimResults = true;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     rec.onresult = (e: any) => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const transcript = Array.from(e.results as any[]).map((r: any) => r[0].transcript).join("");
       onResult(transcript);
     };
@@ -260,11 +255,9 @@ export function Luka() {
   useEffect(() => { scrollToBottom(); }, [messages, loading, scrollToBottom]);
   useEffect(() => { if (open && inputRef.current) inputRef.current.focus(); }, [open]);
 
-  const isAuthPage = pathname === "/login" || pathname.startsWith("/onboarding");
-  if (!authed || isAuthPage) return null;
-
-  async function sendMessage(text: string) {
-    if (!text.trim() || loading) return;
+  // sendMessage as useCallback so voice callbacks can reference it before the early return
+  const sendMessage = useCallback(async (text: string) => {
+    if (!text.trim()) return;
     const userMsg: Message = { role: "user", content: text.trim() };
     const next = [...messages, userMsg].slice(-10);
     setMessages(next);
@@ -289,22 +282,25 @@ export function Luka() {
     } finally {
       setLoading(false);
     }
-  }
+  }, [messages, router]);
+
+  // Voice callbacks — must be before any early return (Rules of Hooks)
+  const handleVoiceResult = useCallback((text: string) => setInput(text), []);
+  const handleVoiceEnd = useCallback(() => {
+    setTimeout(() => {
+      setInput((prev) => { if (prev.trim()) sendMessage(prev); return prev; });
+    }, 200);
+  }, [sendMessage]);
+
+  const { listening, supported: micSupported, start: startListening, stop: stopListening } = useSpeechRecognition(handleVoiceResult, handleVoiceEnd);
+
+  // Early return AFTER all hooks
+  const isAuthPage = pathname === "/login" || pathname.startsWith("/onboarding");
+  if (!authed || isAuthPage) return null;
 
   function handleKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
     if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(input); }
   }
-
-  // Voice recognition — auto-send on recognition end if there's text
-  const handleVoiceResult = useCallback((text: string) => setInput(text), []);
-  const handleVoiceEnd = useCallback(() => {
-    // Small delay to let input state settle
-    setTimeout(() => {
-      setInput((prev) => { if (prev.trim()) sendMessage(prev); return prev; });
-    }, 200);
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
-
-  const { listening, supported: micSupported, start: startListening, stop: stopListening } = useSpeechRecognition(handleVoiceResult, handleVoiceEnd);
 
   const inputArea = (
     <div className="border-t border-[var(--border)] px-3 py-3">
