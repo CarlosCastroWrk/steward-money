@@ -5,15 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { formatUSD, formatUSDCents, formatDate } from "@/lib/format";
 import { QuickActionRow } from "@/components/dashboard/QuickActionRow";
 import { GreetingHeader } from "@/components/dashboard/GreetingHeader";
-import { LukaMorningBriefing } from "@/components/dashboard/LukaMorningBriefing";
-import { SolomonWord } from "@/components/dashboard/SolomonWord";
-import { SilasInsights } from "@/components/dashboard/SilasInsights";
 import { AllocationCard } from "@/components/dashboard/AllocationCard";
-import { MannaCard } from "@/components/dashboard/MannaCard";
-import { EdenMoment } from "@/components/dashboard/EdenMoment";
-import { NovaMessage } from "@/components/dashboard/NovaMessage";
-import { CalendarCard } from "@/components/dashboard/CalendarCard";
-import { TalkToLukaButton } from "@/components/dashboard/TalkToLukaButton";
 
 export const metadata: Metadata = {
   title: "Dashboard — Steward Money",
@@ -48,24 +40,18 @@ export default async function DashboardPage() {
     allBillsResult,
     subsResult,
     spendingRes,
-    incomeTransactionsResult,
     alertsResult,
-    solomonResult,
-    silasResult,
     upcomingExpensesWeekResult,
     upcomingExpensesMonthResult,
   ] = await Promise.all([
     calculateSafeToSpend(supabase, user.id),
     supabase.from("goals").select("id, name, target_amount, current_amount, deadline").eq("user_id", user.id).order("priority", { ascending: true }),
-    supabase.from("user_settings").select("display_name, life_stage, main_goal, last_plan_review").eq("user_id", user.id).maybeSingle(),
+    supabase.from("user_settings").select("display_name, last_plan_review").eq("user_id", user.id).maybeSingle(),
     supabase.from("bills").select("id, name, amount, next_due_date, is_autopay").eq("user_id", user.id).not("next_due_date", "is", null).gte("next_due_date", today).lte("next_due_date", sevenDaysOut).order("next_due_date", { ascending: true }),
     supabase.from("bills").select("name, amount, frequency, next_due_date").eq("user_id", user.id),
     supabase.from("bills").select("amount, subscription_status").eq("user_id", user.id).eq("is_subscription", true),
-    supabase.from("transactions").select("category, amount").eq("user_id", user.id).lt("amount", 0).gte("date", monthStart),
-    supabase.from("transactions").select("amount").eq("user_id", user.id).gt("amount", 0).gte("date", monthStart),
-    supabase.from("alerts").select("id, message, severity, alert_type").eq("user_id", user.id).eq("is_read", false).order("created_at", { ascending: false }).limit(4),
-    supabase.from("weekly_reports").select("solomon_word, stewardship_score, week_start, lived_within_provision, giving_honored").eq("user_id", user.id).order("created_at", { ascending: false }).limit(1).maybeSingle(),
-    supabase.from("pulse_insights").select("id, insight_text, insight_type").eq("user_id", user.id).eq("is_active", true).eq("is_dismissed", false).order("confidence_score", { ascending: false }).limit(2),
+    supabase.from("transactions").select("amount").eq("user_id", user.id).lt("amount", 0).gte("date", monthStart),
+    supabase.from("alerts").select("id, message, severity, alert_type").eq("user_id", user.id).eq("is_read", false).order("created_at", { ascending: false }).limit(2),
     supabase.from("upcoming_expenses").select("id, name, amount, expense_date").eq("user_id", user.id).eq("is_paid", false).gte("expense_date", today).lte("expense_date", sevenDaysOut).order("expense_date", { ascending: true }),
     supabase.from("upcoming_expenses").select("amount").eq("user_id", user.id).eq("is_paid", false).gte("expense_date", monthStart),
   ]);
@@ -78,22 +64,10 @@ export default async function DashboardPage() {
   const monthlyRecurringTotal = (allBillsResult.data ?? []).reduce((s, b) => s + toMonthly(Number(b.amount), b.frequency), 0);
   const monthlyUpcomingTotal = (upcomingExpensesMonthResult.data ?? []).reduce((s, e) => s + Number(e.amount), 0);
   const monthlyBillsTotal = monthlyRecurringTotal + monthlyUpcomingTotal;
-  const monthlyIncome = (incomeTransactionsResult.data ?? []).reduce((s, t) => s + Number(t.amount), 0);
   const totalSpentMonth = (spendingRes.data ?? []).reduce((s, t) => s + Math.abs(Number(t.amount)), 0);
   const monthlySubsTotal = (subsResult.data ?? []).filter((s) => s.subscription_status === "keep" || s.subscription_status == null).reduce((s, sub) => s + Number(sub.amount), 0);
 
   const in3Days = new Date(Date.now() + 3 * 86_400_000).toISOString().split("T")[0];
-  const billsDueThisWeekList = upcomingBills.map((b) => ({ name: b.name, amount: Number(b.amount) }));
-
-  const briefingData = {
-    safeToSpend: result.safeToSpend,
-    liquidTotal: result.liquidTotal,
-    billsDueSoon: result.billsDueSoon,
-    nextIncomeDate: result.nextIncomeDate,
-    displayName,
-    alertCount: alerts.length,
-    billsDueThisWeek: billsDueThisWeekList,
-  };
 
   return (
     <div className="space-y-5 px-4 pb-10 pt-5 md:space-y-6 md:px-8 md:pt-8">
@@ -101,28 +75,7 @@ export default async function DashboardPage() {
       {/* 1. Greeting + date */}
       <GreetingHeader displayName={displayName} />
 
-      {/* 2. Manna — daily bread */}
-      <MannaCard />
-
-      {/* 3. Talk to Luka — voice mode */}
-      <TalkToLukaButton />
-
-      {/* 4. Luka morning briefing */}
-      <LukaMorningBriefing data={briefingData} />
-
-      {/* 4. Eden — vision & gratitude */}
-      <EdenMoment />
-
-      {/* 5. Nova — forward-looking messages */}
-      <NovaMessage />
-
-      {/* 6. Calendar — financial events this week */}
-      <CalendarCard />
-
-      {/* 7. Solomon's word */}
-      {solomonResult.data && <SolomonWord report={solomonResult.data} />}
-
-      {/* 7. Argus alerts */}
+      {/* 2. Argus alerts — urgent only, max 2 */}
       {alerts.length > 0 && (
         <div className="flex flex-col gap-2">
           {alerts.map((alert) => (
@@ -139,10 +92,13 @@ export default async function DashboardPage() {
               {alert.message}
             </div>
           ))}
+          <a href="/pulse" className="self-end text-xs text-purple-400 hover:text-purple-300">
+            View all in Pulse →
+          </a>
         </div>
       )}
 
-      {/* 8. Safe-to-spend hero */}
+      {/* 3. Safe-to-spend hero */}
       <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#3d1f7d] via-[#4a1d96] to-[#2a1f6e] p-6 shadow-2xl shadow-purple-900/40">
         <div className="absolute -right-8 -top-8 h-36 w-36 rounded-full bg-white/5 blur-2xl" />
         <div className="absolute -bottom-8 -left-4 h-28 w-52 rounded-full bg-purple-400/10 blur-2xl" />
@@ -169,7 +125,7 @@ export default async function DashboardPage() {
         </div>
       </div>
 
-      {/* 9. Stats row */}
+      {/* 4. Stats row */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         {[
           { label: "Monthly Expenses", value: formatUSD(monthlyBillsTotal), color: "text-red-400" },
@@ -184,15 +140,12 @@ export default async function DashboardPage() {
         ))}
       </div>
 
-      {/* 10. Allocation card */}
+      {/* 5. Allocation card */}
       {result.nextIncomeAmount > 0 && (
         <AllocationCard income={result.nextIncomeAmount} />
       )}
 
-      {/* 11. Silas sees */}
-      <SilasInsights insights={silasResult.data ?? []} />
-
-      {/* 12. Expenses this week */}
+      {/* 6. Expenses this week */}
       <section>
         <div className="mb-3 flex items-center justify-between">
           <h2 className="text-[10px] font-semibold uppercase tracking-widest text-[var(--text-3)]">Expenses This Week</h2>
@@ -241,7 +194,7 @@ export default async function DashboardPage() {
         )}
       </section>
 
-      {/* 13. Goals */}
+      {/* 7. Goals */}
       <section>
         <div className="mb-3 flex items-center justify-between">
           <h2 className="text-[10px] font-semibold uppercase tracking-widest text-[var(--text-3)]">Goals</h2>
@@ -287,10 +240,9 @@ export default async function DashboardPage() {
         )}
       </section>
 
-      {/* 14. Quick actions — includes Council */}
+      {/* 8. Quick actions */}
       <QuickActionRow />
 
-      {/* Footer — last reviewed */}
       {settingsResult.data?.last_plan_review && (
         <p className="text-center text-[10px] text-[var(--text-3)]">
           Plan last reviewed: {new Date(settingsResult.data.last_plan_review).toLocaleDateString("en-US", { month: "short", day: "numeric" })} by Kairos

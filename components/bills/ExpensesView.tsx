@@ -4,23 +4,15 @@ import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { useToast } from "@/components/Toast";
-import { Plus, Home, Car, Smartphone, Zap, Heart, GraduationCap, CreditCard, Tv, Box, Check, ChevronDown, ChevronUp, Search, X, RefreshCw } from "lucide-react";
+import { Plus, Home, Car, Smartphone, Zap, Heart, GraduationCap, CreditCard, Tv, Box, Check, ChevronDown, ChevronUp, X } from "lucide-react";
 import { AddExpenseSheet } from "./AddExpenseSheet";
-import type { Bill, AccountOption, UpcomingExpense, RecentTx } from "./types";
+import type { Bill, AccountOption, UpcomingExpense } from "./types";
 import type { RecurringPrefill } from "./AddExpenseSheet";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-type Tab = "recurring" | "upcoming" | "recent";
+type Tab = "recurring" | "upcoming";
 type BillStatus = "paid" | "overdue" | "due-soon" | "unpaid";
-type RecentFilter = "month" | "last-month" | "3months";
-
-interface Suggestion {
-  merchant: string;
-  amount: number;
-  frequency: string;
-  occurrences: number;
-}
 
 interface MonthSummary {
   totalDue: number;
@@ -29,20 +21,11 @@ interface MonthSummary {
   nextBill: { name: string; daysUntil: number } | null;
 }
 
-interface SilasInsight {
-  id: string;
-  insight_text: string;
-  insight_type: string;
-}
-
 interface Props {
   bills: Bill[];
   accounts: AccountOption[];
-  suggestions: Suggestion[];
   monthSummary: MonthSummary;
   upcomingExpenses: UpcomingExpense[];
-  recentTransactions: RecentTx[];
-  silasInsights: SilasInsight[];
   monthlyIncome: number;
 }
 
@@ -147,11 +130,8 @@ function mapPlaidCategory(cat: string | null): string {
 export function ExpensesView({
   bills,
   accounts,
-  suggestions,
   monthSummary,
   upcomingExpenses,
-  recentTransactions,
-  silasInsights,
   monthlyIncome,
 }: Props) {
   const router = useRouter();
@@ -168,19 +148,12 @@ export function ExpensesView({
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [paidSectionOpen, setPaidSectionOpen] = useState(false);
-  const [dismissedSuggestions, setDismissedSuggestions] = useState<Set<string>>(new Set());
-  const [dismissedInsights, setDismissedInsights] = useState<Set<string>>(new Set());
-  const [monthResetDismissed, setMonthResetDismissed] = useState(true); // start true, check in useEffect
+  const [monthResetDismissed, setMonthResetDismissed] = useState(true);
 
   // Upcoming tab state
   const [deletingUpcomingId, setDeletingUpcomingId] = useState<string | null>(null);
   const [confirmDeleteUpcomingId, setConfirmDeleteUpcomingId] = useState<string | null>(null);
   const [markingPaidUpcomingId, setMarkingPaidUpcomingId] = useState<string | null>(null);
-
-  // Recent tab state
-  const [recentFilter, setRecentFilter] = useState<RecentFilter>("month");
-  const [categoryFilter, setCategoryFilter] = useState("");
-  const [search, setSearch] = useState("");
 
   // Month-reset banner
   useEffect(() => {
@@ -226,19 +199,6 @@ export function ExpensesView({
     else { toast("Expense deleted"); router.refresh(); }
   }
 
-  async function addSuggestion(s: Suggestion) {
-    setDismissedSuggestions((p) => new Set([...p, s.merchant]));
-    const supabase = createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
-    const nextDueDate = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 1).toISOString().split("T")[0];
-    const { error } = await supabase.from("bills").insert({
-      user_id: user.id, name: s.merchant, amount: s.amount, frequency: s.frequency, is_autopay: false, next_due_date: nextDueDate,
-    });
-    if (error) toast("Failed to add expense", "error");
-    else { toast(`${s.merchant} added`); router.refresh(); }
-  }
-
   // ── Upcoming actions ───────────────────────────────────────────────────────
 
   async function deleteUpcoming(id: string) {
@@ -262,18 +222,6 @@ export function ExpensesView({
     setMarkingPaidUpcomingId(null);
     toast(`${exp.name} marked as paid`);
     router.refresh();
-  }
-
-  // ── "Add as recurring" from Recent ────────────────────────────────────────
-
-  function addAsRecurring(tx: RecentTx) {
-    setPrefill({
-      name: tx.merchant ?? "",
-      amount: Math.abs(tx.amount),
-      frequency: "monthly",
-    });
-    setSheetMode("recurring");
-    setSheetOpen(true);
   }
 
   // ── Derived values ─────────────────────────────────────────────────────────
@@ -308,34 +256,6 @@ export function ExpensesView({
   const progressPct = monthSummary.totalDue > 0
     ? Math.min(100, Math.round((monthSummary.paidTotal / monthSummary.totalDue) * 100))
     : 0;
-
-  // Recent filtering
-  const now = new Date();
-  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-  const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-  const threeMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 3, 1);
-  const filterCutoff = recentFilter === "month" ? monthStart : recentFilter === "last-month" ? lastMonthStart : threeMonthsAgo;
-  const filterEnd = recentFilter === "last-month" ? monthStart : new Date();
-
-  const filteredRecent = recentTransactions
-    .filter((tx) => {
-      const d = new Date(tx.date + "T00:00:00");
-      if (d < filterCutoff || d >= filterEnd) return false;
-      if (categoryFilter && mapPlaidCategory(tx.category).toLowerCase() !== categoryFilter.toLowerCase()) return false;
-      if (search && !((tx.merchant ?? "").toLowerCase().includes(search.toLowerCase()))) return false;
-      return true;
-    })
-    .sort((a, b) => b.date.localeCompare(a.date));
-
-  // Group recent by date
-  const recentByDate = new Map<string, typeof filteredRecent>();
-  for (const tx of filteredRecent) {
-    if (!recentByDate.has(tx.date)) recentByDate.set(tx.date, []);
-    recentByDate.get(tx.date)!.push(tx);
-  }
-
-  // Unique categories in recent transactions for filter chips
-  const recentCategories = [...new Set(recentTransactions.map((tx) => mapPlaidCategory(tx.category)).filter(Boolean))].sort();
 
   function openSheet(mode: "recurring" | "upcoming") {
     setPrefill(undefined);
@@ -432,7 +352,7 @@ export function ExpensesView({
 
         {/* ── Tab bar ────────────────────────────────────────────────────── */}
         <div className="mt-5 flex border-b border-[var(--border-subtle)]">
-          {(["recurring", "upcoming", "recent"] as Tab[]).map((tab) => (
+          {(["recurring", "upcoming"] as Tab[]).map((tab) => (
             <button
               key={tab}
               type="button"
@@ -477,50 +397,6 @@ export function ExpensesView({
                 </button>
               ))}
             </div>
-
-            {/* Silas insights */}
-            {silasInsights.filter((i) => !dismissedInsights.has(i.id)).slice(0, 1).map((insight) => (
-              <div key={insight.id} className="flex items-start justify-between gap-2 rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-card)] px-4 py-3.5">
-                <div className="flex items-start gap-2.5">
-                  <div className="mt-0.5 h-5 w-5 flex-shrink-0 rounded-full bg-teal-500/20 flex items-center justify-center">
-                    <span className="text-[9px] font-bold text-teal-400">S</span>
-                  </div>
-                  <p className="text-sm text-[var(--text-secondary)]">{insight.insight_text}</p>
-                </div>
-                <button type="button" onClick={() => setDismissedInsights((p) => new Set([...p, insight.id]))} className="flex-shrink-0 text-[var(--text-dim)] hover:text-[var(--text-muted)]">
-                  <X size={13} />
-                </button>
-              </div>
-            ))}
-
-            {/* Detected recurring charges */}
-            {suggestions.filter((s) => !dismissedSuggestions.has(s.merchant)).length > 0 && (
-              <div className="rounded-2xl border border-[var(--color-warning)]/20 bg-[var(--color-warning)]/5 p-4">
-                <p className="mb-1 text-[10px] font-semibold uppercase tracking-widest text-[var(--color-warning)]">Recurring charges we found</p>
-                <p className="mb-3 text-xs text-[var(--text-muted)]">We spotted these in your transactions. Add the ones you want to track.</p>
-                <div className="space-y-2">
-                  {suggestions.filter((s) => !dismissedSuggestions.has(s.merchant)).map((s) => (
-                    <div key={s.merchant} className="flex items-center justify-between gap-3 rounded-xl border border-[var(--border-default)] bg-[var(--bg-card)] px-4 py-3">
-                      <div className="min-w-0">
-                        <p className="truncate text-sm font-medium text-[var(--text-primary)]">{s.merchant}</p>
-                        <p className="text-xs text-[var(--text-muted)]">{s.frequency} · {s.occurrences}× detected</p>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className="font-mono text-sm font-semibold text-[var(--text-primary)]">{fmt(s.amount)}</span>
-                        <button type="button" onClick={() => addSuggestion(s)}
-                          className="rounded-lg border border-[var(--color-income)]/30 px-3 py-1 text-[11px] font-semibold text-[var(--color-income)] hover:bg-[var(--color-income)]/10 transition-colors">
-                          Add
-                        </button>
-                        <button type="button" onClick={() => setDismissedSuggestions((p) => new Set([...p, s.merchant]))}
-                          className="text-[var(--text-dim)] hover:text-[var(--text-muted)] transition-colors">
-                          <X size={14} />
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
 
             {/* Unpaid/due expense cards */}
             {unpaidBills.length === 0 && paidBills.length === 0 ? (
@@ -655,108 +531,6 @@ export function ExpensesView({
           </div>
         )}
 
-        {/* ══ RECENT TAB ═══════════════════════════════════════════════════ */}
-        {activeTab === "recent" && (
-          <div className="mt-4 space-y-3">
-            {recentTransactions.length === 0 ? (
-              <div className="rounded-2xl border border-dashed border-[var(--border-default)] p-12 text-center">
-                <RefreshCw size={28} strokeWidth={1.4} className="mx-auto mb-3 text-[var(--text-dim)]" />
-                <p className="text-sm font-medium text-[var(--text-secondary)]">No transactions yet.</p>
-                <p className="mt-1 text-xs text-[var(--text-muted)]">Connect your bank to see recent expenses automatically.</p>
-                <a href="/accounts" className="mt-4 inline-flex items-center gap-1.5 rounded-xl bg-[var(--accent)] px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-[var(--accent)]/20 hover:bg-[var(--accent-deep)] transition-all">
-                  Connect bank
-                </a>
-              </div>
-            ) : (
-              <>
-                {/* Filter bar */}
-                <div className="space-y-2">
-                  {/* Time period */}
-                  <div className="flex gap-2 overflow-x-auto pb-1">
-                    {(["month", "last-month", "3months"] as RecentFilter[]).map((f) => (
-                      <button key={f} type="button" onClick={() => setRecentFilter(f)}
-                        className={`flex-shrink-0 rounded-full border px-3.5 py-1.5 text-xs font-medium transition-all ${
-                          recentFilter === f
-                            ? "border-[var(--accent)] bg-[var(--accent)]/10 text-[var(--text-primary)]"
-                            : "border-[var(--border-default)] text-[var(--text-muted)] hover:border-[var(--border-strong)]"
-                        }`}>
-                        {f === "month" ? "This month" : f === "last-month" ? "Last month" : "3 months"}
-                      </button>
-                    ))}
-                  </div>
-
-                  {/* Search + category chips */}
-                  <div className="relative">
-                    <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-dim)]" />
-                    <input
-                      className="w-full rounded-xl border border-[var(--border-default)] bg-[var(--bg-card)] py-2.5 pl-8 pr-4 text-sm text-[var(--text-primary)] placeholder-[var(--text-dim)] outline-none focus:border-[var(--accent)]"
-                      placeholder="Search merchant…"
-                      value={search}
-                      onChange={(e) => setSearch(e.target.value)}
-                    />
-                  </div>
-                  {recentCategories.length > 0 && (
-                    <div className="flex gap-2 overflow-x-auto pb-1">
-                      {recentCategories.slice(0, 8).map((cat) => (
-                        <button key={cat} type="button" onClick={() => setCategoryFilter(categoryFilter === cat ? "" : cat)}
-                          className={`flex-shrink-0 rounded-full border px-3 py-1 text-[11px] transition-all ${
-                            categoryFilter === cat
-                              ? "border-[var(--accent)] bg-[var(--accent)]/10 text-[var(--text-primary)]"
-                              : "border-[var(--border-subtle)] text-[var(--text-muted)]"
-                          }`}>
-                          {cat}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-                {/* Grouped transactions */}
-                {filteredRecent.length === 0 ? (
-                  <p className="py-8 text-center text-sm text-[var(--text-muted)]">No transactions match your filters.</p>
-                ) : (
-                  [...recentByDate.entries()].map(([date, txs]) => {
-                    const dayTotal = txs.reduce((s, tx) => s + Math.abs(tx.amount), 0);
-                    const label = (() => {
-                      const diff = daysUntilDate(date);
-                      if (diff === 0) return "Today";
-                      if (diff === -1) return "Yesterday";
-                      return new Date(date + "T00:00:00").toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
-                    })();
-                    return (
-                      <div key={date}>
-                        <div className="flex items-center justify-between py-2">
-                          <span className="text-[11px] font-semibold text-[var(--text-muted)]">{label}</span>
-                          <span className="font-mono text-[11px] text-[var(--text-muted)]">{fmt(dayTotal)}</span>
-                        </div>
-                        <div className="overflow-hidden rounded-2xl border border-[var(--border-default)] bg-[var(--bg-card)] divide-y divide-[var(--border-subtle)]">
-                          {txs.map((tx) => (
-                            <div key={tx.id} className="flex items-center justify-between px-4 py-3 gap-3">
-                              <div className="min-w-0">
-                                <p className="truncate text-sm font-medium text-[var(--text-primary)]">{tx.merchant ?? "Unknown"}</p>
-                                <p className="text-[11px] text-[var(--text-muted)]">{mapPlaidCategory(tx.category)}</p>
-                              </div>
-                              <div className="flex items-center gap-2 flex-shrink-0">
-                                <span className="font-mono text-sm font-semibold text-[var(--color-expense)]">-{fmt(Math.abs(tx.amount))}</span>
-                                <button
-                                  type="button"
-                                  onClick={() => addAsRecurring(tx)}
-                                  className="rounded-lg border border-[var(--border-default)] px-2.5 py-1 text-[10px] font-medium text-[var(--text-muted)] hover:border-[var(--accent)] hover:text-[var(--accent)] transition-colors whitespace-nowrap"
-                                >
-                                  + Recurring
-                                </button>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    );
-                  })
-                )}
-              </>
-            )}
-          </div>
-        )}
       </div>
 
       {/* ── Add expense bottom sheet ──────────────────────────────────────── */}

@@ -10,7 +10,7 @@ import {
   CreditCard,
   ArrowLeftRight,
   FileText,
-  RefreshCw,
+  Activity,
   Target,
   Scale,
   Layers,
@@ -25,15 +25,15 @@ type NavItem = {
 };
 
 const PRIMARY_NAV: NavItem[] = [
-  { label: "Dashboard",     href: "/",             icon: <Home size={16} strokeWidth={1.6} /> },
-  { label: "Accounts",      href: "/accounts",     icon: <CreditCard size={16} strokeWidth={1.6} /> },
-  { label: "Transactions",  href: "/transactions", icon: <ArrowLeftRight size={16} strokeWidth={1.6} /> },
-  { label: "Expenses",      href: "/bills",        icon: <FileText size={16} strokeWidth={1.6} /> },
-  { label: "Subscriptions", href: "/subscriptions",icon: <RefreshCw size={16} strokeWidth={1.6} /> },
-  { label: "Goals",         href: "/goals",        icon: <Target size={16} strokeWidth={1.6} /> },
-  { label: "Decide",        href: "/decide",       icon: <Scale size={16} strokeWidth={1.6} /> },
-  { label: "Card",          href: "/card",         icon: <Layers size={16} strokeWidth={1.6} /> },
-  { label: "Council",       href: "/council",      icon: <Users size={16} strokeWidth={1.6} /> },
+  { label: "Dashboard", href: "/",             icon: <Home size={16} strokeWidth={1.6} /> },
+  { label: "Pulse",     href: "/pulse",        icon: <Activity size={16} strokeWidth={1.6} /> },
+  { label: "Accounts",  href: "/accounts",     icon: <CreditCard size={16} strokeWidth={1.6} /> },
+  { label: "Activity",  href: "/transactions", icon: <ArrowLeftRight size={16} strokeWidth={1.6} /> },
+  { label: "Expenses",  href: "/bills",        icon: <FileText size={16} strokeWidth={1.6} /> },
+  { label: "Goals",     href: "/goals",        icon: <Target size={16} strokeWidth={1.6} /> },
+  { label: "Decide",    href: "/decide",       icon: <Scale size={16} strokeWidth={1.6} /> },
+  { label: "Card",      href: "/card",         icon: <Layers size={16} strokeWidth={1.6} /> },
+  { label: "Council",   href: "/council",      icon: <Users size={16} strokeWidth={1.6} /> },
 ];
 
 const SETTINGS_NAV: NavItem = {

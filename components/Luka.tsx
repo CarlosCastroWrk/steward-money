@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { LukaVoiceMode } from "@/components/luka/LukaVoiceMode";
 
 type Action = { tool: string; label: string; detail: string };
 type Message = { role: "user" | "assistant"; content: string; actions?: Action[] };
@@ -55,6 +56,15 @@ function SpeakerIcon({ active }: { active: boolean }) {
   );
 }
 
+function VoiceIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="h-3.5 w-3.5">
+      <rect x="9" y="2" width="6" height="12" rx="3" />
+      <path d="M5 10v2a7 7 0 0014 0v-2M12 19v3M8 22h8" />
+    </svg>
+  );
+}
+
 function TypingDots() {
   return (
     <div className="flex items-center gap-1 px-1 py-0.5">
@@ -73,7 +83,8 @@ function ActionCard({ action }: { action: Action }) {
   const icons: Record<string, string> = {
     add_bill: "📋", add_goal: "🎯", add_transaction: "💳",
     add_income_source: "💰", mark_bill_paid: "✓", mark_income_received: "✓",
-    update_settings: "⚙️", trigger_kairos: "🔄",
+    update_settings: "⚙️", trigger_kairos: "🔄", update_account_purpose: "🏦",
+    save_personal_rule: "📝", bulk_setup: "✦",
   };
   return (
     <div className="mt-1.5 flex items-center gap-2 rounded-xl border border-[var(--border)] bg-[var(--bg-elevated)] px-3 py-1.5">
@@ -85,6 +96,15 @@ function ActionCard({ action }: { action: Action }) {
     </div>
   );
 }
+
+const QUICK_ACTIONS = [
+  "What can I spend today?",
+  "How am I doing this week?",
+  "Teach me about Roth IRAs",
+  "Review my subscriptions",
+  "Strategy review",
+  "Tell me about my situation",
+];
 
 function MessageList({
   messages,
@@ -118,7 +138,6 @@ function MessageList({
     window.speechSynthesis.speak(utt);
   }, [voiceOutputEnabled]);
 
-  // Speak the latest assistant message when it arrives
   useEffect(() => {
     const last = messages[messages.length - 1];
     if (last?.role === "assistant" && voiceOutputEnabled) speak(last.content);
@@ -127,15 +146,15 @@ function MessageList({
   return (
     <div className="flex flex-col gap-3 overflow-y-auto px-4 py-4" style={{ flex: 1 }}>
       {messages.length === 0 && (
-        <div className="flex flex-1 flex-col items-center justify-center gap-2 py-8 text-center">
+        <div className="flex flex-1 flex-col items-center justify-center gap-2 py-6 text-center">
           <p className="text-sm font-medium text-[var(--text-1)]">Hi, I&apos;m Luka.</p>
-          <p className="text-xs text-[var(--text-3)]">Ask me anything about your finances.</p>
+          <p className="text-xs text-[var(--text-3)]">Your financial co-pilot. Ask me anything.</p>
           <div className="mt-3 flex flex-wrap justify-center gap-2">
-            {["How much can I spend today?", "What bills are coming up?", "Add a transaction"].map((s) => (
+            {QUICK_ACTIONS.map((s) => (
               <button
                 key={s}
                 onClick={() => sendMessage(s)}
-                className="rounded-full border border-[var(--border)] px-3 py-1 text-xs text-[var(--text-3)] transition-colors hover:border-emerald-700 hover:text-emerald-400"
+                className="rounded-full border border-[var(--border)] px-3 py-1.5 text-xs text-[var(--text-3)] transition-colors hover:border-purple-700/50 hover:text-purple-400"
               >
                 {s}
               </button>
@@ -181,9 +200,7 @@ function MessageList({
 
 // ── Voice recognition hook ─────────────────────────────────────────────────
 
-type AnyRecognition = any;
-
-function getSpeechRecognitionClass(): AnyRecognition | null {
+function getSpeechRecognitionClass(): (new () => any) | null {
   if (typeof window === "undefined") return null;
   return (window as any).SpeechRecognition ?? (window as any).webkitSpeechRecognition ?? null;
 }
@@ -228,10 +245,12 @@ function useSpeechRecognition(onResult: (text: string) => void, onEnd: () => voi
 export function Luka() {
   const [authed, setAuthed] = useState(false);
   const [open, setOpen] = useState(false);
+  const [voiceModeOpen, setVoiceModeOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [voiceOutputEnabled, setVoiceOutputEnabled] = useState(false);
+  const [lukaContext, setLukaContext] = useState<{ lifeStage?: string; mainGoal?: string; nextPaycheck?: string; rulesCount?: number } | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const router = useRouter();
@@ -241,12 +260,33 @@ export function Luka() {
     const supabase = createClient();
     supabase.auth.getSession().then(({ data: { session } }) => {
       setAuthed(!!session);
+      if (session) loadContext(supabase);
     });
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_e, session) => {
       setAuthed(!!session);
+      if (session) loadContext(supabase);
     });
     return () => subscription.unsubscribe();
   }, []);
+
+  async function loadContext(supabase: ReturnType<typeof createClient>) {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+    const [settings, rules, income] = await Promise.all([
+      supabase.from("user_settings").select("life_stage, main_goal").eq("user_id", user.id).maybeSingle(),
+      supabase.from("personal_rules").select("id").eq("user_id", user.id),
+      supabase.from("income_sources").select("next_expected_date").eq("user_id", user.id).eq("is_active", true).order("next_expected_date", { ascending: true }).limit(1).maybeSingle(),
+    ]);
+    const nextDate = income.data?.next_expected_date
+      ? new Date(income.data.next_expected_date).toLocaleDateString("en-US", { month: "short", day: "numeric" })
+      : undefined;
+    setLukaContext({
+      lifeStage: settings.data?.life_stage ?? undefined,
+      mainGoal: settings.data?.main_goal ?? undefined,
+      nextPaycheck: nextDate,
+      rulesCount: rules.data?.length ?? 0,
+    });
+  }
 
   const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -255,13 +295,14 @@ export function Luka() {
   useEffect(() => { scrollToBottom(); }, [messages, loading, scrollToBottom]);
   useEffect(() => { if (open && inputRef.current) inputRef.current.focus(); }, [open]);
 
-  // sendMessage as useCallback so voice callbacks can reference it before the early return
   const sendMessage = useCallback(async (text: string) => {
     if (!text.trim()) return;
     const userMsg: Message = { role: "user", content: text.trim() };
     const next = [...messages, userMsg].slice(-10);
     setMessages(next);
     setInput("");
+    // Reset textarea height
+    if (inputRef.current) { inputRef.current.style.height = "auto"; }
     setLoading(true);
     try {
       const res = await fetch("/api/luka", {
@@ -284,7 +325,6 @@ export function Luka() {
     }
   }, [messages, router]);
 
-  // Voice callbacks — must be before any early return (Rules of Hooks)
   const handleVoiceResult = useCallback((text: string) => setInput(text), []);
   const handleVoiceEnd = useCallback(() => {
     setTimeout(() => {
@@ -294,7 +334,6 @@ export function Luka() {
 
   const { listening, supported: micSupported, start: startListening, stop: stopListening } = useSpeechRecognition(handleVoiceResult, handleVoiceEnd);
 
-  // Early return AFTER all hooks
   const isAuthPage = pathname === "/login" || pathname.startsWith("/onboarding");
   if (!authed || isAuthPage) return null;
 
@@ -302,18 +341,33 @@ export function Luka() {
     if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(input); }
   }
 
+  function handleInput(e: React.ChangeEvent<HTMLTextAreaElement>) {
+    setInput(e.target.value);
+    // Auto-expand
+    const ta = e.target;
+    ta.style.height = "auto";
+    ta.style.height = `${Math.min(ta.scrollHeight, 120)}px`;
+  }
+
+  const contextParts = [
+    lukaContext?.lifeStage,
+    lukaContext?.mainGoal,
+    lukaContext?.nextPaycheck ? `paycheck ${lukaContext.nextPaycheck}` : null,
+    lukaContext?.rulesCount ? `${lukaContext.rulesCount} rule${lukaContext.rulesCount !== 1 ? "s" : ""}` : null,
+  ].filter(Boolean);
+
   const inputArea = (
     <div className="border-t border-[var(--border)] px-3 py-3">
       <div className="flex items-end gap-2 rounded-xl bg-[var(--luka-msg-bg)] px-3 py-2">
         <textarea
           ref={inputRef}
           value={input}
-          onChange={(e) => setInput(e.target.value)}
+          onChange={handleInput}
           onKeyDown={handleKeyDown}
           placeholder="Ask Luka anything…"
           rows={1}
           className="flex-1 resize-none bg-transparent text-sm text-[var(--text-1)] placeholder-[var(--text-3)] outline-none"
-          style={{ maxHeight: 80 }}
+          style={{ maxHeight: 120, minHeight: "1.5rem", lineHeight: "1.5rem", overflowY: "auto" }}
         />
         {micSupported && (
           <button
@@ -335,8 +389,14 @@ export function Luka() {
           <SendIcon />
         </button>
       </div>
-      {/* Voice output toggle */}
-      <div className="mt-2 flex items-center justify-end gap-2">
+      <div className="mt-2 flex items-center justify-between gap-2">
+        <button
+          type="button"
+          onClick={() => { setOpen(false); setVoiceModeOpen(true); }}
+          className="flex items-center gap-1.5 rounded-full border border-[var(--border)] px-2.5 py-1 text-[10px] text-[var(--text-3)] transition-colors hover:border-purple-700/40 hover:text-purple-400"
+        >
+          <VoiceIcon /> Voice mode
+        </button>
         <button
           type="button"
           onClick={() => {
@@ -357,23 +417,32 @@ export function Luka() {
   );
 
   const header = (
-    <div className="flex items-center gap-2.5 border-b border-[var(--border)] px-4 py-3">
-      <div className="flex h-7 w-7 items-center justify-center rounded-full bg-purple-600">
-        <SparkleIcon className="h-4 w-4" />
+    <div className="flex flex-col border-b border-[var(--border)]">
+      <div className="flex items-center gap-2.5 px-4 py-3">
+        <div className="flex h-7 w-7 items-center justify-center rounded-full bg-purple-600">
+          <SparkleIcon className="h-4 w-4" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-medium text-[var(--text-1)]">Luka</p>
+          <p className="text-xs text-[var(--text-3)]">Your financial co-pilot</p>
+        </div>
+        {listening && (
+          <span className="flex items-center gap-1 rounded-full bg-red-500/15 px-2 py-0.5 text-[10px] text-red-400">
+            <span className="h-1.5 w-1.5 rounded-full bg-red-400 animate-pulse" />
+            Listening
+          </span>
+        )}
+        <button onClick={() => setOpen(false)} className="text-[var(--text-3)] transition-colors hover:text-[var(--text-1)]">
+          <CloseIcon />
+        </button>
       </div>
-      <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium text-[var(--text-1)]">Luka</p>
-        <p className="text-xs text-[var(--text-3)]">Your financial co-pilot</p>
-      </div>
-      {listening && (
-        <span className="flex items-center gap-1 rounded-full bg-red-500/15 px-2 py-0.5 text-[10px] text-red-400">
-          <span className="h-1.5 w-1.5 rounded-full bg-red-400 animate-pulse" />
-          Listening
-        </span>
+      {contextParts.length > 0 && (
+        <div className="px-4 pb-2">
+          <p className="text-[10px] text-[var(--text-3)] leading-relaxed">
+            Luka knows: {contextParts.join(" · ")}
+          </p>
+        </div>
       )}
-      <button onClick={() => setOpen(false)} className="text-[var(--text-3)] transition-colors hover:text-[var(--text-1)]">
-        <CloseIcon />
-      </button>
     </div>
   );
 
@@ -405,6 +474,9 @@ export function Luka() {
         .luka-panel { animation: lukaSlideUp 0.18s cubic-bezier(0.16,1,0.3,1) both; }
         .luka-sheet { animation: lukaSheetUp 0.24s cubic-bezier(0.16,1,0.3,1) both; }
       `}</style>
+
+      {/* Voice mode overlay */}
+      {voiceModeOpen && <LukaVoiceMode onClose={() => setVoiceModeOpen(false)} />}
 
       {/* ── MOBILE: pill handle above bottom nav ── */}
       <button
@@ -457,7 +529,7 @@ export function Luka() {
 
       {/* ── DESKTOP: floating panel ── */}
       {open && (
-        <div className="luka-panel fixed bottom-24 right-6 z-[51] hidden w-[380px] flex-col overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--bg-card)] shadow-2xl shadow-black/60 md:flex" style={{ height: 500 }}>
+        <div className="luka-panel fixed bottom-24 right-6 z-[51] hidden w-[380px] flex-col overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--bg-card)] shadow-2xl shadow-black/60 md:flex" style={{ height: 520 }}>
           {header}
           {messageListEl}
           {inputArea}
