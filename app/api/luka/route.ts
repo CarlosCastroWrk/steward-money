@@ -141,11 +141,11 @@ const TOOLS: Anthropic.Tool[] = [
   },
   {
     name: "update_account_purpose",
-    description: "Tag a bank account with its purpose (e.g., 'everyday spending', 'emergency fund', 'bills only', 'savings', 'investing').",
+    description: "Tag a bank account with its purpose (e.g., 'everyday spending', 'emergency fund', 'bills only', 'savings', 'investing'). Match accounts using institution name (Chase, Wells Fargo), account type (checking, savings), or keywords from the account list in your context. When the user says 'Chase checking', pass 'Chase checking' and the tool will fuzzy-match against institution + type. If no match, the tool returns available account names — show them to the user.",
     input_schema: {
       type: "object",
       properties: {
-        account_name: { type: "string", description: "Partial account name to match" },
+        account_name: { type: "string", description: "Institution and/or account type hint (e.g. 'Chase checking', 'Wells Fargo savings', 'Everyday Checking')" },
         purpose: { type: "string", description: "Purpose label for the account" },
       },
       required: ["account_name", "purpose"],
@@ -362,13 +362,66 @@ async function executeTool(
       }
 
       case "update_account_purpose": {
-        const accountName = String(input.account_name ?? "").toLowerCase();
+        const query = String(input.account_name ?? "").toLowerCase();
         const purpose = String(input.purpose ?? "");
-        const { data: accounts } = await supabase.from("accounts").select("id, name").eq("user_id", userId).eq("is_active", true);
-        const match = (accounts ?? []).find((a) => a.name.toLowerCase().includes(accountName));
-        if (!match) return { result: { error: `No account found matching "${input.account_name}"` }, refreshNeeded: false };
+        const { data: accounts } = await supabase
+          .from("accounts")
+          .select("id, name, institution, type, plaid_subtype")
+          .eq("user_id", userId)
+          .eq("is_active", true);
+
+        const allAccounts = accounts ?? [];
+
+        // Expand common shorthand aliases before token matching
+        const ALIASES: Record<string, string[]> = {
+          "wf": ["wells fargo"],
+          "chase": ["chase"],
+          "bofa": ["bank of america"],
+          "amex": ["american express"],
+        };
+        const tokens = query.split(/\s+/).filter(Boolean);
+        const expandedTokens = [...new Set(tokens.flatMap((t) => [t, ...(ALIASES[t] ?? [])]))];
+
+        const scored = allAccounts
+          .map((a) => {
+            const haystack = [
+              a.name,
+              a.institution ?? "",
+              a.type ?? "",
+              a.plaid_subtype ?? "",
+            ].join(" ").toLowerCase();
+            const hits = expandedTokens.filter((t) => haystack.includes(t)).length;
+            return { account: a, hits };
+          })
+          .filter((s) => s.hits > 0)
+          .sort((a, b) => b.hits - a.hits);
+
+        if (scored.length === 0) {
+          const list = allAccounts.map((a) => `• ${a.name} (${a.institution ?? a.type})`).join("\n");
+          return {
+            result: {
+              error: `No account found matching "${input.account_name}". Connected accounts are:\n${list}\nAsk the user which one they mean using these exact names.`,
+              available_accounts: allAccounts.map((a) => ({ name: a.name, institution: a.institution, type: a.type })),
+            },
+            refreshNeeded: false,
+          };
+        }
+
+        // Ambiguous: top two scores are equal AND both > 0 — ask to clarify
+        if (scored.length > 1 && scored[0].hits === scored[1].hits) {
+          const options = scored.map((s) => `• ${s.account.name} (${s.account.institution ?? s.account.type})`).join("\n");
+          return {
+            result: {
+              error: `Multiple accounts match "${input.account_name}":\n${options}\nAsk the user to clarify which one.`,
+              matching_accounts: scored.map((s) => ({ name: s.account.name, institution: s.account.institution })),
+            },
+            refreshNeeded: false,
+          };
+        }
+
+        const match = scored[0].account;
         await supabase.from("accounts").update({ purpose }).eq("id", match.id).eq("user_id", userId);
-        return { result: { success: true, message: `${match.name} tagged as: ${purpose}` }, refreshNeeded: true };
+        return { result: { success: true, message: `${match.name} (${match.institution ?? match.type}) tagged as: ${purpose}` }, refreshNeeded: true };
       }
 
       case "save_personal_rule": {
@@ -421,7 +474,7 @@ export async function POST(req: NextRequest) {
   };
   const { messages: clientMessages, setup_mode: setupMode = false } = body;
 
-  const [settingsResult, safeResult, alertsResult, insightsResult, solomonResult, kairosResult, agentMemoryContext] = await Promise.all([
+  const [settingsResult, safeResult, alertsResult, insightsResult, solomonResult, kairosResult, agentMemoryContext, accountsResult] = await Promise.all([
     supabase.from("user_settings").select("*").eq("user_id", user.id).maybeSingle(),
     calculateSafeToSpend(supabase, user.id),
     supabase.from("alerts").select("message, severity").eq("user_id", user.id).eq("is_read", false).limit(4),
@@ -429,6 +482,7 @@ export async function POST(req: NextRequest) {
     supabase.from("weekly_reports").select("solomon_word, stewardship_score").eq("user_id", user.id).order("created_at", { ascending: false }).limit(1).maybeSingle(),
     supabase.from("user_settings").select("kairos_pending").eq("user_id", user.id).maybeSingle(),
     summarizeAgentMemoriesForLuka(supabase, user.id),
+    supabase.from("accounts").select("name, institution, type, purpose").eq("user_id", user.id).eq("is_active", true).order("created_at", { ascending: false }),
   ]);
 
   const settings = settingsResult.data;
@@ -456,6 +510,10 @@ export async function POST(req: NextRequest) {
     .lte("next_due_date", new Date(Date.now() + 7 * 86_400_000).toISOString().split("T")[0]);
 
   const billsList = (billsDueThisWeek ?? []).map((b) => `  ${b.name}: ${fmt(Number(b.amount))} due ${b.next_due_date}`).join("\n") || "None this week";
+
+  const accountList = (accountsResult.data ?? [])
+    .map((a) => `  • ${a.name} at ${a.institution ?? "manual"} (${a.type})${a.purpose ? ` — purpose: ${a.purpose}` : ""}`)
+    .join("\n") || "  No accounts connected";
 
   let kairosOpener = "";
   if (kairoPending) {
@@ -499,6 +557,8 @@ Current snapshot:
 - Next paycheck: ${nextIncomeDate} — ${fmt(safeResult.nextIncomeAmount)}
 - Bills due this week:
 ${billsList}
+- Connected accounts (use these exact names when calling update_account_purpose):
+${accountList}
 - Active Argus alerts:
 ${activeAlerts}
 - Latest Silas insight:
@@ -576,8 +636,8 @@ If the user mentions a significant life change (new job, moving, relationship ch
             block.name, block.input as Record<string, unknown>, user.id, supabase
           );
           if (needs) refreshNeeded = true;
-          // Track write actions for transparency cards
-          if (TOOL_LABELS[block.name]) {
+          // Only show action card on success — skip if tool returned an error
+          if (TOOL_LABELS[block.name] && !(result as { error?: string })?.error) {
             const detail = (result as { message?: string })?.message ?? "";
             actions.push({ tool: block.name, label: TOOL_LABELS[block.name], detail });
           }
