@@ -48,7 +48,7 @@ export async function calculateSafeToSpend(
   if (!settings) return ZERO_RESULT;
 
   const [accountsResult, incomeResult, billsResult] = await Promise.all([
-    supabase.from("accounts").select("type, current_balance").eq("user_id", userId).eq("is_active", true),
+    supabase.from("accounts").select("type, current_balance, available_balance").eq("user_id", userId).eq("is_active", true),
     supabase
       .from("income_sources")
       .select("amount, next_expected_date, is_variable, hourly_rate, weekly_hours")
@@ -59,8 +59,9 @@ export async function calculateSafeToSpend(
 
   const liquidTotal = (accountsResult.data ?? [])
     .filter((account: { type: string }) => ["checking", "savings"].includes(account.type))
-    .reduce((sum: number, account: { current_balance: number | null }) => {
-      return sum + Number(account.current_balance ?? 0);
+    .reduce((sum: number, account: { current_balance: number | null; available_balance: number | null }) => {
+      const balance = account.available_balance ?? account.current_balance ?? 0;
+      return sum + Number(balance);
     }, 0);
 
   const incomes = [...(incomeResult.data ?? [])].sort((a, b) => {

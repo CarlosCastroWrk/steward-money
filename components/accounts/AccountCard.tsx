@@ -27,7 +27,13 @@ export function AccountCard({ account }: { account: Account }) {
   const [savedFlash, setSavedFlash] = useState(false);
   const [busy, setBusy] = useState(false);
 
-  const balanceNum = Number(account.current_balance ?? 0);
+  const presentBalance  = Number(account.current_balance ?? 0);
+  const availableBalance = account.available_balance != null
+    ? Number(account.available_balance)
+    : presentBalance;
+  const pendingImpact = presentBalance - availableBalance;
+  const hasPendingDiff = Math.abs(pendingImpact) >= 0.01;
+  const balanceNum = availableBalance;
 
   useEffect(() => {
     if (!editing) {
@@ -50,7 +56,7 @@ export function AccountCard({ account }: { account: Account }) {
     if (Number.isNaN(next)) return;
     setBusy(true);
     const supabase = createClient();
-    const { error } = await supabase.from("accounts").update({ current_balance: next }).eq("id", account.id);
+    const { error } = await supabase.from("accounts").update({ current_balance: next, available_balance: next }).eq("id", account.id);
     setBusy(false);
     if (error) return;
     setEditing(false);
@@ -124,9 +130,24 @@ export function AccountCard({ account }: { account: Account }) {
         </div>
       ) : (
         <>
-          <p className={`mt-4 text-2xl font-semibold ${balanceNum < 0 ? "text-red-400" : "text-[var(--text-1)]"}`}>
-            {formatCurrency(balanceNum)}
-          </p>
+          <div className="mt-4">
+            <p className={`text-2xl font-semibold ${balanceNum < 0 ? "text-red-400" : "text-[var(--text-1)]"}`}>
+              {formatCurrency(balanceNum)}
+            </p>
+            <p className="mt-0.5 text-xs text-[var(--text-3)]">Available</p>
+            {hasPendingDiff && (
+              <div className="mt-2 space-y-0.5 border-t border-[var(--border-subtle)] pt-2">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-[var(--text-3)]">Present balance</span>
+                  <span className="text-[var(--text-2)]">{formatCurrency(presentBalance)}</span>
+                </div>
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-[var(--text-3)]">Pending charges</span>
+                  <span className="text-amber-400">−{formatCurrency(Math.abs(pendingImpact))}</span>
+                </div>
+              </div>
+            )}
+          </div>
           {lastSyncedLabel ? (
             <p className={`mt-2 text-xs ${isStale ? "text-amber-400" : "text-[var(--text-3)]"}`}>{lastSyncedLabel}</p>
           ) : null}

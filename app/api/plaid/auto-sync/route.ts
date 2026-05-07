@@ -39,7 +39,11 @@ export async function POST(req: NextRequest) {
       for (const a of accountsRes.data.accounts) {
         await supabase
           .from("accounts")
-          .update({ current_balance: a.balances.current ?? 0, last_synced: now })
+          .update({
+            current_balance: a.balances.current ?? 0,
+            available_balance: a.balances.available ?? a.balances.current ?? 0,
+            last_synced: now,
+          })
           .eq("plaid_account_id", a.account_id)
           .eq("user_id", item.user_id);
       }
