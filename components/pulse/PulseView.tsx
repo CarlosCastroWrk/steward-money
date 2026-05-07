@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { AgentAvatar } from "@/components/AgentAvatar";
 import { AgentChatModal } from "./AgentChatModal";
+import { TabPills } from "@/components/ui/TabPills";
 import { createClient } from "@/lib/supabase/client";
 import { formatUSD } from "@/lib/format";
 
@@ -359,23 +360,16 @@ export function PulseView() {
           </div>
         </div>
 
-        {/* Date filter */}
-        <div className="flex gap-1.5">
-          {(["today", "week", "all"] as DateFilter[]).map((f) => (
-            <button
-              key={f}
-              type="button"
-              onClick={() => setFilter(f)}
-              className={`rounded-full px-3 py-1.5 text-xs font-medium transition-all ${
-                filter === f
-                  ? "bg-[var(--accent)] text-white"
-                  : "border border-[var(--border)] text-[var(--text-2)] hover:border-[var(--border-strong)]"
-              }`}
-            >
-              {f === "today" ? "Today" : f === "week" ? "This week" : "All time"}
-            </button>
-          ))}
-        </div>
+        {/* Date filter as pills */}
+        <TabPills
+          tabs={[
+            { id: "today", label: "Today" },
+            { id: "week", label: "This Week" },
+            { id: "all", label: "All" },
+          ]}
+          active={filter}
+          onChange={(id) => setFilter(id as DateFilter)}
+        />
 
         {/* Loading skeletons */}
         {loading && (

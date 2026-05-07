@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { AddTransactionModal } from "./AddTransactionModal";
 import { AskLukaButton } from "@/components/AskLukaButton";
+import { TabPills } from "@/components/ui/TabPills";
 import { CATEGORIES } from "./types";
 import type { Transaction, AccountOption } from "./types";
 
@@ -27,7 +28,15 @@ function merchantAvatar(name: string | null) {
   };
 }
 
-type TimeRange = "week" | "this-month" | "month" | "3months" | "all";
+type TimeRange = "today" | "week" | "this-month" | "month" | "all";
+
+const TIME_TABS = [
+  { id: "today", label: "Today" },
+  { id: "week", label: "This Week" },
+  { id: "this-month", label: "This Month" },
+  { id: "month", label: "30 Days" },
+  { id: "all", label: "All Time" },
+];
 type TxTypeFilter = "all" | "expense" | "income";
 
 function formatUSD(v: number) {
@@ -40,19 +49,19 @@ function formatUSDSigned(v: number) {
 function cutoffFor(range: TimeRange): Date {
   const d = new Date();
   switch (range) {
-    case "week":      d.setDate(d.getDate() - 7); d.setHours(0,0,0,0); return d;
+    case "today":      d.setHours(0,0,0,0); return d;
+    case "week":       return new Date(d.getFullYear(), d.getMonth(), d.getDate() - d.getDay());
     case "this-month": return new Date(d.getFullYear(), d.getMonth(), 1);
-    case "month":     d.setMonth(d.getMonth() - 1); d.setHours(0,0,0,0); return d;
-    case "3months":   d.setMonth(d.getMonth() - 3); d.setHours(0,0,0,0); return d;
-    default:          return new Date(0);
+    case "month":      d.setDate(d.getDate() - 30); d.setHours(0,0,0,0); return d;
+    default:           return new Date(0);
   }
 }
 function rangeLabel(range: TimeRange): string {
   switch (range) {
-    case "week":       return "Last 7 days";
+    case "today":      return "Today";
+    case "week":       return "This week";
     case "this-month": return "This month";
     case "month":      return "Last 30 days";
-    case "3months":    return "Last 90 days";
     default:           return "All time";
   }
 }
@@ -257,7 +266,7 @@ export function TransactionsView({ transactions: initialTransactions, accounts, 
   // Auto-expand to last 30 days if no transactions this month
   const [autoExpanded, setAutoExpanded] = useState(false);
   useEffect(() => {
-    if (timeRange === "this-month" && txList.length > 0) {
+    if ((timeRange === "this-month" || timeRange === "today" || timeRange === "week") && txList.length > 0) {
       const thisMonthCutoff = cutoffFor("this-month");
       const hasThisMonth = txList.some((tx) => new Date(tx.date + "T12:00:00") >= thisMonthCutoff);
       if (!hasThisMonth) {
@@ -385,22 +394,26 @@ export function TransactionsView({ transactions: initialTransactions, accounts, 
           </div>
         )}
 
-        {/* Search */}
+        {/* Time range pill tabs */}
         <div className="mt-5">
+          <TabPills
+            tabs={TIME_TABS}
+            active={timeRange}
+            onChange={(id) => { setTimeRange(id as TimeRange); setAutoExpanded(false); }}
+          />
+        </div>
+
+        {/* Search + secondary filters */}
+        <div className="mt-3 flex flex-wrap items-center gap-2">
           <input
             type="text"
             placeholder="Search merchant…"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full rounded-2xl border border-[var(--border)] bg-[var(--bg-card)] px-4 py-2.5 text-sm text-[var(--text-1)] placeholder-[var(--text-3)] transition focus:border-emerald-500/40 focus:outline-none"
+            className="flex-1 min-w-[160px] rounded-xl border border-[var(--border)] bg-[var(--bg-card)] px-3 py-2 text-sm text-[var(--text-1)] placeholder-[var(--text-3)] transition focus:border-[var(--accent)]/40 focus:outline-none"
           />
-        </div>
-
-        {/* Filters */}
-        <div className="mt-3 flex flex-wrap items-center gap-2">
           {[
-            { value: timeRange,      onChange: (v: string) => setTimeRange(v as TimeRange),     options: [{ v: "week", l: "Last 7 days" }, { v: "this-month", l: "This month" }, { v: "month", l: "Last 30 days" }, { v: "3months", l: "Last 90 days" }, { v: "all", l: "All time" }] },
-            { value: typeFilter,     onChange: (v: string) => setTypeFilter(v as TxTypeFilter), options: [{ v: "all", l: "All types" }, { v: "expense", l: "Expenses only" }, { v: "income", l: "Income only" }] },
+            { value: typeFilter,     onChange: (v: string) => setTypeFilter(v as TxTypeFilter), options: [{ v: "all", l: "All types" }, { v: "expense", l: "Expenses" }, { v: "income", l: "Income" }] },
             { value: accountFilter,  onChange: (v: string) => setAccountFilter(v),              options: [{ v: "all", l: "All accounts" }, ...accounts.map((a) => ({ v: a.id, l: a.name }))] },
             { value: categoryFilter, onChange: (v: string) => setCategoryFilter(v),             options: [{ v: "all", l: "All categories" }, ...CATEGORIES.map((c) => ({ v: c, l: c }))] },
           ].map(({ value, onChange, options }, i) => (
@@ -427,16 +440,17 @@ export function TransactionsView({ transactions: initialTransactions, accounts, 
             <div className="space-y-2">
               {categoryTotals.slice(0, 8).map(([cat, total]) => {
                 const pct = Math.round((total / totalExpenses) * 100);
+                const rawCat = filtered.find(t => formatCategory(t.category) === cat)?.category ?? cat;
                 return (
-                  <div key={cat}>
+                  <a key={cat} href={`/category/${encodeURIComponent(rawCat)}`} className="block active:opacity-70 transition-opacity">
                     <div className="flex items-center justify-between text-xs mb-0.5">
-                      <span className="text-[var(--text-2)]">{cat}</span>
+                      <span className="text-[var(--text-2)] hover:text-[var(--accent)] transition-colors">{cat}</span>
                       <span className="text-[var(--text-3)]">{formatUSD(total)} · {pct}%</span>
                     </div>
                     <div className="h-1.5 w-full rounded-full bg-[var(--bg-elevated)]">
                       <div className="h-1.5 rounded-full bg-purple-500" style={{ width: `${pct}%` }} />
                     </div>
-                  </div>
+                  </a>
                 );
               })}
             </div>
@@ -503,19 +517,32 @@ export function TransactionsView({ transactions: initialTransactions, accounts, 
                           className={`flex items-center justify-between rounded-2xl border bg-[var(--bg-card)] px-4 py-3 transition-colors hover:bg-[var(--bg-elevated)] ${tx.is_pending ? "border-amber-700/40" : "border-[var(--border)]"}`}
                         >
                           <div className="flex min-w-0 items-center gap-3">
-                            <div className={`flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full text-xs font-bold text-white ${av.bg}`}>
+                            <a
+                              href={tx.merchant ? `/merchant/${encodeURIComponent(tx.merchant)}` : "#"}
+                              className={`flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full text-xs font-bold text-white ${av.bg} transition-opacity active:opacity-70`}
+                            >
                               {av.letter}
-                            </div>
+                            </a>
                             <div className="min-w-0">
                               <div className="flex items-center gap-1.5">
-                                <p className="text-sm font-medium text-[var(--text-1)]">{tx.merchant || "—"}</p>
+                                <a
+                                  href={tx.merchant ? `/merchant/${encodeURIComponent(tx.merchant)}` : "#"}
+                                  className="text-sm font-medium text-[var(--text-1)] hover:text-[var(--accent)] transition-colors"
+                                >
+                                  {tx.merchant || "—"}
+                                </a>
                                 {tx.is_pending && (
                                   <span className="rounded-full bg-amber-500/15 px-2 py-0.5 text-[10px] font-medium text-amber-400">pending</span>
                                 )}
                               </div>
                               <div className="mt-0.5 flex flex-wrap items-center gap-1.5 text-xs text-[var(--text-3)]">
                                 {tx.category && (
-                                  <span className="rounded-full bg-[var(--bg-elevated)] px-2 py-0.5 text-[var(--text-2)]">{formatCategory(tx.category)}</span>
+                                  <a
+                                    href={`/category/${encodeURIComponent(tx.category)}`}
+                                    className="rounded-full bg-[var(--bg-elevated)] px-2 py-0.5 text-[var(--text-2)] hover:bg-[var(--accent)]/10 hover:text-[var(--accent)] transition-colors"
+                                  >
+                                    {formatCategory(tx.category)}
+                                  </a>
                                 )}
                                 {tx.is_need === true  && <span className="rounded-full bg-blue-500/10 px-2 py-0.5 text-blue-400">need</span>}
                                 {tx.is_need === false && <span className="rounded-full bg-purple-500/10 px-2 py-0.5 text-purple-400">want</span>}

@@ -7,6 +7,7 @@ import { GreetingHeader } from "@/components/dashboard/GreetingHeader";
 import { CalendarOptInCard } from "@/components/dashboard/CalendarOptInCard";
 import { CalendarCard } from "@/components/dashboard/CalendarCard";
 import { ComingUpWidget } from "@/components/dashboard/ComingUpWidget";
+import { DashboardTabs } from "@/components/dashboard/DashboardTabs";
 
 export const metadata: Metadata = {
   title: "Dashboard — Steward Money",
@@ -160,163 +161,174 @@ export default async function DashboardPage() {
       <CalendarCard />
       {process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID && <CalendarOptInCard />}
 
-      {/* 4. Stats row */}
+      {/* 4. Stats row — tappable tiles */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         {[
-          { label: "Monthly Expenses", value: formatUSD(monthlyBillsTotal), color: "text-red-400" },
-          { label: "Subscriptions", value: formatUSD(monthlySubsTotal), color: "text-amber-400" },
-          { label: "Active Goals", value: String(goals.length), color: "text-[var(--text-1)]" },
-          { label: "Spent This Month", value: formatUSD(totalSpentMonth), color: "text-[var(--text-3)]" },
+          { label: "Monthly Expenses", value: formatUSD(monthlyBillsTotal), color: "text-red-400", href: "/bills" },
+          { label: "Subscriptions", value: formatUSD(monthlySubsTotal), color: "text-amber-400", href: "/bills" },
+          { label: "Active Goals", value: String(goals.length), color: "text-[var(--text-1)]", href: "/goals" },
+          { label: "Spent This Month", value: formatUSD(totalSpentMonth), color: "text-[var(--text-3)]", href: "/transactions" },
         ].map((stat) => (
-          <div key={stat.label} className="rounded-xl border border-[var(--border)] bg-[var(--bg-card)] p-4">
+          <a
+            key={stat.label}
+            href={stat.href}
+            className="rounded-2xl border border-[var(--border)] bg-[var(--bg-card)] p-4 block transition-all active:scale-[0.97] hover:border-[var(--border-strong)]"
+          >
             <p className="text-[10px] font-medium uppercase tracking-wide text-[var(--text-3)]">{stat.label}</p>
             <p className={`mt-1 text-xl font-semibold ${stat.color}`}>{stat.value}</p>
-          </div>
+          </a>
         ))}
       </div>
 
-      {/* 5. Recent activity — visible without scrolling */}
-      <section>
-        <div className="mb-3 flex items-center justify-between">
-          <div>
-            <h2 className="text-[10px] font-semibold uppercase tracking-widest text-[var(--text-3)]">Recent Activity</h2>
-            <p className="text-[10px] text-[var(--text-3)] mt-0.5">Last 7 days</p>
+      {/* 5–7. Swipeable dashboard tabs */}
+      <DashboardTabs>
+        {/* Recent activity */}
+        <section>
+          <div className="mb-3 flex items-center justify-between">
+            <div>
+              <h2 className="text-[10px] font-semibold uppercase tracking-widest text-[var(--text-3)]">Recent Activity</h2>
+              <p className="text-[10px] text-[var(--text-3)] mt-0.5">Last 7 days</p>
+            </div>
+            <a href="/transactions" className="text-xs text-purple-400 transition-colors hover:text-purple-300">See all</a>
           </div>
-          <a href="/transactions" className="text-xs text-purple-400 transition-colors hover:text-purple-300">See all</a>
-        </div>
-        {recentTx.length === 0 ? (
-          <div className="rounded-xl border border-[var(--border)] bg-[var(--bg-card)] p-5 text-center">
-            <p className="text-sm text-[var(--text-3)]">No activity yet — sync your bank or add a transaction manually.</p>
-            <a href="/transactions" className="mt-2 inline-block text-xs text-purple-400 hover:text-purple-300">Go to Activity →</a>
-          </div>
-        ) : (
-          <div className="overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--bg-card)] divide-y divide-[var(--border)]">
-            {recentTx.map((tx) => {
-              const isIncome = Number(tx.amount) > 0;
-              return (
-                <div key={tx.id} className="flex items-center justify-between px-4 py-3.5 gap-3">
-                  <div className="flex items-center gap-3 min-w-0">
-                    <div className={`h-7 w-7 flex-shrink-0 rounded-full flex items-center justify-center text-[10px] font-bold ${isIncome ? "bg-green-500/15 text-green-500" : "bg-[var(--bg-elevated)] text-[var(--text-3)]"}`}>
-                      {isIncome ? "+" : tx.category?.slice(0, 1).toUpperCase() ?? "?"}
+          {recentTx.length === 0 ? (
+            <div className="rounded-2xl border border-[var(--border)] bg-[var(--bg-card)] p-5 text-center">
+              <p className="text-sm text-[var(--text-3)]">No activity yet — sync your bank or add a transaction manually.</p>
+              <a href="/transactions" className="mt-2 inline-block text-xs text-purple-400 hover:text-purple-300">Go to Activity →</a>
+            </div>
+          ) : (
+            <div className="overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--bg-card)] divide-y divide-[var(--border)]">
+              {recentTx.map((tx) => {
+                const isIncome = Number(tx.amount) > 0;
+                return (
+                  <a
+                    key={tx.id}
+                    href={tx.merchant ? `/merchant/${encodeURIComponent(tx.merchant)}` : "/transactions"}
+                    className="flex items-center justify-between px-4 py-3.5 gap-3 transition-colors hover:bg-[var(--bg-elevated)] active:bg-[var(--bg-elevated)]"
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className={`h-7 w-7 flex-shrink-0 rounded-full flex items-center justify-center text-[10px] font-bold ${isIncome ? "bg-green-500/15 text-green-500" : "bg-[var(--bg-elevated)] text-[var(--text-3)]"}`}>
+                        {isIncome ? "+" : tx.category?.slice(0, 1).toUpperCase() ?? "?"}
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium text-[var(--text-1)] truncate">{tx.merchant ?? (isIncome ? "Income" : "Transaction")}</p>
+                        <p className="text-xs text-[var(--text-3)] mt-0.5">{formatDate(tx.date)}{tx.category ? ` · ${tx.category}` : ""}</p>
+                      </div>
                     </div>
+                    <span className={`text-sm font-semibold flex-shrink-0 ${isIncome ? "text-[var(--color-income)]" : "text-[var(--color-expense)]"}`}>
+                      {isIncome ? "+" : ""}{formatUSDCents(Math.abs(Number(tx.amount)))}
+                    </span>
+                  </a>
+                );
+              })}
+            </div>
+          )}
+        </section>
+
+        {/* Expenses this week */}
+        <section>
+          <div className="mb-3 flex items-center justify-between">
+            <h2 className="text-[10px] font-semibold uppercase tracking-widest text-[var(--text-3)]">Expenses This Week</h2>
+            <a href="/bills" className="text-xs text-purple-400 transition-colors hover:text-purple-300">See all</a>
+          </div>
+          {upcomingBills.length === 0 && (upcomingExpensesWeekResult.data ?? []).length === 0 ? (
+            <div className="rounded-2xl border border-[var(--border)] bg-[var(--bg-card)] p-5 text-center">
+              <p className="text-sm text-[var(--text-3)]">Nothing due soon. You&apos;re ahead of it.</p>
+            </div>
+          ) : (
+            <div className="overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--bg-card)] divide-y divide-[var(--border)]">
+              {upcomingBills.map((bill) => {
+                const isOverdue = bill.next_due_date < today;
+                const isDueSoon = !isOverdue && bill.next_due_date <= in3Days;
+                return (
+                  <div key={bill.id} className="flex items-center justify-between px-4 py-3.5">
                     <div className="min-w-0">
-                      <p className="text-sm font-medium text-[var(--text-1)] truncate">{tx.merchant ?? (isIncome ? "Income" : "Transaction")}</p>
-                      <p className="text-xs text-[var(--text-3)] mt-0.5">{formatDate(tx.date)}{tx.category ? ` · ${tx.category}` : ""}</p>
+                      <p className={`text-sm font-medium ${isOverdue ? "text-red-400" : "text-[var(--text-1)]"}`}>{bill.name}</p>
+                      <p className={`text-xs mt-0.5 ${isOverdue ? "text-red-500" : isDueSoon ? "text-amber-400" : "text-[var(--text-3)]"}`}>
+                        {formatDate(bill.next_due_date)}
+                        {bill.is_autopay && <span className="ml-2 text-[var(--text-3)]">Autopay</span>}
+                      </p>
+                    </div>
+                    <span className={`text-sm font-semibold ${isOverdue ? "text-red-400" : "text-[var(--text-1)]"}`}>
+                      {formatUSDCents(Number(bill.amount))}
+                    </span>
+                  </div>
+                );
+              })}
+              {(upcomingExpensesWeekResult.data ?? []).map((exp) => {
+                const diff = Math.ceil((new Date(exp.expense_date + "T00:00:00").getTime() - Date.now()) / 86400000);
+                const isClose = diff <= 3;
+                return (
+                  <div key={exp.id} className="flex items-center justify-between px-4 py-3.5">
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-[var(--text-1)]">{exp.name}</p>
+                      <p className={`text-xs mt-0.5 ${isClose ? "text-amber-400" : "text-[var(--text-3)]"}`}>
+                        {formatDate(exp.expense_date)} · one-time
+                      </p>
+                    </div>
+                    <span className="text-sm font-semibold text-[var(--text-1)]">{formatUSDCents(Number(exp.amount))}</span>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </section>
+
+        {/* Coming up */}
+        <ComingUpWidget />
+
+        {/* Goals */}
+        <section>
+          <div className="mb-3 flex items-center justify-between">
+            <h2 className="text-[10px] font-semibold uppercase tracking-widest text-[var(--text-3)]">Goals</h2>
+            <a href="/goals" className="text-xs text-purple-400 transition-colors hover:text-purple-300">See all</a>
+          </div>
+          {goals.length === 0 ? (
+            <div className="rounded-2xl border border-[var(--border)] bg-[var(--bg-card)] p-5 text-center">
+              <p className="text-sm text-[var(--text-3)]">No goals yet. Where do you want to go?</p>
+              <a href="/goals" className="mt-2 inline-block text-xs text-purple-400 hover:text-purple-300">Add a goal →</a>
+            </div>
+          ) : (
+            <a href="/goals" className="block overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--bg-card)] divide-y divide-[var(--border)] transition-all active:scale-[0.99] hover:border-[var(--border-strong)]">
+              {goals.slice(0, 3).map((goal) => {
+                const pct = goal.target_amount > 0 ? Math.min(100, Math.round((goal.current_amount / goal.target_amount) * 100)) : 0;
+                const daysLeft = goal.deadline ? Math.ceil((new Date(goal.deadline).getTime() - Date.now()) / 86_400_000) : null;
+                const onTrack = daysLeft === null || daysLeft > 14;
+                return (
+                  <div key={goal.id} className="px-4 py-4">
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm font-medium text-[var(--text-1)]">{goal.name}</p>
+                      <div className="flex items-center gap-2">
+                        {daysLeft !== null && daysLeft <= 30 && (
+                          <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${onTrack ? "bg-green-900/40 text-green-400" : "bg-amber-900/40 text-amber-400"}`}>
+                            {daysLeft <= 0 ? "Deadline passed" : `${daysLeft}d left`}
+                          </span>
+                        )}
+                        <span className="text-xs text-[var(--text-3)]">{pct}%</span>
+                      </div>
+                    </div>
+                    <p className="mt-0.5 text-xs text-[var(--text-3)]">
+                      {formatUSD(goal.current_amount)} of {formatUSD(goal.target_amount)}
+                    </p>
+                    <div className="mt-2.5 h-1.5 w-full rounded-full bg-[var(--bg-elevated)]">
+                      <div
+                        className={`h-1.5 rounded-full transition-all ${pct >= 80 ? "bg-green-500" : pct >= 50 ? "bg-purple-500" : "bg-amber-500"}`}
+                        style={{ width: `${pct}%` }}
+                      />
                     </div>
                   </div>
-                  <span className={`text-sm font-semibold flex-shrink-0 ${isIncome ? "text-[var(--color-income)]" : "text-[var(--color-expense)]"}`}>
-                    {isIncome ? "+" : ""}{formatUSDCents(Math.abs(Number(tx.amount)))}
-                  </span>
-                </div>
-              );
-            })}
-          </div>
+                );
+              })}
+            </a>
+          )}
+        </section>
+
+        {settingsResult.data?.last_plan_review && (
+          <p className="text-center text-[10px] text-[var(--text-3)]">
+            Plan last reviewed: {new Date(settingsResult.data.last_plan_review).toLocaleDateString("en-US", { month: "short", day: "numeric" })} by Kairos
+          </p>
         )}
-      </section>
-
-      {/* 6. Expenses this week */}
-      <section>
-        <div className="mb-3 flex items-center justify-between">
-          <h2 className="text-[10px] font-semibold uppercase tracking-widest text-[var(--text-3)]">Expenses This Week</h2>
-          <a href="/bills" className="text-xs text-purple-400 transition-colors hover:text-purple-300">See all</a>
-        </div>
-        {upcomingBills.length === 0 && (upcomingExpensesWeekResult.data ?? []).length === 0 ? (
-          <div className="rounded-xl border border-[var(--border)] bg-[var(--bg-card)] p-5 text-center">
-            <p className="text-sm text-[var(--text-3)]">Nothing due soon. You&apos;re ahead of it.</p>
-          </div>
-        ) : (
-          <div className="overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--bg-card)] divide-y divide-[var(--border)]">
-            {upcomingBills.map((bill) => {
-              const isOverdue = bill.next_due_date < today;
-              const isDueSoon = !isOverdue && bill.next_due_date <= in3Days;
-              return (
-                <div key={bill.id} className="flex items-center justify-between px-4 py-3.5">
-                  <div className="min-w-0">
-                    <p className={`text-sm font-medium ${isOverdue ? "text-red-400" : "text-[var(--text-1)]"}`}>{bill.name}</p>
-                    <p className={`text-xs mt-0.5 ${isOverdue ? "text-red-500" : isDueSoon ? "text-amber-400" : "text-[var(--text-3)]"}`}>
-                      {formatDate(bill.next_due_date)}
-                      {bill.is_autopay && <span className="ml-2 text-[var(--text-3)]">Autopay</span>}
-                    </p>
-                  </div>
-                  <span className={`text-sm font-semibold ${isOverdue ? "text-red-400" : "text-[var(--text-1)]"}`}>
-                    {formatUSDCents(Number(bill.amount))}
-                  </span>
-                </div>
-              );
-            })}
-            {(upcomingExpensesWeekResult.data ?? []).map((exp) => {
-              const diff = Math.ceil((new Date(exp.expense_date + "T00:00:00").getTime() - Date.now()) / 86400000);
-              const isClose = diff <= 3;
-              return (
-                <div key={exp.id} className="flex items-center justify-between px-4 py-3.5">
-                  <div className="min-w-0">
-                    <p className="text-sm font-medium text-[var(--text-1)]">{exp.name}</p>
-                    <p className={`text-xs mt-0.5 ${isClose ? "text-amber-400" : "text-[var(--text-3)]"}`}>
-                      {formatDate(exp.expense_date)} · one-time
-                    </p>
-                  </div>
-                  <span className="text-sm font-semibold text-[var(--text-1)]">{formatUSDCents(Number(exp.amount))}</span>
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </section>
-
-      {/* 6.5 Coming up next 14 days */}
-      <ComingUpWidget />
-
-      {/* 7. Goals */}
-      <section>
-        <div className="mb-3 flex items-center justify-between">
-          <h2 className="text-[10px] font-semibold uppercase tracking-widest text-[var(--text-3)]">Goals</h2>
-          <a href="/goals" className="text-xs text-purple-400 transition-colors hover:text-purple-300">See all</a>
-        </div>
-        {goals.length === 0 ? (
-          <div className="rounded-xl border border-[var(--border)] bg-[var(--bg-card)] p-5 text-center">
-            <p className="text-sm text-[var(--text-3)]">No goals yet. Where do you want to go?</p>
-            <a href="/goals" className="mt-2 inline-block text-xs text-purple-400 hover:text-purple-300">Add a goal →</a>
-          </div>
-        ) : (
-          <div className="overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--bg-card)] divide-y divide-[var(--border)]">
-            {goals.slice(0, 3).map((goal) => {
-              const pct = goal.target_amount > 0 ? Math.min(100, Math.round((goal.current_amount / goal.target_amount) * 100)) : 0;
-              const daysLeft = goal.deadline ? Math.ceil((new Date(goal.deadline).getTime() - Date.now()) / 86_400_000) : null;
-              const onTrack = daysLeft === null || daysLeft > 14;
-              return (
-                <div key={goal.id} className="px-4 py-4">
-                  <div className="flex items-center justify-between">
-                    <p className="text-sm font-medium text-[var(--text-1)]">{goal.name}</p>
-                    <div className="flex items-center gap-2">
-                      {daysLeft !== null && daysLeft <= 30 && (
-                        <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${onTrack ? "bg-green-900/40 text-green-400" : "bg-amber-900/40 text-amber-400"}`}>
-                          {daysLeft <= 0 ? "Deadline passed" : `${daysLeft}d left`}
-                        </span>
-                      )}
-                      <span className="text-xs text-[var(--text-3)]">{pct}%</span>
-                    </div>
-                  </div>
-                  <p className="mt-0.5 text-xs text-[var(--text-3)]">
-                    {formatUSD(goal.current_amount)} of {formatUSD(goal.target_amount)}
-                  </p>
-                  <div className="mt-2.5 h-1.5 w-full rounded-full bg-[var(--bg-elevated)]">
-                    <div
-                      className={`h-1.5 rounded-full transition-all ${pct >= 80 ? "bg-green-500" : pct >= 50 ? "bg-purple-500" : "bg-amber-500"}`}
-                      style={{ width: `${pct}%` }}
-                    />
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </section>
-
-      {settingsResult.data?.last_plan_review && (
-        <p className="text-center text-[10px] text-[var(--text-3)]">
-          Plan last reviewed: {new Date(settingsResult.data.last_plan_review).toLocaleDateString("en-US", { month: "short", day: "numeric" })} by Kairos
-        </p>
-      )}
+      </DashboardTabs>
     </div>
   );
 }

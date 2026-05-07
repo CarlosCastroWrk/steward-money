@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { getBankColor } from "@/lib/bank-colors";
 import type { Account } from "./types";
 
 function formatCurrency(value: number) {
@@ -93,14 +94,22 @@ export function AccountCard({ account }: { account: Account }) {
     return { lastSyncedLabel: `Updated ${Math.floor(secs / 86400)}d ago`, isStale: true };
   })();
 
+  const bankColor = getBankColor(account.institution);
+
   return (
-    <div className="rounded-xl border border-[var(--border)] bg-[var(--bg-card)] p-5">
+    <div
+      className="rounded-2xl border border-[var(--border)] bg-[var(--bg-card)] overflow-hidden"
+      style={{ borderLeft: `4px solid ${bankColor}` }}
+    >
+      <div className="p-5">
       <div className="flex flex-wrap items-start justify-between gap-3">
-        <div className="min-w-0 flex-1 space-y-2">
+        <div className="min-w-0 flex-1 space-y-1.5">
+          {account.institution ? (
+            <p className="text-xs font-semibold" style={{ color: bankColor }}>{account.institution}</p>
+          ) : null}
           <p className="text-base font-medium text-[var(--text-1)]">{account.name}</p>
-          {account.institution ? <p className="text-sm text-[var(--text-2)]">{account.institution}</p> : null}
           <div className="flex flex-wrap items-center gap-2">
-            <span className={`rounded-full px-2 py-1 text-xs ${typeBadgeClasses(account.type)}`}>{account.type}</span>
+            <span className={`rounded-full px-2 py-0.5 text-xs ${typeBadgeClasses(account.type)}`}>{account.type}</span>
             {account.is_manual ? (
               <span className="rounded border border-[var(--border)] px-2 py-0.5 text-xs text-[var(--text-3)]">Manual</span>
             ) : null}
@@ -141,24 +150,29 @@ export function AccountCard({ account }: { account: Account }) {
         <>
           <div className="mt-4">
             {isCreditOrLoan ? (
-              /* Credit / loan — show owed amount in red */
+              /* Credit / loan — show owed + utilization bar */
               <>
                 <p className="text-2xl font-semibold text-red-400">{formatCurrency(balanceNum)}</p>
                 <p className="mt-0.5 text-xs text-[var(--text-3)]">Owed</p>
-                {creditLimit != null && (
-                  <div className="mt-2 space-y-0.5 border-t border-[var(--border-subtle)] pt-2">
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="text-[var(--text-3)]">Credit limit</span>
-                      <span className="text-[var(--text-2)]">{formatCurrency(creditLimit)}</span>
-                    </div>
-                    {availableCredit != null && (
+                {creditLimit != null && (() => {
+                  const utilPct = Math.min(100, Math.round((balanceNum / creditLimit) * 100));
+                  const barColor = utilPct > 70 ? "bg-red-500" : utilPct > 30 ? "bg-amber-400" : "bg-emerald-500";
+                  return (
+                    <div className="mt-3 space-y-1.5">
                       <div className="flex items-center justify-between text-xs">
-                        <span className="text-[var(--text-3)]">Available credit</span>
-                        <span className="text-[var(--text-2)]">{formatCurrency(availableCredit)}</span>
+                        <span className="text-[var(--text-3)]">Utilization</span>
+                        <span className={utilPct > 70 ? "text-red-400" : utilPct > 30 ? "text-amber-400" : "text-emerald-400"}>{utilPct}%</span>
                       </div>
-                    )}
-                  </div>
-                )}
+                      <div className="h-1.5 w-full rounded-full bg-[var(--bg-elevated)]">
+                        <div className={`h-1.5 rounded-full transition-all ${barColor}`} style={{ width: `${utilPct}%` }} />
+                      </div>
+                      <div className="flex items-center justify-between text-xs pt-0.5">
+                        <span className="text-[var(--text-3)]">Limit {formatCurrency(creditLimit)}</span>
+                        {availableCredit != null && <span className="text-[var(--text-2)]">{formatCurrency(availableCredit)} available</span>}
+                      </div>
+                    </div>
+                  );
+                })()}
               </>
             ) : (
               /* Depository — show available cash */
@@ -206,6 +220,7 @@ export function AccountCard({ account }: { account: Account }) {
           </div>
         </>
       )}
+      </div>
     </div>
   );
 }
