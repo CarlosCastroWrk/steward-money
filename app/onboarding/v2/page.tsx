@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { usePlaidLink, PlaidLinkOnSuccess } from "react-plaid-link";
 import { createClient } from "@/lib/supabase/client";
 
-type Screen = "welcome" | "step1" | "step2" | "step3";
+type Screen = "welcome" | "step1" | "step2" | "step3" | "step4";
 
 const LIFE_STAGES = [
   { id: "student",      label: "Student",         emoji: "🎓" },
@@ -43,19 +43,21 @@ async function saveAndComplete(form: FormState): Promise<void> {
     main_goal: form.goal.trim() || null,
     onboarding_completed: true,
     onboarding_version: "v2",
-    emergency_buffer: 500,
+    emergency_buffer: 0,
     giving_enabled: false,
     giving_value: 10,
     savings_value: 10,
-    weekly_groceries_min: 100,
-    weekly_gas_min: 40,
-    weekly_eating_out_cap: 60,
-    weekly_misc_cap: 50,
+    weekly_groceries_min: 0,
+    weekly_gas_min: 0,
+    weekly_eating_out_cap: 0,
+    weekly_misc_cap: 0,
   }, { onConflict: "user_id" });
 
   // Hard navigation so middleware reads fresh onboarding_completed from DB
   window.location.href = "/";
 }
+
+const HAS_GOOGLE_CLIENT_ID = Boolean(process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID);
 
 export default function OnboardingV2() {
   const [screen, setScreen] = useState<Screen>("welcome");
@@ -66,6 +68,14 @@ export default function OnboardingV2() {
     setSaving(true);
     await saveAndComplete(form);
     // saveAndComplete does a hard redirect; setSaving stays true until redirect
+  }
+
+  function goToNextAfterGoal() {
+    if (HAS_GOOGLE_CLIENT_ID) {
+      setScreen("step4");
+    } else {
+      finishOnboarding();
+    }
   }
 
   if (screen === "welcome") {
@@ -185,10 +195,11 @@ export default function OnboardingV2() {
     );
   }
 
-  // step3
-  return (
+  if (screen === "step3") {
+    const totalSteps = HAS_GOOGLE_CLIENT_ID ? 4 : 3;
+    return (
     <div className="flex min-h-screen flex-col bg-[var(--bg)] px-6 pt-12">
-      <StepHeader step={3} total={3} onBack={() => setScreen("step2")} />
+      <StepHeader step={3} total={totalSteps} onBack={() => setScreen("step2")} />
       <div className="mx-auto w-full max-w-sm flex-1 pt-8">
         <h2 className="text-2xl font-bold tracking-tight text-[var(--text-primary)]">
           One goal to start
@@ -232,11 +243,11 @@ export default function OnboardingV2() {
       >
         <button
           type="button"
-          onClick={finishOnboarding}
+          onClick={HAS_GOOGLE_CLIENT_ID ? goToNextAfterGoal : finishOnboarding}
           disabled={saving}
           className="w-full rounded-2xl bg-[var(--accent)] py-3.5 text-[15px] font-semibold text-white shadow-lg shadow-[var(--accent)]/30 transition-all hover:bg-[var(--accent-deep)] disabled:opacity-40 active:scale-[0.98]"
         >
-          {saving ? "Setting up…" : "Enter Steward"}
+          {saving ? "Setting up…" : HAS_GOOGLE_CLIENT_ID ? "Continue" : "Enter Steward"}
         </button>
         {!form.goal.trim() && (
           <button
@@ -250,7 +261,11 @@ export default function OnboardingV2() {
         )}
       </div>
     </div>
-  );
+    );
+  }
+
+  // step4 — optional calendar connection (only shown when NEXT_PUBLIC_GOOGLE_CLIENT_ID is set)
+  return <CalendarOnboardingStep onFinish={finishOnboarding} saving={saving} />;
 }
 
 function StepHeader({ step, total, onBack }: { step: number; total: number; onBack: () => void }) {
@@ -400,6 +415,117 @@ function PlaidLinkReady({ token, onConnected }: { token: string; onConnected: ()
         {syncing ? "Connecting…" : ready ? "Connect my bank" : "Preparing…"}
       </button>
       {error && <p className="text-center text-xs text-[var(--color-expense)]">{error}</p>}
+    </div>
+  );
+}
+
+// ─── Step 4: Calendar opt-in ──────────────────────────────────────────────────
+
+declare global {
+  interface Window {
+    google?: {
+      accounts: {
+        oauth2: {
+          initTokenClient: (config: {
+            client_id: string;
+            scope: string;
+            callback: (resp: { access_token?: string; error?: string }) => void;
+          }) => { requestAccessToken: () => void };
+        };
+      };
+    };
+  }
+}
+
+function CalendarOnboardingStep({ onFinish, saving }: { onFinish: () => void; saving: boolean }) {
+  const [gsiLoaded, setGsiLoaded] = useState(false);
+  const [connecting, setConnecting] = useState(false);
+  const [connected, setConnected] = useState(false);
+  const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID ?? "";
+
+  useEffect(() => {
+    if (window.google?.accounts) {
+      setGsiLoaded(true);
+    } else {
+      const script = document.createElement("script");
+      script.src = "https://accounts.google.com/gsi/client";
+      script.async = true;
+      script.onload = () => setGsiLoaded(true);
+      document.head.appendChild(script);
+    }
+  }, []);
+
+  function handleConnect() {
+    if (!clientId || !gsiLoaded || !window.google) return;
+    setConnecting(true);
+
+    const client = window.google.accounts.oauth2.initTokenClient({
+      client_id: clientId,
+      scope: "https://www.googleapis.com/auth/calendar.readonly",
+      callback: async (resp) => {
+        if (resp.error || !resp.access_token) {
+          setConnecting(false);
+          return;
+        }
+        await fetch("/api/calendar/connect", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ access_token: resp.access_token }),
+        });
+        await fetch("/api/calendar/sync", { method: "POST" });
+        setConnected(true);
+        setConnecting(false);
+        setTimeout(() => onFinish(), 1200);
+      },
+    });
+
+    client.requestAccessToken();
+  }
+
+  return (
+    <div className="flex min-h-screen flex-col bg-[var(--bg)] px-6 pt-12">
+      <StepHeader step={4} total={4} onBack={() => {}} />
+      <div className="mx-auto w-full max-w-sm flex-1 pt-8">
+        <h2 className="text-2xl font-bold tracking-tight text-[var(--text-primary)]">Sync your calendar?</h2>
+        <p className="mt-2 text-sm text-[var(--text-muted)] leading-relaxed">
+          This is optional but powerful. When I know what&apos;s on your calendar, I can give you smarter guidance. A wedding in 3 months means save now. A business trip means budget for travel.
+        </p>
+
+        {connected ? (
+          <div className="mt-8 flex items-center gap-3 rounded-xl border border-emerald-800/40 bg-emerald-950/20 px-4 py-4">
+            <span className="h-2 w-2 flex-shrink-0 rounded-full bg-emerald-400" />
+            <p className="text-sm text-[var(--text-primary)]">Calendar connected. Setting up your account…</p>
+          </div>
+        ) : (
+          <div className="mt-8 space-y-3">
+            <button
+              type="button"
+              onClick={handleConnect}
+              disabled={connecting || !gsiLoaded}
+              className="flex w-full items-center justify-center gap-2.5 rounded-2xl border border-[var(--border-default)] bg-[var(--bg-card)] py-3.5 text-[15px] font-semibold text-[var(--text-primary)] transition-all hover:border-[var(--border-strong)] disabled:opacity-40 active:scale-[0.98]"
+            >
+              <svg width="18" height="18" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M43.6 20.5H42V20H24v8h11.3C33.7 32.9 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.1 8 2.9l5.7-5.7C34.6 6.1 29.6 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.7-.4-3.5z" fill="#FFC107"/>
+                <path d="M6.3 14.7l6.6 4.8C14.7 16.1 19 13 24 13c3.1 0 5.8 1.1 8 2.9l5.7-5.7C34.6 6.1 29.6 4 24 4 16.3 4 9.7 8.3 6.3 14.7z" fill="#FF3D00"/>
+                <path d="M24 44c5.5 0 10.4-2.1 14.1-5.4l-6.5-5.5C29.6 35 26.9 36 24 36c-5.2 0-9.6-3.1-11.3-7.5l-6.5 5C9.6 40.1 16.3 44 24 44z" fill="#4CAF50"/>
+                <path d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.3 4.1-4.2 5.4l6.5 5.5C37.3 38.9 44 33.9 44 24c0-1.3-.1-2.7-.4-3.5z" fill="#1976D2"/>
+              </svg>
+              {connecting ? "Connecting…" : "Connect Google Calendar"}
+            </button>
+
+            <button
+              type="button"
+              onClick={onFinish}
+              disabled={saving}
+              className="w-full rounded-2xl bg-[var(--accent)] py-3.5 text-[15px] font-semibold text-white shadow-lg shadow-[var(--accent)]/30 transition-all hover:bg-[var(--accent-deep)] disabled:opacity-40 active:scale-[0.98]"
+            >
+              {saving ? "Setting up…" : "Skip for now — Enter Steward"}
+            </button>
+
+            <p className="text-center text-[11px] text-[var(--text-dim)]">Read-only access. We never modify your calendar.</p>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

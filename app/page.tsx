@@ -4,6 +4,8 @@ import { advanceStaleIncomeDates } from "@/lib/income";
 import { createClient } from "@/lib/supabase/server";
 import { formatUSD, formatUSDCents, formatDate } from "@/lib/format";
 import { GreetingHeader } from "@/components/dashboard/GreetingHeader";
+import { CalendarOptInCard } from "@/components/dashboard/CalendarOptInCard";
+import { CalendarCard } from "@/components/dashboard/CalendarCard";
 
 export const metadata: Metadata = {
   title: "Dashboard — Steward Money",
@@ -135,7 +137,11 @@ export default async function DashboardPage() {
           <div className="mt-4 flex gap-6 border-t border-white/10 pt-3.5">
             <div>
               <p className="text-[10px] uppercase tracking-wide text-white/50">Protected</p>
-              <p className="text-sm font-semibold text-white/80">{formatUSD(result.emergencyBuffer)}</p>
+              {result.emergencyBuffer > 0 ? (
+                <p className="text-sm font-semibold text-white/80">{formatUSD(result.emergencyBuffer)}</p>
+              ) : (
+                <a href="/settings" className="text-xs text-white/40 hover:text-white/60 transition-colors">Not set →</a>
+              )}
             </div>
             <div>
               <p className="text-[10px] uppercase tracking-wide text-white/50">Committed</p>
@@ -148,6 +154,10 @@ export default async function DashboardPage() {
           </div>
         </div>
       </div>
+
+      {/* 3.5 Calendar (connected users) + opt-in (unconnected, env set) */}
+      <CalendarCard />
+      {process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID && <CalendarOptInCard />}
 
       {/* 4. Stats row */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">

@@ -170,6 +170,12 @@ export function VirtualCard({
       >
         <p className="px-4 pt-4 pb-2 text-[10px] font-semibold uppercase tracking-widest text-[var(--text-muted)]">Protected buckets</p>
         <div className="divide-y divide-[var(--border-subtle)]">
+          {buckets.length === 0 && (
+            <div className="flex items-center justify-between px-4 py-3">
+              <span className="text-sm text-[var(--text-muted)]">No protected buckets set yet</span>
+              <a href="/settings" className="text-xs text-[var(--accent)] hover:opacity-80 transition-opacity">Configure →</a>
+            </div>
+          )}
           {buckets.map((b) => (
             <div key={b.label} className="flex items-center justify-between px-4 py-3">
               <span className="flex items-center gap-2 text-sm text-[var(--text-secondary)]">

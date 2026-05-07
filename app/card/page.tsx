@@ -28,8 +28,8 @@ export default async function CardPage() {
     <div className="px-4 py-6 md:px-8 md:py-8">
       <div className="mx-auto max-w-lg">
         <header className="mb-6">
-          <h1 className="text-2xl font-semibold text-white">Steward Card</h1>
-          <p className="mt-1 text-sm text-zinc-500">Spend only what&apos;s been cleared.</p>
+          <h1 className="text-2xl font-semibold text-[var(--text-1)]">Steward Card</h1>
+          <p className="mt-1 text-sm text-[var(--text-2)]">Spend only what&apos;s been cleared.</p>
         </header>
         <VirtualCard
           safeToSpend={safe.safeToSpend}
