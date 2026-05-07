@@ -168,11 +168,21 @@ function ActionCard({ action }: { action: Action }) {
     <div className="mt-1.5 flex items-center gap-2 rounded-xl border border-[var(--border)] bg-[var(--bg-elevated)] px-3 py-1.5">
       <span className="text-sm">{icons[action.tool] ?? "✓"}</span>
       <div className="min-w-0">
-        <p className="text-[11px] font-medium text-[var(--text-2)]">{action.label}</p>
+        <p className="text-[11px] font-medium text-emerald-500">{action.label}</p>
         {action.detail && <p className="text-[10px] text-[var(--text-3)] truncate">{action.detail}</p>}
       </div>
     </div>
   );
+}
+
+function dedupeActions(actions: Action[]): Action[] {
+  const seen = new Set<string>();
+  return actions.filter((a) => {
+    const key = `${a.tool}:${a.detail}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
 }
 
 // ── Message list ───────────────────────────────────────────────────────────
@@ -260,7 +270,7 @@ function MessageList({
           </div>
           {m.role === "assistant" && m.actions && m.actions.length > 0 && (
             <div className="mt-1 space-y-1">
-              {m.actions.map((a, j) => <ActionCard key={j} action={a} />)}
+              {dedupeActions(m.actions).map((a, j) => <ActionCard key={j} action={a} />)}
             </div>
           )}
         </div>

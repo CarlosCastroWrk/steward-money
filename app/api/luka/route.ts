@@ -75,16 +75,18 @@ const TOOLS: Anthropic.Tool[] = [
   },
   {
     name: "add_income_source",
-    description: "Add a new income source.",
+    description: "Add a new income source. For salaried/fixed income provide 'amount'. For hourly workers provide 'hourly_rate' and 'weekly_hours' instead — amount will be calculated automatically. 'next_expected_date' is when the next paycheck arrives (YYYY-MM-DD).",
     input_schema: {
       type: "object",
       properties: {
         name: { type: "string" },
-        amount: { type: "number" },
+        amount: { type: "number", description: "Fixed paycheck amount. Omit if hourly." },
+        hourly_rate: { type: "number", description: "Hourly pay rate (for variable/hourly workers)" },
+        weekly_hours: { type: "number", description: "Average hours per week (for hourly workers)" },
         frequency: { type: "string", enum: ["monthly", "biweekly", "weekly", "twice monthly", "quarterly", "yearly"] },
-        next_date: { type: "string", description: "YYYY-MM-DD" },
+        next_expected_date: { type: "string", description: "Next payday date YYYY-MM-DD" },
       },
-      required: ["name", "amount", "frequency", "next_date"],
+      required: ["name", "frequency", "next_expected_date"],
     },
   },
   {
@@ -277,8 +279,12 @@ async function executeTool(
           user_id: userId, name: input.name, amount: input.amount,
           frequency: input.frequency, next_due_date: input.next_due_date, is_autopay: input.is_autopay ?? false,
         });
-        if (error) return { result: { error: error.message }, refreshNeeded: false };
-        return { result: { success: true, message: `Bill "${input.name}" added` }, refreshNeeded: true };
+        if (error) {
+          console.error("[luka:add_bill]", error.message);
+          return { result: { error: `Database error: ${error.message}` }, refreshNeeded: false };
+        }
+        const fmtAmt = `$${Number(input.amount).toLocaleString()}`;
+        return { result: { success: true, message: `${input.name} — ${fmtAmt}/${input.frequency}, due ${input.next_due_date}` }, refreshNeeded: true };
       }
 
       case "add_goal": {
@@ -302,13 +308,42 @@ async function executeTool(
       }
 
       case "add_income_source": {
+        // Resolve amount: use fixed amount or calculate from hourly
+        const hourlyRate = Number(input.hourly_rate ?? 0);
+        const weeklyHours = Number(input.weekly_hours ?? 0);
+        let resolvedAmount = Number(input.amount ?? 0);
+        if (!resolvedAmount && hourlyRate && weeklyHours) {
+          // Approximate weekly earnings; frequency determines how we store it
+          const weeklyPay = hourlyRate * weeklyHours;
+          resolvedAmount = input.frequency === "biweekly" ? weeklyPay * 2
+            : input.frequency === "monthly" ? weeklyPay * (52 / 12)
+            : input.frequency === "weekly" ? weeklyPay
+            : weeklyPay;
+          resolvedAmount = Math.round(resolvedAmount * 100) / 100;
+        }
+        if (!resolvedAmount) {
+          return { result: { error: "Provide either 'amount' or both 'hourly_rate' and 'weekly_hours'." }, refreshNeeded: false };
+        }
+
+        const nextDate = String(input.next_expected_date ?? "");
+        if (!nextDate) {
+          return { result: { error: "next_expected_date is required (YYYY-MM-DD)." }, refreshNeeded: false };
+        }
+
         const { error } = await supabase.from("income_sources").insert({
-          user_id: userId, name: input.name, amount: input.amount,
-          frequency: input.frequency, next_date: input.next_date,
-          next_expected_date: input.next_date, is_active: true, is_variable: false,
+          user_id: userId,
+          name: input.name,
+          amount: resolvedAmount,
+          frequency: input.frequency,
+          next_expected_date: nextDate,
+          is_active: true,
         });
-        if (error) return { result: { error: error.message }, refreshNeeded: false };
-        return { result: { success: true, message: `Income source "${input.name}" added` }, refreshNeeded: true };
+        if (error) {
+          console.error("[luka:add_income_source]", error.message);
+          return { result: { error: `Database error: ${error.message}` }, refreshNeeded: false };
+        }
+        const rateLabel = hourlyRate ? ` (${hourlyRate}/hr × ${weeklyHours}h/wk)` : "";
+        return { result: { success: true, message: `${input.name} added — $${resolvedAmount.toLocaleString()}/${input.frequency}${rateLabel}` }, refreshNeeded: true };
       }
 
       case "mark_bill_paid": {
@@ -323,14 +358,13 @@ async function executeTool(
       }
 
       case "mark_income_received": {
-        const { data: sources } = await supabase.from("income_sources").select("id, name, next_date, next_expected_date, frequency").eq("user_id", userId).eq("is_active", true);
+        const { data: sources } = await supabase.from("income_sources").select("id, name, next_expected_date, frequency").eq("user_id", userId).eq("is_active", true);
         const query = String(input.income_name).toLowerCase();
         const src = (sources ?? []).find((s) => s.name.toLowerCase().includes(query));
         if (!src) return { result: { error: `No income source found matching "${input.income_name}"` }, refreshNeeded: false };
-        const currentDate = src.next_date || src.next_expected_date;
-        if (!currentDate) return { result: { error: "Income source has no date" }, refreshNeeded: false };
-        const next = advanceIncomeDate(currentDate, src.frequency);
-        await supabase.from("income_sources").update({ next_date: next, next_expected_date: next }).eq("id", src.id);
+        if (!src.next_expected_date) return { result: { error: "Income source has no next date" }, refreshNeeded: false };
+        const next = advanceIncomeDate(src.next_expected_date, src.frequency);
+        await supabase.from("income_sources").update({ next_expected_date: next }).eq("id", src.id);
         return { result: { success: true, message: `"${src.name}" marked received. Next: ${next}` }, refreshNeeded: true };
       }
 
@@ -584,6 +618,8 @@ ${silasInsights}
 You manage money as a steward — giving comes first, every dollar has a purpose, wisdom guides every decision. Never quote scripture unless asked. But let stewardship principles guide your recommendations.
 
 When asked to take action, use your tools. When asked a question, answer with real numbers. When opening proactively, lead with what matters most.
+
+**Trust tool results.** If a tool call returned success, the action is done — don't say "let me add that now" or "I haven't added this yet." Reference the confirmed result. If a tool returned an error, tell the user exactly what failed and ask for clarification. Never re-attempt a tool that already succeeded.
 
 If the user mentions a significant life change (new job, moving, relationship change, major purchase), use the trigger_kairos tool and acknowledge the change warmly.${kairosOpener}`;
 
