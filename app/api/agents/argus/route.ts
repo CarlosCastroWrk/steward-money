@@ -4,6 +4,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { calculateSafeToSpend } from "@/lib/safe-to-spend";
 import { advanceStaleIncomeDates } from "@/lib/income";
 import { saveAgentMemory } from "@/lib/agent-memory";
+import { getUpcomingEvents } from "@/lib/calendar-context";
 
 type AlertInput = {
   user_id: string;
@@ -23,13 +24,14 @@ async function runArgus(supabase: ReturnType<typeof createClient>, userId: strin
   const in3Days = new Date(Date.now() + 3 * 86_400_000).toISOString().split("T")[0];
   const monthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split("T")[0];
 
-  const [billsRes, goalsRes, incomeRes, safeRes, settingsRes, givingTxRes] = await Promise.all([
+  const [billsRes, goalsRes, incomeRes, safeRes, settingsRes, givingTxRes, calendarEvents] = await Promise.all([
     supabase.from("bills").select("name, amount, next_due_date, is_autopay").eq("user_id", userId),
     supabase.from("goals").select("name, target_amount, current_amount, deadline").eq("user_id", userId),
     supabase.from("income_sources").select("name, next_date, next_expected_date").eq("user_id", userId).eq("is_active", true),
     calculateSafeToSpend(supabase, userId),
     supabase.from("user_settings").select("giving_enabled, giving_value, kairos_pending").eq("user_id", userId).maybeSingle(),
     supabase.from("transactions").select("amount, category").eq("user_id", userId).gt("amount", 0).gte("date", monthStart),
+    getUpcomingEvents(supabase, userId, 14),
   ]);
 
   // Auto-advance stale income dates silently
@@ -88,6 +90,23 @@ async function runArgus(supabase: ReturnType<typeof createClient>, userId: strin
     );
     if (!givingThisMonth) {
       alerts.push({ user_id: userId, type: "giving_not_honored", alert_type: "giving_not_honored", message: "No giving recorded this month yet.", severity: "info", agent: "argus" });
+    }
+  }
+
+  // Check 8 — Expensive calendar event coming + tight cash flow
+  const bigEvents = calendarEvents.filter((e) => e.spending_estimate >= 100 && !e.is_income_event);
+  if (bigEvents.length > 0) {
+    const totalEventCost = bigEvents.reduce((s, e) => s + e.spending_estimate, 0);
+    const eventNames = bigEvents.slice(0, 2).map((e) => `${e.title ?? "event"} (~${fmt(e.spending_estimate)})`).join(", ");
+    if (safeRes.safeToSpend < totalEventCost * 1.5) {
+      alerts.push({
+        user_id: userId,
+        type: "calendar_cash_flow",
+        alert_type: "calendar_cash_flow",
+        message: `Upcoming: ${eventNames}. Safe-to-spend may be tight — plan ahead.`,
+        severity: safeRes.safeToSpend < totalEventCost ? "warning" : "info",
+        agent: "argus",
+      });
     }
   }
 

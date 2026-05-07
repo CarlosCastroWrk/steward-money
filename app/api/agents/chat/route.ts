@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
 import { createClient } from "@/lib/supabase/server";
+import { getUpcomingEvents, formatCalendarContextForAgent } from "@/lib/calendar-context";
+import { calculateSafeToSpend } from "@/lib/safe-to-spend";
 
 const client = new Anthropic();
 
@@ -78,12 +80,24 @@ Keep responses brief and referenced to past context (2-3 sentences).`,
   },
   kairos: {
     name: "Kairos",
-    role: "Life Transitions",
-    systemPrompt: `You are Kairos, attuned to life's significant moments and transitions.
-You recognize that big life changes (new job, move, relationship, loss) require different financial rules.
-You help users think through how their financial approach needs to shift during transitions.
-"Big moments need different rules." You're thoughtful and aware of the full picture.
-Keep responses attuned to the life event context (2-4 sentences).`,
+    role: "Calendar & Life Interpreter",
+    systemPrompt: `You are Kairos, the Steward Money agent who watches the rhythm of life. You have access to the user's Google Calendar and you help them prepare for what's coming.
+
+Your job:
+- Surface upcoming events that will affect their finances
+- Help them plan financially for life moments
+- Connect calendar events to spending patterns
+- Detect life transitions (job changes, moves, relationships) when they appear in calendar context
+
+Your voice:
+- Aware of timing ("kairos" means the right moment, the appointed time)
+- Patient but pointed — you see what's coming before it arrives
+- "There's a season for everything"
+- Not anxious, not rushing — just deeply aware
+
+When the user taps your card to chat, start by referencing the most relevant upcoming event. Then ask how you can help them prepare financially.
+
+Be specific with numbers when you have them. Suggest concrete actions: set aside X amount, create a savings goal, review your buffer. Keep responses focused (2-4 sentences).`,
   },
 };
 
@@ -101,8 +115,20 @@ export async function POST(req: NextRequest) {
   const config = AGENT_CONFIG[agent];
   if (!config) return NextResponse.json({ error: "Unknown agent" }, { status: 400 });
 
-  const systemPrompt = context
-    ? `${config.systemPrompt}\n\nContext for this conversation: ${context}`
+  // Kairos gets enriched context: calendar events + financial summary
+  let enrichedContext = context ?? "";
+  if (agent === "kairos") {
+    const [calendarEvents, safeResult] = await Promise.all([
+      getUpcomingEvents(supabase, user.id, 30),
+      calculateSafeToSpend(supabase, user.id),
+    ]);
+    const calCtx = formatCalendarContextForAgent(calendarEvents);
+    const finCtx = `Current financial position: Safe-to-spend $${safeResult.safeToSpend.toFixed(0)}, liquid cash $${safeResult.liquidTotal.toFixed(0)}.`;
+    enrichedContext = [enrichedContext, calCtx, finCtx].filter(Boolean).join("\n\n");
+  }
+
+  const systemPrompt = enrichedContext
+    ? `${config.systemPrompt}\n\nContext for this conversation: ${enrichedContext}`
     : config.systemPrompt;
 
   try {

@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { saveAgentMemory } from "@/lib/agent-memory";
+import { getUpcomingEvents } from "@/lib/calendar-context";
+import { formatDate } from "@/lib/format";
 
 type KairosEvent = {
   user_id: string;
@@ -101,24 +103,76 @@ export async function GET() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const { data: settings } = await supabase
-    .from("user_settings")
-    .select("kairos_pending, last_plan_review")
-    .eq("user_id", user.id)
-    .maybeSingle();
+  const [settingsRes, lifeEventsRes, calendarEvents] = await Promise.all([
+    supabase.from("user_settings").select("kairos_pending, last_plan_review").eq("user_id", user.id).maybeSingle(),
+    supabase.from("life_events").select("*").eq("user_id", user.id).eq("acknowledged", false).order("detected_at", { ascending: false }).limit(5),
+    getUpcomingEvents(supabase, user.id, 21),
+  ]);
 
-  const { data: recentEvents } = await supabase
-    .from("life_events")
-    .select("*")
-    .eq("user_id", user.id)
-    .eq("acknowledged", false)
-    .order("detected_at", { ascending: false })
-    .limit(5);
+  // Build calendar-based Kairos insights
+  const calendarInsights: Array<{
+    id: string; type: string; headline: string; detail: string; event_date: string; spending_estimate: number;
+  }> = [];
+
+  const now = Date.now();
+
+  for (const event of calendarEvents) {
+    const daysAway = Math.ceil((new Date(event.start_time).getTime() - now) / 86_400_000);
+    const dateLabel = formatDate(event.start_time.split("T")[0]);
+
+    if (!event.title) continue;
+
+    if (event.spending_estimate >= 100) {
+      calendarInsights.push({
+        id: `cal-${event.id}`,
+        type: "big_expense",
+        headline: `⏳ ${event.title} in ${daysAway} day${daysAway !== 1 ? "s" : ""} · est. $${event.spending_estimate.toFixed(0)}`,
+        detail: `${dateLabel}${event.analysis_notes ? ` — ${event.analysis_notes}` : ""}`,
+        event_date: event.start_time,
+        spending_estimate: event.spending_estimate,
+      });
+    } else if (event.category === "travel") {
+      calendarInsights.push({
+        id: `cal-${event.id}`,
+        type: "travel",
+        headline: `⏳ ${event.title} · ${dateLabel}`,
+        detail: "Travel weeks tend to run higher than normal. Want to plan ahead?",
+        event_date: event.start_time,
+        spending_estimate: event.spending_estimate,
+      });
+    } else if (event.category === "gift" || event.category === "family") {
+      calendarInsights.push({
+        id: `cal-${event.id}`,
+        type: "gift",
+        headline: `⏳ ${event.title} · ${dateLabel}`,
+        detail: "Want help planning a gift budget?",
+        event_date: event.start_time,
+        spending_estimate: event.spending_estimate,
+      });
+    }
+  }
+
+  // One "busy season" card if 5+ events in next 14 days
+  const busyEvents = calendarEvents.filter((e) => {
+    const days = (new Date(e.start_time).getTime() - now) / 86_400_000;
+    return days >= 0 && days <= 14;
+  });
+  if (busyEvents.length >= 5 && calendarInsights.length < 3) {
+    calendarInsights.push({
+      id: "cal-busy-season",
+      type: "busy_season",
+      headline: `You've got ${busyEvents.length} events in the next 2 weeks. That's a busy season.`,
+      detail: "Busy schedules usually mean unplanned spending. Want to review your buffer?",
+      event_date: busyEvents[0].start_time,
+      spending_estimate: 0,
+    });
+  }
 
   return NextResponse.json({
-    kairos_pending: settings?.kairos_pending ?? false,
-    last_plan_review: settings?.last_plan_review ?? null,
-    events: recentEvents ?? [],
+    kairos_pending: settingsRes.data?.kairos_pending ?? false,
+    last_plan_review: settingsRes.data?.last_plan_review ?? null,
+    events: lifeEventsRes.data ?? [],
+    calendar_insights: calendarInsights.slice(0, 4),
   });
 }
 

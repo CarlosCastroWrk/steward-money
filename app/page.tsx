@@ -6,6 +6,7 @@ import { formatUSD, formatUSDCents, formatDate } from "@/lib/format";
 import { GreetingHeader } from "@/components/dashboard/GreetingHeader";
 import { CalendarOptInCard } from "@/components/dashboard/CalendarOptInCard";
 import { CalendarCard } from "@/components/dashboard/CalendarCard";
+import { ComingUpWidget } from "@/components/dashboard/ComingUpWidget";
 
 export const metadata: Metadata = {
   title: "Dashboard — Steward Money",
@@ -261,6 +262,9 @@ export default async function DashboardPage() {
           </div>
         )}
       </section>
+
+      {/* 6.5 Coming up next 14 days */}
+      <ComingUpWidget />
 
       {/* 7. Goals */}
       <section>

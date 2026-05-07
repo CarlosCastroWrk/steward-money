@@ -173,14 +173,18 @@ export function PulseView() {
     if (mannaRes.status === "fulfilled") {
       const manna = mannaRes.value;
       if (manna && manna.hasPaycheckDate && !manna.isNegative) {
+        const eventHint = manna.nextBigEvent
+          ? ` · Saving for ${manna.nextBigEvent.title ?? "upcoming event"} ($${(manna.nextBigEvent.estimate ?? 0).toFixed(0)} est.)`
+          : "";
+        const effectiveAllowance = manna.adjustedDailyAllowance ?? manna.dailyAllowance;
         items.push({
           id: "manna-today",
           agent: "manna",
-          headline: `${formatUSD(manna.remaining)} available for today`,
-          detail: `Daily allowance: ${formatUSD(manna.dailyAllowance)}${manna.spentToday > 0 ? ` · Spent so far: ${formatUSD(manna.spentToday)}` : ""}`,
+          headline: `${formatUSD(effectiveAllowance)} for today${manna.nextBigEvent ? ` (adjusted for upcoming event)` : ""}`,
+          detail: `Base allowance: ${formatUSD(manna.dailyAllowance)}${eventHint}${manna.spentToday > 0 ? ` · Spent: ${formatUSD(manna.spentToday)}` : ""}`,
           priority: 20,
           createdAt: now,
-          context: `Today's provision. Daily allowance: ${formatUSD(manna.dailyAllowance)}. Spent today: ${formatUSD(manna.spentToday)}. Remaining: ${formatUSD(manna.remaining)}. Days until next paycheck: ${manna.daysUntilPaycheck ?? "unknown"}.`,
+          context: `Today's provision. Daily allowance: ${formatUSD(manna.dailyAllowance)}. Adjusted: ${formatUSD(effectiveAllowance)}. Spent today: ${formatUSD(manna.spentToday)}. Days until next paycheck: ${manna.daysUntilPaycheck ?? "unknown"}.${manna.upcomingEventCost > 0 ? ` Upcoming event costs in next 14 days: $${manna.upcomingEventCost.toFixed(0)}.` : ""}`,
         });
       } else if (manna?.isNegative) {
         items.push({
@@ -273,8 +277,9 @@ export function PulseView() {
       });
     }
 
-    // 9. Kairos life events — priority 70
+    // 9. Kairos — life events + calendar insights — priority 70
     if (kairosRes.status === "fulfilled") {
+      // Life events from DB
       const events: Array<{ id: string; event_type: string; event_description: string; created_at?: string }> = kairosRes.value.events ?? [];
       events.forEach((ev) => {
         items.push({
@@ -290,6 +295,20 @@ export function PulseView() {
             await supabase.from("life_events").update({ acknowledged: true }).eq("id", ev.id);
             setFeed((prev) => prev.filter((i) => i.id !== `kairos-${ev.id}`));
           },
+        });
+      });
+
+      // Calendar-based insights from Kairos — shown at higher priority (15) since they're time-sensitive
+      const calendarInsights: Array<{ id: string; type: string; headline: string; detail: string; event_date: string; spending_estimate: number }> = kairosRes.value.calendar_insights ?? [];
+      calendarInsights.forEach((insight) => {
+        items.push({
+          id: insight.id,
+          agent: "kairos",
+          headline: insight.headline,
+          detail: insight.detail,
+          priority: insight.spending_estimate >= 200 ? 8 : 15, // expensive events near Argus in priority
+          createdAt: insight.event_date,
+          context: `Calendar event coming up. Type: ${insight.type}. ${insight.detail} Estimated cost: $${insight.spending_estimate}.`,
         });
       });
     }

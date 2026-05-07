@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { calculateSafeToSpend } from "@/lib/safe-to-spend";
 import { saveAgentMemory } from "@/lib/agent-memory";
+import { getUpcomingEvents } from "@/lib/calendar-context";
 
 // GET — compute today's daily allowance ("daily bread")
 export async function GET() {
@@ -37,6 +38,20 @@ export async function GET() {
 
   const spentToday = (txToday ?? []).reduce((s, t) => s + Math.abs(Number(t.amount)), 0);
 
+  // Pull upcoming calendar events to surface as context (no changes to core calculation)
+  const upcomingEvents = await getUpcomingEvents(supabase, user.id, 14);
+  const upcomingEventCost = upcomingEvents
+    .filter((e) => !e.is_income_event && e.spending_estimate > 0)
+    .reduce((s, e) => s + e.spending_estimate, 0);
+  const nextBigEvent = upcomingEvents
+    .filter((e) => !e.is_income_event && e.spending_estimate >= 50)
+    .sort((a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime())[0] ?? null;
+
+  // Suggested adjusted allowance: set aside upcoming event costs spread across days
+  const adjustedDailyAllowance = upcomingEventCost > 0 && daysUntilPaycheck > 0
+    ? Math.max(0, (safeToSpend - upcomingEventCost) / daysUntilPaycheck)
+    : dailyAllowance;
+
   // Check if we already cached today
   const { data: existing } = await supabase
     .from("manna_daily")
@@ -62,11 +77,18 @@ export async function GET() {
   return NextResponse.json({
     date: today,
     dailyAllowance,
+    adjustedDailyAllowance,
     spentToday,
     remaining: dailyAllowance - spentToday,
     safeToSpend,
     daysUntilPaycheck,
     hasPaycheckDate,
     isNegative,
+    upcomingEventCost,
+    nextBigEvent: nextBigEvent ? {
+      title: nextBigEvent.title,
+      date: nextBigEvent.start_time,
+      estimate: nextBigEvent.spending_estimate,
+    } : null,
   });
 }

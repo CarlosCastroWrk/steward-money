@@ -6,6 +6,7 @@ import { advanceIncomeDate } from "@/lib/income";
 import { summarizeAgentMemoriesForLuka } from "@/lib/agent-memory";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { getIncompleteSetup } from "@/lib/progressive-setup";
+import { getUpcomingEvents, formatCalendarContextForAgent } from "@/lib/calendar-context";
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
@@ -508,7 +509,7 @@ export async function POST(req: NextRequest) {
   };
   const { messages: clientMessages, setup_mode: setupMode = false } = body;
 
-  const [settingsResult, safeResult, alertsResult, insightsResult, solomonResult, kairosResult, agentMemoryContext, accountsResult] = await Promise.all([
+  const [settingsResult, safeResult, alertsResult, insightsResult, solomonResult, kairosResult, agentMemoryContext, accountsResult, calendarEvents] = await Promise.all([
     supabase.from("user_settings").select("*").eq("user_id", user.id).maybeSingle(),
     calculateSafeToSpend(supabase, user.id),
     supabase.from("alerts").select("message, severity").eq("user_id", user.id).eq("is_read", false).limit(4),
@@ -517,6 +518,7 @@ export async function POST(req: NextRequest) {
     supabase.from("user_settings").select("kairos_pending").eq("user_id", user.id).maybeSingle(),
     summarizeAgentMemoriesForLuka(supabase, user.id),
     supabase.from("accounts").select("name, institution, type, purpose").eq("user_id", user.id).eq("is_active", true).order("created_at", { ascending: false }),
+    getUpcomingEvents(supabase, user.id, 30),
   ]);
 
   const settings = settingsResult.data;
@@ -621,7 +623,7 @@ When asked to take action, use your tools. When asked a question, answer with re
 
 **Trust tool results.** If a tool call returned success, the action is done — don't say "let me add that now" or "I haven't added this yet." Reference the confirmed result. If a tool returned an error, tell the user exactly what failed and ask for clarification. Never re-attempt a tool that already succeeded.
 
-If the user mentions a significant life change (new job, moving, relationship change, major purchase), use the trigger_kairos tool and acknowledge the change warmly.${kairosOpener}`;
+If the user mentions a significant life change (new job, moving, relationship change, major purchase), use the trigger_kairos tool and acknowledge the change warmly.${kairosOpener}${calendarEvents.length > 0 ? `\n\n${formatCalendarContextForAgent(calendarEvents)}` : ""}`;
 
   const messages: Anthropic.MessageParam[] = clientMessages.map((m) => ({
     role: m.role,

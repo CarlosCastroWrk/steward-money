@@ -6,6 +6,8 @@ import { createClient } from "@/lib/supabase/client";
 import { GOAL_TYPES } from "./types";
 import type { Goal } from "./types";
 
+interface CalEvent { id: string; title: string | null; start_time: string; spending_estimate: number }
+
 type Props = {
   open: boolean;
   onClose: () => void;
@@ -27,6 +29,8 @@ export function AddGoalModal({ open, onClose, goal }: Props) {
   const [priority, setPriority] = useState("5");
   const [submitting, setSubmitting] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [calEvents, setCalEvents] = useState<CalEvent[]>([]);
+  const [linkedEvent, setLinkedEvent] = useState<string>(""); // event id
 
   useEffect(() => {
     if (open && goal) {
@@ -44,8 +48,21 @@ export function AddGoalModal({ open, onClose, goal }: Props) {
       setType(GOAL_TYPES[0]);
       setPriority("5");
       setSaveError(null);
+      setLinkedEvent("");
     }
   }, [open, goal]);
+
+  // Load upcoming calendar events for linking
+  useEffect(() => {
+    if (!open) return;
+    const supabase = createClient();
+    supabase.from("calendar_events_cache")
+      .select("id, title, start_time, spending_estimate")
+      .gte("start_time", new Date().toISOString())
+      .order("start_time", { ascending: true })
+      .limit(10)
+      .then(({ data }) => setCalEvents(data ?? []));
+  }, [open]);
 
   if (!open) return null;
 
@@ -191,6 +208,42 @@ export function AddGoalModal({ open, onClose, goal }: Props) {
               onChange={(e) => setDeadline(e.target.value)}
             />
           </div>
+          {calEvents.length > 0 && (
+            <div>
+              <label htmlFor="goal-event" className="text-xs text-zinc-400">
+                Linked to event <span className="text-zinc-600">(optional — sets deadline)</span>
+              </label>
+              <select
+                id="goal-event"
+                className={inputClass}
+                value={linkedEvent}
+                onChange={(e) => {
+                  const eventId = e.target.value;
+                  setLinkedEvent(eventId);
+                  if (eventId) {
+                    const ev = calEvents.find((c) => c.id === eventId);
+                    if (ev) {
+                      const d = new Date(ev.start_time);
+                      setDeadline(d.toISOString().split("T")[0]);
+                    }
+                  }
+                }}
+              >
+                <option value="">None</option>
+                {calEvents.map((ev) => {
+                  const d = new Date(ev.start_time);
+                  const label = ev.title ?? "Untitled event";
+                  const dateStr = d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+                  return (
+                    <option key={ev.id} value={ev.id}>
+                      {label} · {dateStr}
+                      {ev.spending_estimate > 0 ? ` · $${Math.round(ev.spending_estimate)}` : ""}
+                    </option>
+                  );
+                })}
+              </select>
+            </div>
+          )}
           <div>
             <label htmlFor="goal-priority" className="text-xs text-zinc-400">
               Priority (1 = highest, 10 = lowest)

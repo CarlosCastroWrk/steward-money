@@ -92,13 +92,15 @@ export async function POST(req: NextRequest) {
 
   const classifyMsg = await anthropic.messages.create({
     model: "claude-sonnet-4-6",
-    max_tokens: 800,
+    max_tokens: 1200,
     messages: [{
       role: "user",
-      content: `Classify each calendar event as a financial event. For each, return a JSON array (same order as input) with:
-- spending_estimate: number (0 if not a spending event, estimated $ cost if yes)
+      content: `Classify each calendar event for its financial impact. For each, return a JSON array (same order as input) with:
+- spending_estimate: number (0 if not a spending event, estimated $ cost in USD if yes — be realistic)
 - is_income_event: boolean
-- category: string (one of: dining, entertainment, travel, personal_care, health, work, social, other, income)
+- category: string (one of: dining, entertainment, travel, personal_care, health, work, social, gift, family, other, income)
+- financial_relevance_score: number 0.0-1.0 (0 = no financial impact, 1 = major financial event)
+- analysis_notes: string (1 short sentence on financial implication, or empty string if irrelevant)
 
 Events:
 ${eventSummaries}
@@ -107,7 +109,7 @@ Return ONLY a JSON array of objects, no other text.`,
     }],
   });
 
-  let classifications: Array<{ spending_estimate: number; is_income_event: boolean; category: string }> = [];
+  let classifications: Array<{ spending_estimate: number; is_income_event: boolean; category: string; financial_relevance_score: number; analysis_notes: string }> = [];
   try {
     const text = (classifyMsg.content[0] as { type: string; text: string }).text;
     const jsonMatch = text.match(/\[[\s\S]*\]/);
@@ -126,6 +128,8 @@ Return ONLY a JSON array of objects, no other text.`,
     spending_estimate: classifications[i]?.spending_estimate ?? 0,
     category: classifications[i]?.category ?? "other",
     is_income_event: classifications[i]?.is_income_event ?? false,
+    financial_relevance_score: classifications[i]?.financial_relevance_score ?? 0,
+    analysis_notes: classifications[i]?.analysis_notes ?? null,
     synced_at: new Date().toISOString(),
   }));
 
