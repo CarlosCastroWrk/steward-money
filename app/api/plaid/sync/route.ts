@@ -58,6 +58,7 @@ export async function POST(req: NextRequest) {
   let accountsUpdated = 0;
   let transactionsSynced = 0;
   const allNewTx: { merchant: string; amount: number; date: string }[] = [];
+  const itemErrors: { institution: string; code: string; message: string }[] = [];
 
   for (const item of items) {
     try {
@@ -133,8 +134,14 @@ export async function POST(req: NextRequest) {
         transactionsSynced += txRows.length;
         allNewTx.push(...posted.map((t) => ({ merchant: t.merchant, amount: t.amount, date: t.date })));
       }
-    } catch {
-      // continue if one item fails
+    } catch (err: unknown) {
+      const plaidErr = err as { response?: { data?: { error_code?: string; error_message?: string } } };
+      const code = plaidErr?.response?.data?.error_code ?? "UNKNOWN";
+      const msg  = plaidErr?.response?.data?.error_message ?? String(err);
+      console.error(`[sync] item ${item.id} failed: ${code} — ${msg}`);
+      // Look up institution name for the error report
+      const { data: itemRow } = await supabase.from("plaid_items").select("institution_name").eq("id", item.id).maybeSingle();
+      itemErrors.push({ institution: itemRow?.institution_name ?? item.id, code, message: msg });
     }
   }
 
@@ -169,5 +176,10 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  return NextResponse.json({ accounts_updated: accountsUpdated, transactions_synced: transactionsSynced, large_deposits: largeDeposits.length });
+  return NextResponse.json({
+    accounts_updated: accountsUpdated,
+    transactions_synced: transactionsSynced,
+    large_deposits: largeDeposits.length,
+    ...(itemErrors.length > 0 && { item_errors: itemErrors }),
+  });
 }

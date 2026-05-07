@@ -43,15 +43,18 @@ export async function POST(req: NextRequest) {
     const accountsRes = await plaidClient.accountsGet({ access_token: accessToken });
     const accounts = accountsRes.data.accounts;
 
+    const now = new Date().toISOString();
     const accountRows = accounts.map((a) => ({
       user_id: user.id,
       name: cleanName(a.name),
       institution: institution_name ?? null,
       type: mapType(a.type as string, a.subtype as string | null),
       current_balance: a.balances.current ?? 0,
+      available_balance: a.balances.available ?? a.balances.current ?? 0,
       is_manual: false,
       is_active: true,
       plaid_account_id: a.account_id,
+      last_synced: now,
     }));
 
     const { error: accErr } = await supabase

@@ -73,15 +73,15 @@ export default async function DashboardPage() {
   const in3Days = new Date(Date.now() + 3 * 86_400_000).toISOString().split("T")[0];
   const recentTx = recentTxResult.data ?? [];
   const lastSynced = lastSyncedResult.data?.last_synced ?? null;
-  const lastSyncedLabel = lastSynced
-    ? (() => {
-        const secs = Math.floor((Date.now() - new Date(lastSynced).getTime()) / 1000);
-        if (secs < 60) return "Synced just now";
-        if (secs < 3600) return `Synced ${Math.floor(secs / 60)}m ago`;
-        if (secs < 86400) return `Synced ${Math.floor(secs / 3600)}h ago`;
-        return `Synced ${Math.floor(secs / 86400)}d ago`;
-      })()
-    : null;
+  const { lastSyncedLabel, syncIsStale } = (() => {
+    if (!lastSynced) return { lastSyncedLabel: null, syncIsStale: true };
+    const secs = Math.floor((Date.now() - new Date(lastSynced).getTime()) / 1000);
+    const isStale = secs > 7200; // > 2 hours
+    if (secs < 60)    return { lastSyncedLabel: "Synced just now",                          syncIsStale: false };
+    if (secs < 3600)  return { lastSyncedLabel: `Synced ${Math.floor(secs / 60)}m ago`,     syncIsStale: false };
+    if (secs < 86400) return { lastSyncedLabel: `Synced ${Math.floor(secs / 3600)}h ago`,   syncIsStale: isStale };
+    return              { lastSyncedLabel: `Synced ${Math.floor(secs / 86400)}d ago`,        syncIsStale: true };
+  })();
 
   return (
     <div className="space-y-5 px-4 pb-10 pt-5 md:space-y-6 md:px-8 md:pt-8">
@@ -122,11 +122,16 @@ export default async function DashboardPage() {
             {formatUSD(result.safeToSpend)}
           </p>
           <p className="mt-1.5 text-xs text-white/40">After bills, buffer &amp; deductions</p>
-          {lastSyncedLabel && (
+          {syncIsStale ? (
+            <a href="/transactions" className="mt-1 inline-flex items-center gap-1 text-[10px] text-amber-400/80 hover:text-amber-400 transition-colors">
+              <span className="h-1.5 w-1.5 rounded-full bg-amber-400/80" />
+              {lastSyncedLabel ? `${lastSyncedLabel} — Balance may be outdated · Sync now` : "Balance may be outdated · Sync now"}
+            </a>
+          ) : lastSyncedLabel ? (
             <a href="/transactions" className="mt-1 inline-block text-[10px] text-white/30 hover:text-white/50 transition-colors">
               {lastSyncedLabel} · Sync
             </a>
-          )}
+          ) : null}
           <div className="mt-4 flex gap-6 border-t border-white/10 pt-3.5">
             <div>
               <p className="text-[10px] uppercase tracking-wide text-white/50">Protected</p>
