@@ -11,10 +11,26 @@ function formatCurrency(value: number) {
   return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(value);
 }
 
+function isDepository(a: Account) {
+  return a.plaid_type ? a.plaid_type === "depository" : ["checking", "savings"].includes(a.type);
+}
+function isCredit(a: Account) {
+  return a.plaid_type ? a.plaid_type === "credit" : a.type === "credit card";
+}
+function isLoan(a: Account) {
+  return a.plaid_type ? a.plaid_type === "loan" : a.type === "debt / installment";
+}
+function isInvestment(a: Account) {
+  return a.plaid_type === "investment" || a.type === "trading";
+}
+
 function SyncButton() {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
-  const [result, setResult] = useState<{ accounts_updated: number; transactions_synced: number } | null>(null);
+  const [result, setResult] = useState<{
+    accounts_updated: number;
+    item_errors?: { institution: string; code: string }[];
+  } | null>(null);
 
   const sync = async () => {
     setBusy(true);
@@ -25,7 +41,7 @@ function SyncButton() {
       if (res.ok) {
         setResult(data);
         router.refresh();
-        window.setTimeout(() => setResult(null), 4000);
+        window.setTimeout(() => setResult(null), 5000);
       }
     } finally {
       setBusy(false);
@@ -33,7 +49,7 @@ function SyncButton() {
   };
 
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex flex-col items-end gap-1">
       <button
         type="button"
         onClick={sync}
@@ -43,10 +59,13 @@ function SyncButton() {
         {busy ? "Syncing…" : "Sync balances"}
       </button>
       {result && (
-        <span className="text-xs text-emerald-400">
-          {result.accounts_updated} accounts · {result.transactions_synced} new txns
-        </span>
+        <span className="text-xs text-emerald-400">{result.accounts_updated} accounts updated</span>
       )}
+      {result?.item_errors?.map((e) => (
+        <span key={e.institution} className="text-xs text-amber-400">
+          {e.institution}: {e.code}
+        </span>
+      ))}
     </div>
   );
 }
@@ -60,12 +79,11 @@ function DisconnectButton({ item }: { item: PlaidItem }) {
     if (!window.confirm(`Disconnect ${name}? All linked accounts and transactions will be removed.`)) return;
     setBusy(true);
     try {
-      const res = await fetch("/api/plaid/disconnect", {
+      await fetch("/api/plaid/disconnect", {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ item_id: item.item_id }),
       });
-      if (!res.ok) throw new Error("Failed");
       router.refresh();
     } finally {
       setBusy(false);
@@ -84,6 +102,18 @@ function DisconnectButton({ item }: { item: PlaidItem }) {
   );
 }
 
+function AccountSection({ title, accounts }: { title: string; accounts: Account[] }) {
+  if (accounts.length === 0) return null;
+  return (
+    <div>
+      <p className="mb-3 text-[10px] font-semibold uppercase tracking-widest text-[var(--text-3)]">{title}</p>
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+        {accounts.map((a) => <AccountCard key={a.id} account={a} />)}
+      </div>
+    </div>
+  );
+}
+
 type Props = {
   accounts: Account[];
   plaidItems: PlaidItem[];
@@ -95,15 +125,24 @@ type Props = {
 export function AccountsView({ accounts, plaidItems, totalCash, totalDebt, net }: Props) {
   const [modalOpen, setModalOpen] = useState(false);
 
+  const cash        = accounts.filter(isDepository);
+  const creditCards = accounts.filter(isCredit);
+  const loans       = accounts.filter(isLoan);
+  const investments = accounts.filter(isInvestment);
+  const other       = accounts.filter(
+    (a) => !isDepository(a) && !isCredit(a) && !isLoan(a) && !isInvestment(a)
+  );
+
   return (
     <section className="min-h-screen p-4 md:p-8">
-      <div className="mx-auto w-full max-w-6xl">
+      <div className="mx-auto w-full max-w-6xl space-y-8">
+
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
             <h1 className="text-2xl font-medium text-[var(--text-1)]">Accounts</h1>
             <p className="mt-1 text-sm text-[var(--text-3)]">Your connected and manual accounts</p>
           </div>
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap items-start gap-2">
             {plaidItems.length > 0 && <SyncButton />}
             <PlaidLinkButton />
             <button
@@ -116,9 +155,8 @@ export function AccountsView({ accounts, plaidItems, totalCash, totalDebt, net }
           </div>
         </div>
 
-        {/* Connected banks */}
         {plaidItems.length > 0 && (
-          <div className="mt-6 rounded-xl border border-[var(--border)] bg-[var(--bg-card)] p-4">
+          <div className="rounded-xl border border-[var(--border)] bg-[var(--bg-card)] p-4">
             <p className="mb-3 text-xs font-medium uppercase tracking-wide text-[var(--text-3)]">Connected banks</p>
             <div className="flex flex-col gap-2">
               {plaidItems.map((item) => (
@@ -131,28 +169,37 @@ export function AccountsView({ accounts, plaidItems, totalCash, totalDebt, net }
           </div>
         )}
 
-        <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <div className="grid grid-cols-3 gap-3">
           <div className="rounded-xl border border-[var(--border)] bg-[var(--bg-card)] p-4">
-            <p className="text-xs font-medium uppercase tracking-wide text-[var(--text-3)]">Total cash</p>
-            <p className="mt-2 text-xl font-semibold text-[var(--text-1)]">{formatCurrency(totalCash)}</p>
+            <p className="text-[10px] font-medium uppercase tracking-wide text-[var(--text-3)]">Total cash</p>
+            <p className="mt-2 text-xl font-semibold text-emerald-400">{formatCurrency(totalCash)}</p>
+            <p className="mt-0.5 text-[10px] text-[var(--text-3)]">Checking &amp; savings</p>
           </div>
           <div className="rounded-xl border border-[var(--border)] bg-[var(--bg-card)] p-4">
-            <p className="text-xs font-medium uppercase tracking-wide text-[var(--text-3)]">Total debt</p>
-            <p className="mt-2 text-xl font-semibold text-[var(--text-1)]">{formatCurrency(totalDebt)}</p>
+            <p className="text-[10px] font-medium uppercase tracking-wide text-[var(--text-3)]">Total owed</p>
+            <p className="mt-2 text-xl font-semibold text-red-400">{formatCurrency(totalDebt)}</p>
+            <p className="mt-0.5 text-[10px] text-[var(--text-3)]">Cards &amp; loans</p>
           </div>
           <div className="rounded-xl border border-[var(--border)] bg-[var(--bg-card)] p-4">
-            <p className="text-xs font-medium uppercase tracking-wide text-[var(--text-3)]">Net</p>
-            <p className={`mt-2 text-xl font-semibold ${net >= 0 ? "text-emerald-400" : "text-red-400"}`}>
+            <p className="text-[10px] font-medium uppercase tracking-wide text-[var(--text-3)]">Net worth</p>
+            <p className={`mt-2 text-xl font-semibold ${net >= 0 ? "text-[var(--text-1)]" : "text-red-400"}`}>
               {formatCurrency(net)}
             </p>
+            <p className="mt-0.5 text-[10px] text-[var(--text-3)]">Cash minus debt</p>
           </div>
         </div>
 
-        <div className="mt-8 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-          {accounts.map((account) => (
-            <AccountCard key={account.id} account={account} />
-          ))}
-        </div>
+        <AccountSection title="Cash Accounts" accounts={cash} />
+        <AccountSection title="Credit Cards" accounts={creditCards} />
+        <AccountSection title="Loans" accounts={loans} />
+        <AccountSection title="Investments" accounts={investments} />
+        <AccountSection title="Other" accounts={other} />
+
+        {accounts.length === 0 && (
+          <div className="rounded-xl border border-dashed border-[var(--border)] p-10 text-center">
+            <p className="text-sm text-[var(--text-3)]">No accounts yet. Connect your bank or add one manually.</p>
+          </div>
+        )}
       </div>
 
       <AddAccountModal open={modalOpen} onClose={() => setModalOpen(false)} />

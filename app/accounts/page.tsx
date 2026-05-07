@@ -14,12 +14,16 @@ function computeSummary(accounts: Account[]) {
   let totalCash = 0;
   let totalDebt = 0;
   for (const a of accounts) {
-    const b = toNumber(a.available_balance ?? a.current_balance);
-    if (a.type === "checking" || a.type === "savings") {
-      totalCash += b;
-    }
-    if (a.type === "credit card" || a.type === "debt / installment") {
-      totalDebt += Math.abs(b);
+    const isDepository = a.plaid_type ? a.plaid_type === "depository" : ["checking", "savings"].includes(a.type);
+    const isCredit     = a.plaid_type ? a.plaid_type === "credit"     : a.type === "credit card";
+    const isLoan       = a.plaid_type ? a.plaid_type === "loan"       : a.type === "debt / installment";
+
+    if (isDepository) {
+      // Use available cash (not present balance) for liquid total
+      totalCash += toNumber(a.available_balance ?? a.current_balance);
+    } else if (isCredit || isLoan) {
+      // current_balance = amount owed (positive number in Plaid convention)
+      totalDebt += Math.abs(toNumber(a.current_balance));
     }
   }
   return { totalCash, totalDebt, net: totalCash - totalDebt };
@@ -38,7 +42,7 @@ export default async function AccountsPage() {
   const [{ data, error }, { data: itemData }] = await Promise.all([
     supabase
       .from("accounts")
-      .select("id, name, institution, type, current_balance, available_balance, is_manual, is_active, created_at, last_synced")
+      .select("id, name, institution, type, plaid_type, plaid_subtype, current_balance, available_balance, credit_limit, is_manual, is_active, created_at, last_synced")
       .eq("user_id", user.id)
       .eq("is_active", true)
       .order("created_at", { ascending: false }),

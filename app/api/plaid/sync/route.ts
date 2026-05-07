@@ -64,10 +64,16 @@ export async function POST(req: NextRequest) {
     try {
       const accountsRes = await plaidClient.accountsGet({ access_token: item.access_token });
       for (const a of accountsRes.data.accounts) {
+        const isDepository = a.type === "depository";
+        const isCredit     = a.type === "credit";
+        const isLoan       = a.type === "loan";
         await supabase.from("accounts").update({
           name: cleanName(a.name),
+          plaid_type: a.type as string,
+          plaid_subtype: (a.subtype ?? null) as string | null,
           current_balance: a.balances.current ?? 0,
-          available_balance: a.balances.available ?? a.balances.current ?? 0,
+          available_balance: isDepository ? (a.balances.available ?? a.balances.current ?? 0) : null,
+          credit_limit: (isCredit || isLoan) ? (a.balances.limit ?? null) : null,
           last_synced: now,
         }).eq("plaid_account_id", a.account_id).eq("user_id", user.id);
         accountsUpdated++;

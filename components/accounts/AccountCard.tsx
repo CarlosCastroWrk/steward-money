@@ -27,13 +27,19 @@ export function AccountCard({ account }: { account: Account }) {
   const [savedFlash, setSavedFlash] = useState(false);
   const [busy, setBusy] = useState(false);
 
-  const presentBalance  = Number(account.current_balance ?? 0);
-  const availableBalance = account.available_balance != null
+  const isCreditOrLoan = account.plaid_type === "credit" || account.plaid_type === "loan"
+    || account.type === "credit card" || account.type === "debt / installment";
+
+  const presentBalance   = Number(account.current_balance ?? 0);
+  const availableBalance = !isCreditOrLoan && account.available_balance != null
     ? Number(account.available_balance)
     : presentBalance;
-  const pendingImpact = presentBalance - availableBalance;
-  const hasPendingDiff = Math.abs(pendingImpact) >= 0.01;
-  const balanceNum = availableBalance;
+  const pendingImpact  = presentBalance - availableBalance;
+  const hasPendingDiff = !isCreditOrLoan && Math.abs(pendingImpact) >= 0.01;
+  const creditLimit    = account.credit_limit != null ? Number(account.credit_limit) : null;
+  const availableCredit = creditLimit != null ? creditLimit - presentBalance : null;
+  // Primary display number
+  const balanceNum = isCreditOrLoan ? presentBalance : availableBalance;
 
   useEffect(() => {
     if (!editing) {
@@ -56,7 +62,10 @@ export function AccountCard({ account }: { account: Account }) {
     if (Number.isNaN(next)) return;
     setBusy(true);
     const supabase = createClient();
-    const { error } = await supabase.from("accounts").update({ current_balance: next, available_balance: next }).eq("id", account.id);
+    const update = isCreditOrLoan
+      ? { current_balance: next }
+      : { current_balance: next, available_balance: next };
+    const { error } = await supabase.from("accounts").update(update).eq("id", account.id);
     setBusy(false);
     if (error) return;
     setEditing(false);
@@ -131,21 +140,46 @@ export function AccountCard({ account }: { account: Account }) {
       ) : (
         <>
           <div className="mt-4">
-            <p className={`text-2xl font-semibold ${balanceNum < 0 ? "text-red-400" : "text-[var(--text-1)]"}`}>
-              {formatCurrency(balanceNum)}
-            </p>
-            <p className="mt-0.5 text-xs text-[var(--text-3)]">Available</p>
-            {hasPendingDiff && (
-              <div className="mt-2 space-y-0.5 border-t border-[var(--border-subtle)] pt-2">
-                <div className="flex items-center justify-between text-xs">
-                  <span className="text-[var(--text-3)]">Present balance</span>
-                  <span className="text-[var(--text-2)]">{formatCurrency(presentBalance)}</span>
-                </div>
-                <div className="flex items-center justify-between text-xs">
-                  <span className="text-[var(--text-3)]">Pending charges</span>
-                  <span className="text-amber-400">−{formatCurrency(Math.abs(pendingImpact))}</span>
-                </div>
-              </div>
+            {isCreditOrLoan ? (
+              /* Credit / loan — show owed amount in red */
+              <>
+                <p className="text-2xl font-semibold text-red-400">{formatCurrency(balanceNum)}</p>
+                <p className="mt-0.5 text-xs text-[var(--text-3)]">Owed</p>
+                {creditLimit != null && (
+                  <div className="mt-2 space-y-0.5 border-t border-[var(--border-subtle)] pt-2">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-[var(--text-3)]">Credit limit</span>
+                      <span className="text-[var(--text-2)]">{formatCurrency(creditLimit)}</span>
+                    </div>
+                    {availableCredit != null && (
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-[var(--text-3)]">Available credit</span>
+                        <span className="text-[var(--text-2)]">{formatCurrency(availableCredit)}</span>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </>
+            ) : (
+              /* Depository — show available cash */
+              <>
+                <p className={`text-2xl font-semibold ${balanceNum < 0 ? "text-red-400" : "text-[var(--text-1)]"}`}>
+                  {formatCurrency(balanceNum)}
+                </p>
+                <p className="mt-0.5 text-xs text-[var(--text-3)]">Available</p>
+                {hasPendingDiff && (
+                  <div className="mt-2 space-y-0.5 border-t border-[var(--border-subtle)] pt-2">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-[var(--text-3)]">Present balance</span>
+                      <span className="text-[var(--text-2)]">{formatCurrency(presentBalance)}</span>
+                    </div>
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-[var(--text-3)]">Pending charges</span>
+                      <span className="text-amber-400">−{formatCurrency(Math.abs(pendingImpact))}</span>
+                    </div>
+                  </div>
+                )}
+              </>
             )}
           </div>
           {lastSyncedLabel ? (

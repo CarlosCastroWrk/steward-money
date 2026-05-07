@@ -44,18 +44,28 @@ export async function POST(req: NextRequest) {
     const accounts = accountsRes.data.accounts;
 
     const now = new Date().toISOString();
-    const accountRows = accounts.map((a) => ({
-      user_id: user.id,
-      name: cleanName(a.name),
-      institution: institution_name ?? null,
-      type: mapType(a.type as string, a.subtype as string | null),
-      current_balance: a.balances.current ?? 0,
-      available_balance: a.balances.available ?? a.balances.current ?? 0,
-      is_manual: false,
-      is_active: true,
-      plaid_account_id: a.account_id,
-      last_synced: now,
-    }));
+    const accountRows = accounts.map((a) => {
+      const isDepository = a.type === "depository";
+      const isCredit     = a.type === "credit";
+      const isLoan       = a.type === "loan";
+      return {
+        user_id: user.id,
+        name: cleanName(a.name),
+        institution: institution_name ?? null,
+        type: mapType(a.type as string, a.subtype as string | null),
+        plaid_type: a.type as string,
+        plaid_subtype: (a.subtype ?? null) as string | null,
+        current_balance: a.balances.current ?? 0,
+        // available_balance is only meaningful for depository accounts.
+        // For credit/loan, Plaid's `available` is remaining credit line — NOT cash.
+        available_balance: isDepository ? (a.balances.available ?? a.balances.current ?? 0) : null,
+        credit_limit: (isCredit || isLoan) ? (a.balances.limit ?? null) : null,
+        is_manual: false,
+        is_active: true,
+        plaid_account_id: a.account_id,
+        last_synced: now,
+      };
+    });
 
     const { error: accErr } = await supabase
       .from("accounts")
