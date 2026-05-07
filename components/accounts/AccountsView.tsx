@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { AccountCard } from "./AccountCard";
 import { AddAccountModal } from "./AddAccountModal";
 import { PlaidLinkButton } from "./PlaidLinkButton";
+import { AskLukaButton } from "@/components/AskLukaButton";
 import type { Account, PlaidItem } from "./types";
 
 function formatCurrency(value: number) {
@@ -143,6 +144,10 @@ export function AccountsView({ accounts, plaidItems, totalCash, totalDebt, net }
             <p className="mt-1 text-sm text-[var(--text-3)]">Your connected and manual accounts</p>
           </div>
           <div className="flex flex-wrap items-start gap-2">
+            <AskLukaButton
+              prefill="Help me organize my accounts by purpose. I have "
+              label="Tag accounts with Luka"
+            />
             {plaidItems.length > 0 && <SyncButton />}
             <PlaidLinkButton />
             <button

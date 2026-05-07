@@ -8,11 +8,14 @@ import { NotificationBell } from "./NotificationBell";
 import { SessionGuard } from "./security/SessionGuard";
 import { SyncOnFocus } from "./SyncOnFocus";
 
+const AUTH_PATHS = ["/login", "/signup", "/sign-in", "/sign-up", "/register", "/reset-password"];
+
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const isAuthPage = AUTH_PATHS.includes(pathname) || pathname.startsWith("/auth/");
   const isOnboarding = pathname.startsWith("/onboarding");
 
-  if (isOnboarding) {
+  if (isAuthPage || isOnboarding) {
     return (
       <main className="min-h-screen w-full bg-[var(--bg)]">
         {children}

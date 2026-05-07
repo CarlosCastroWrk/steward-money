@@ -143,9 +143,16 @@ NEXT_PUBLIC_SUPABASE_URL
 NEXT_PUBLIC_SUPABASE_ANON_KEY
 PLAID_CLIENT_ID
 PLAID_SECRET
-PLAID_ENV                   # "sandbox" | "development" | "production"
-ANTHROPIC_API_KEY           # Used server-side only in agent routes
-SUPABASE_SERVICE_ROLE_KEY   # Used only in lib/supabase/admin.ts (cron paths)
+PLAID_ENV                       # "sandbox" | "development" | "production"
+ANTHROPIC_API_KEY               # Used server-side only in agent routes
+SUPABASE_SERVICE_ROLE_KEY       # Used only in lib/supabase/admin.ts (cron paths)
+RESEND_API_KEY                  # Welcome email on signup — get from resend.com
+NEXT_PUBLIC_APP_URL             # Full app URL for email links (e.g. https://steward-money.vercel.app)
+
+# Google Calendar (optional)
+NEXT_PUBLIC_GOOGLE_CLIENT_ID    # From console.cloud.google.com OAuth credentials
+GOOGLE_CLIENT_SECRET            # Same source — set redirect URI in Google Cloud Console:
+                                #   steward-money-w8m8.vercel.app/api/calendar/callback
 ```
 
 ### Plaid Integration

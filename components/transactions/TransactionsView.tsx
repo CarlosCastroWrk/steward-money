@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { AddTransactionModal } from "./AddTransactionModal";
+import { AskLukaButton } from "@/components/AskLukaButton";
 import { CATEGORIES } from "./types";
 import type { Transaction, AccountOption } from "./types";
 
@@ -314,7 +315,11 @@ export function TransactionsView({ transactions: initialTransactions, accounts, 
               {rangeLabel(timeRange)} · {filtered.length} transaction{filtered.length !== 1 ? "s" : ""}
             </p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <AskLukaButton
+              prefill="What do you notice about my spending this week?"
+              label="Ask Luka"
+            />
             {/* Last synced + sync button */}
             <button
               type="button"

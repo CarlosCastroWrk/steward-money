@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { useToast } from "@/components/Toast";
 import { AddBillModal } from "./AddBillModal";
+import { AskLukaButton } from "@/components/AskLukaButton";
 import type { Bill, AccountOption } from "./types";
 
 type BillSuggestion = {
@@ -161,10 +162,16 @@ export function BillsView({ bills, accounts, suggestions, monthSummary }: Props)
             <h1 className="text-2xl font-semibold text-white">Bills</h1>
             <p className="mt-1 text-sm text-zinc-500">Recurring payments — this month&apos;s status</p>
           </div>
-          <button type="button" onClick={() => { setEditing(null); setModalOpen(true); }}
-            className="rounded-lg bg-white text-black px-4 py-2 text-sm font-medium hover:bg-zinc-100 transition-colors">
-            + Add bill
-          </button>
+          <div className="flex flex-wrap items-center gap-2">
+            <AskLukaButton
+              prefill="I want to add a bill. It's for "
+              label="Add bill with Luka"
+            />
+            <button type="button" onClick={() => { setEditing(null); setModalOpen(true); }}
+              className="rounded-lg bg-[var(--bg-card)] border border-[var(--border)] text-[var(--text-1)] px-4 py-2 text-sm font-medium hover:bg-[var(--bg-elevated)] transition-colors">
+              + Add bill
+            </button>
+          </div>
         </div>
 
         {/* Monthly summary */}

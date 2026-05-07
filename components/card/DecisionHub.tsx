@@ -4,6 +4,7 @@ import { useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { formatUSDCents } from "@/lib/format";
+import { AskLukaButton } from "@/components/AskLukaButton";
 
 type Verdict = "good" | "tight" | "over";
 type Decision = {
@@ -118,9 +119,15 @@ export function DecisionHub({ safeToSpend, weeklyNeedsTotal, recentDecisions: in
     <div className="mt-6 space-y-5">
       {/* ── Decide section ── */}
       <div className="rounded-2xl border border-[var(--border)] bg-[var(--bg-card)] p-5">
-        <p className="mb-4 text-[10px] font-semibold uppercase tracking-widest text-[var(--text-3)]">
-          Should I spend this?
-        </p>
+        <div className="mb-4 flex items-center justify-between">
+          <p className="text-[10px] font-semibold uppercase tracking-widest text-[var(--text-3)]">
+            Should I spend this?
+          </p>
+          <AskLukaButton
+            prefill="Should I make this purchase? It's "
+            label="Decide with Luka"
+          />
+        </div>
 
         {verdict ? (
           <>

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { AddGoalModal } from "./AddGoalModal";
+import { AskLukaButton } from "@/components/AskLukaButton";
 import type { Goal } from "./types";
 
 type Props = { goals: Goal[] };
@@ -140,13 +141,19 @@ export function GoalsView({ goals }: Props) {
             <h1 className="text-2xl font-medium text-[var(--text-1)]">Goals</h1>
             <p className="mt-1 text-sm text-[var(--text-3)]">Financial targets and milestones</p>
           </div>
-          <button
-            type="button"
-            onClick={() => { setEditing(null); setModalOpen(true); }}
-            className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white"
-          >
-            Add goal
-          </button>
+          <div className="flex flex-wrap items-center gap-2">
+            <AskLukaButton
+              prefill="Help me add a new goal. I want to save for "
+              label="Add goal with Luka"
+            />
+            <button
+              type="button"
+              onClick={() => { setEditing(null); setModalOpen(true); }}
+              className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white"
+            >
+              Add goal
+            </button>
+          </div>
         </div>
 
         {goals.length > 0 && (

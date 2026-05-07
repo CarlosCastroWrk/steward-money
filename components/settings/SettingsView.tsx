@@ -3,11 +3,6 @@
 import { useState } from "react";
 import { LukaSetupMode } from "@/components/luka/LukaSetupMode";
 import { ProfileSection } from "./ProfileSection";
-import { GivingSection } from "./GivingSection";
-import { BufferSection } from "./BufferSection";
-import { SavingsSection } from "./SavingsSection";
-import { TradingSection } from "./TradingSection";
-import { NeedsSection } from "./NeedsSection";
 import { IncomeSection } from "./IncomeSection";
 import { PrioritySection } from "./PrioritySection";
 import { AccountsSection } from "./AccountsSection";
@@ -16,11 +11,10 @@ import { CalendarSection } from "./CalendarSection";
 import { PlaidDiagnosticSection } from "./PlaidDiagnosticSection";
 import type { UserSettingsData, IncomeSourceRow, AccountRow, PriorityRow } from "./types";
 
-type Tab = "profile" | "rules" | "income" | "priorities" | "accounts" | "integrations" | "diagnostics" | "security";
+type Tab = "profile" | "income" | "priorities" | "accounts" | "integrations" | "diagnostics" | "security";
 
 const TABS: { id: Tab; label: string }[] = [
   { id: "profile",      label: "Profile"      },
-  { id: "rules",        label: "Budget Rules" },
   { id: "income",       label: "Income"       },
   { id: "priorities",   label: "Priorities"   },
   { id: "accounts",     label: "Accounts"     },
@@ -82,15 +76,6 @@ export function SettingsView({ settings, incomeSources, accounts, priorities }: 
         <div className="space-y-4">
           {tab === "profile" && (
             <ProfileSection initialData={settings} />
-          )}
-          {tab === "rules" && (
-            <>
-              <GivingSection initialData={settings} />
-              <BufferSection initialData={settings} />
-              <SavingsSection initialData={settings} />
-              <TradingSection initialData={settings} />
-              <NeedsSection initialData={settings} />
-            </>
           )}
           {tab === "income" && (
             <IncomeSection initialSources={incomeSources} />

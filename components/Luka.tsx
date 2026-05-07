@@ -410,6 +410,17 @@ export function Luka() {
     };
   }, [open]);
 
+  // ── External open trigger (AskLukaButton) ─────────────────────────────────
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent<{ prefill?: string }>).detail;
+      setOpen(true);
+      if (detail?.prefill) setInput(detail.prefill);
+    };
+    window.addEventListener("luka:open", handler);
+    return () => window.removeEventListener("luka:open", handler);
+  }, []);
+
   // ── Auth + context ─────────────────────────────────────────────────────────
   useEffect(() => {
     const supabase = createClient();
