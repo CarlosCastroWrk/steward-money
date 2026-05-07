@@ -62,38 +62,44 @@ export async function POST(req: NextRequest) {
         category: mapCategory(cat),
         is_need: inferIsNeed(cat),
         is_manual: false,
+        is_pending: tx.pending ?? false,
         plaid_transaction_id: tx.transaction_id,
       };
     });
 
     if (txRows.length > 0) {
-      await supabase.from("transactions").upsert(txRows, {
-        onConflict: "plaid_transaction_id",
-        ignoreDuplicates: true,
-      });
+      const posted  = txRows.filter((r) => !r.is_pending);
+      const pending = txRows.filter((r) => r.is_pending);
 
-      // Reconcile pending manual transactions: if user pre-logged a charge
-      // and Plaid now delivers the real one (same amount, date within 24h), remove the duplicate.
-      const { data: pendingTxs } = await supabase
-        .from("transactions")
-        .select("id, amount, date")
-        .eq("user_id", item.user_id)
-        .eq("is_pending", true)
-        .eq("is_manual", true);
+      if (posted.length > 0) {
+        await supabase.from("transactions").upsert(posted, { onConflict: "plaid_transaction_id", ignoreDuplicates: false });
+      }
+      if (pending.length > 0) {
+        await supabase.from("transactions").upsert(pending, { onConflict: "plaid_transaction_id", ignoreDuplicates: true });
+      }
 
-      if (pendingTxs?.length) {
-        const toDelete: string[] = [];
-        for (const plaidTx of txRows) {
-          const match = pendingTxs.find((p) => {
-            if (toDelete.includes(p.id)) return false;
-            const amountClose = Math.abs(Math.abs(p.amount) - Math.abs(plaidTx.amount)) < 0.02;
-            const dateClose   = Math.abs(new Date(p.date).getTime() - new Date(plaidTx.date).getTime()) <= 24 * 60 * 60 * 1000;
-            return amountClose && dateClose;
-          });
-          if (match) toDelete.push(match.id);
-        }
-        if (toDelete.length) {
-          await supabase.from("transactions").delete().in("id", toDelete);
+      // When posted txs arrive, remove stale pending rows with matching amount + date
+      if (posted.length > 0) {
+        const { data: stalePending } = await supabase
+          .from("transactions")
+          .select("id, amount, date")
+          .eq("user_id", item.user_id)
+          .eq("is_pending", true)
+          .eq("is_manual", false);
+
+        if (stalePending?.length) {
+          const toDelete: string[] = [];
+          for (const p of posted) {
+            const match = stalePending.find((s) =>
+              !toDelete.includes(s.id) &&
+              Math.abs(Number(s.amount) - p.amount) < 0.02 &&
+              Math.abs(new Date(s.date).getTime() - new Date(p.date).getTime()) <= 86_400_000
+            );
+            if (match) toDelete.push(match.id);
+          }
+          if (toDelete.length) {
+            await supabase.from("transactions").delete().in("id", toDelete);
+          }
         }
       }
     }

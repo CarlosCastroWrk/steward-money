@@ -82,14 +82,52 @@ export async function POST(req: NextRequest) {
           category: mapCategory(cat),
           is_need: inferIsNeed(cat),
           is_manual: false,
+          is_pending: tx.pending ?? false,
           plaid_transaction_id: tx.transaction_id,
         };
       });
 
       if (txRows.length > 0) {
-        await supabase.from("transactions").upsert(txRows, { onConflict: "plaid_transaction_id", ignoreDuplicates: true });
+        // Upsert posted transactions; for pending ones use ignoreDuplicates so
+        // a newly-settled tx doesn't get blocked by a stale pending row.
+        const posted  = txRows.filter((r) => !r.is_pending);
+        const pending = txRows.filter((r) => r.is_pending);
+
+        if (posted.length > 0) {
+          await supabase.from("transactions").upsert(posted, { onConflict: "plaid_transaction_id", ignoreDuplicates: false });
+        }
+        if (pending.length > 0) {
+          await supabase.from("transactions").upsert(pending, { onConflict: "plaid_transaction_id", ignoreDuplicates: true });
+        }
+
+        // When a pending tx settles, Plaid issues a new transaction_id.
+        // Remove any pending rows that match a now-posted tx by amount + date.
+        if (posted.length > 0) {
+          const { data: stalePending } = await supabase
+            .from("transactions")
+            .select("id, amount, date")
+            .eq("user_id", user.id)
+            .eq("is_pending", true)
+            .eq("is_manual", false);
+
+          if (stalePending?.length) {
+            const toDelete: string[] = [];
+            for (const p of posted) {
+              const match = stalePending.find((s) =>
+                !toDelete.includes(s.id) &&
+                Math.abs(Number(s.amount) - p.amount) < 0.02 &&
+                s.date === p.date
+              );
+              if (match) toDelete.push(match.id);
+            }
+            if (toDelete.length > 0) {
+              await supabase.from("transactions").delete().in("id", toDelete);
+            }
+          }
+        }
+
         transactionsSynced += txRows.length;
-        allNewTx.push(...txRows.map((t) => ({ merchant: t.merchant, amount: t.amount, date: t.date })));
+        allNewTx.push(...posted.map((t) => ({ merchant: t.merchant, amount: t.amount, date: t.date })));
       }
     } catch {
       // continue if one item fails
