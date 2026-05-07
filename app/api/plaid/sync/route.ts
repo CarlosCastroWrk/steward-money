@@ -101,5 +101,31 @@ export async function POST(req: NextRequest) {
     await autoDetectBillPayments(supabase, user.id, allNewTx);
   }
 
-  return NextResponse.json({ accounts_updated: accountsUpdated, transactions_synced: transactionsSynced });
+  // Paycheck detection: flag large income deposits (>$200) for Argus
+  const largeDeposits = allNewTx.filter((tx) => tx.amount > 200);
+  for (const deposit of largeDeposits) {
+    const fmt = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(deposit.amount);
+    // Deduplicate within 24h by alert_type key
+    const alertKey = `income_detected_${deposit.date}`;
+    const { data: existing } = await supabase
+      .from("alerts")
+      .select("id")
+      .eq("user_id", user.id)
+      .eq("alert_type", alertKey)
+      .gte("created_at", new Date(Date.now() - 86_400_000).toISOString())
+      .limit(1)
+      .maybeSingle();
+    if (!existing) {
+      await supabase.from("alerts").insert({
+        user_id: user.id,
+        agent: "argus",
+        alert_type: alertKey,
+        severity: "info",
+        message: `New income detected — ${fmt} from ${deposit.merchant}. Tap to review your allocation.`,
+        is_read: false,
+      });
+    }
+  }
+
+  return NextResponse.json({ accounts_updated: accountsUpdated, transactions_synced: transactionsSynced, large_deposits: largeDeposits.length });
 }

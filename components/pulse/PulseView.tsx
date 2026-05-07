@@ -7,7 +7,7 @@ import { createClient } from "@/lib/supabase/client";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-interface MannaData { dailyAllowance: number; spentToday: number; remaining: number }
+interface MannaData { dailyAllowance: number; spentToday: number; remaining: number; safeToSpend?: number; daysUntilPaycheck?: number; hasPaycheckDate?: boolean; isNegative?: boolean }
 interface WeeklyReport {
   solomon_word: string | null;
   stewardship_score: number | null;
@@ -190,26 +190,47 @@ export function PulseView() {
       {!loading && (
         <>
           {/* 1. Manna */}
-          {manna && manna.dailyAllowance > 0 && (
+          {manna && (
             <Section label="Manna · Today's Provision" color="text-amber-500">
               <div className="rounded-xl border border-amber-900/30 bg-amber-950/15 p-4">
-                <div className="flex items-end justify-between">
+                {manna.isNegative ? (
                   <div>
-                    <p className={`text-3xl font-bold ${manna.remaining <= 0 ? "text-red-400" : manna.remaining < manna.dailyAllowance * 0.25 ? "text-amber-400" : "text-[var(--text-primary)]"}`}>
-                      {formatUSD(manna.remaining)}
-                    </p>
-                    <p className="mt-0.5 text-xs text-[var(--text-muted)]">of {formatUSD(manna.dailyAllowance)} remaining today</p>
+                    <p className="text-sm font-medium text-amber-400">Focus on stability today</p>
+                    <p className="mt-1 text-xs text-[var(--text-muted)]">Safe-to-spend is currently negative — no daily allowance until balance improves.</p>
                   </div>
-                  {manna.spentToday > 0 && (
-                    <p className="text-sm text-[var(--text-muted)]">Spent: {formatUSD(manna.spentToday)}</p>
-                  )}
-                </div>
-                <div className="mt-3 h-1.5 w-full rounded-full bg-[var(--bg-elevated)]">
-                  <div
-                    className={`h-1.5 rounded-full transition-all ${manna.remaining <= 0 ? "bg-red-500" : manna.remaining < manna.dailyAllowance * 0.25 ? "bg-amber-500" : "bg-amber-400"}`}
-                    style={{ width: `${Math.max(0, Math.min(100, manna.dailyAllowance > 0 ? (manna.remaining / manna.dailyAllowance) * 100 : 0))}%` }}
-                  />
-                </div>
+                ) : !manna.hasPaycheckDate ? (
+                  <div>
+                    <p className="text-sm font-medium text-[var(--text-secondary)]">Set your next paycheck date to see daily provision</p>
+                    <a href="/settings" className="mt-1 inline-block text-xs text-amber-500 hover:text-amber-400">
+                      Settings → Income →
+                    </a>
+                  </div>
+                ) : (
+                  <>
+                    <div className="flex items-end justify-between">
+                      <div>
+                        <p className={`text-3xl font-bold ${manna.remaining <= 0 ? "text-red-400" : manna.remaining < manna.dailyAllowance * 0.25 ? "text-amber-400" : "text-[var(--text-primary)]"}`}>
+                          {formatUSD(manna.remaining)}
+                        </p>
+                        <p className="mt-0.5 text-xs text-[var(--text-muted)]">remaining today of {formatUSD(manna.dailyAllowance)}</p>
+                        {manna.safeToSpend != null && manna.daysUntilPaycheck != null && (
+                          <p className="mt-1 text-[11px] text-[var(--text-muted)]">
+                            {formatUSD(manna.safeToSpend)} safe to spend ÷ {manna.daysUntilPaycheck} day{manna.daysUntilPaycheck !== 1 ? "s" : ""} until next paycheck
+                          </p>
+                        )}
+                      </div>
+                      {manna.spentToday > 0 && (
+                        <p className="text-sm text-[var(--text-muted)]">Spent: {formatUSD(manna.spentToday)}</p>
+                      )}
+                    </div>
+                    <div className="mt-3 h-1.5 w-full rounded-full bg-[var(--bg-elevated)]">
+                      <div
+                        className={`h-1.5 rounded-full transition-all ${manna.remaining <= 0 ? "bg-red-500" : manna.remaining < manna.dailyAllowance * 0.25 ? "bg-amber-500" : "bg-amber-400"}`}
+                        style={{ width: `${Math.max(0, Math.min(100, manna.dailyAllowance > 0 ? (manna.remaining / manna.dailyAllowance) * 100 : 0))}%` }}
+                      />
+                    </div>
+                  </>
+                )}
               </div>
             </Section>
           )}

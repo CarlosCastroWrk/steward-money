@@ -6,7 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 import { LukaVoiceMode } from "@/components/luka/LukaVoiceMode";
 
 type Action = { tool: string; label: string; detail: string };
-type Message = { role: "user" | "assistant"; content: string; actions?: Action[] };
+type Message = { role: "user" | "assistant"; content: string; actions?: Action[]; created_at?: string; db_id?: string };
 
 // ── Icons ──────────────────────────────────────────────────────────────────
 
@@ -143,6 +143,50 @@ function MessageList({
     if (last?.role === "assistant" && voiceOutputEnabled) speak(last.content);
   }, [messages, voiceOutputEnabled, speak]);
 
+  // Build message list with date separators
+  const rendered: React.ReactNode[] = [];
+  let lastDateLabel = "";
+  for (let i = 0; i < messages.length; i++) {
+    const m = messages[i];
+    if (m.created_at) {
+      const label = dateSeparatorLabel(m.created_at);
+      if (label !== lastDateLabel) {
+        rendered.push(
+          <div key={`sep-${i}`} className="flex items-center gap-2 py-1">
+            <div className="flex-1 h-px bg-[var(--border)]" />
+            <span className="text-[10px] text-[var(--text-3)] shrink-0">{label}</span>
+            <div className="flex-1 h-px bg-[var(--border)]" />
+          </div>
+        );
+        lastDateLabel = label;
+      }
+    }
+    rendered.push(
+      <div key={m.db_id ?? i} className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}>
+        <div className="max-w-[85%]">
+          <div
+            className={`rounded-2xl px-3 py-2 text-sm leading-relaxed ${
+              m.role === "user" ? "rounded-br-sm bg-emerald-700 text-white" : "rounded-bl-sm bg-[var(--luka-msg-bg)] text-[var(--text-1)]"
+            }`}
+            style={{ whiteSpace: "pre-wrap", wordBreak: "break-word" }}
+          >
+            {m.content}
+            {m.role === "assistant" && voiceOutputEnabled && speaking && i === messages.length - 1 && (
+              <span className="ml-2 inline-flex items-center gap-1 text-purple-400 text-[10px]">
+                <SpeakerIcon active={true} /> speaking
+              </span>
+            )}
+          </div>
+          {m.role === "assistant" && m.actions && m.actions.length > 0 && (
+            <div className="mt-1 space-y-1">
+              {m.actions.map((a, j) => <ActionCard key={j} action={a} />)}
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col gap-3 overflow-y-auto px-4 py-4" style={{ flex: 1 }}>
       {messages.length === 0 && (
@@ -162,30 +206,7 @@ function MessageList({
           </div>
         </div>
       )}
-      {messages.map((m, i) => (
-        <div key={i} className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}>
-          <div className="max-w-[85%]">
-            <div
-              className={`rounded-2xl px-3 py-2 text-sm leading-relaxed ${
-                m.role === "user" ? "rounded-br-sm bg-emerald-700 text-white" : "rounded-bl-sm bg-[var(--luka-msg-bg)] text-[var(--text-1)]"
-              }`}
-              style={{ whiteSpace: "pre-wrap", wordBreak: "break-word" }}
-            >
-              {m.content}
-              {m.role === "assistant" && voiceOutputEnabled && speaking && i === messages.length - 1 && (
-                <span className="ml-2 inline-flex items-center gap-1 text-purple-400 text-[10px]">
-                  <SpeakerIcon active={true} /> speaking
-                </span>
-              )}
-            </div>
-            {m.role === "assistant" && m.actions && m.actions.length > 0 && (
-              <div className="mt-1 space-y-1">
-                {m.actions.map((a, j) => <ActionCard key={j} action={a} />)}
-              </div>
-            )}
-          </div>
-        </div>
-      ))}
+      {rendered}
       {loading && (
         <div className="flex justify-start">
           <div className="rounded-2xl rounded-bl-sm bg-[var(--luka-msg-bg)] px-3 py-2">
@@ -242,14 +263,27 @@ function useSpeechRecognition(onResult: (text: string) => void, onEnd: () => voi
 
 // ── Main Luka component ────────────────────────────────────────────────────
 
+function dateSeparatorLabel(isoStr: string): string {
+  const d = new Date(isoStr);
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const yesterday = new Date(today.getTime() - 86_400_000);
+  const msgDay = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  if (msgDay.getTime() === today.getTime()) return "Today";
+  if (msgDay.getTime() === yesterday.getTime()) return "Yesterday";
+  return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+}
+
 export function Luka() {
   const [authed, setAuthed] = useState(false);
   const [open, setOpen] = useState(false);
   const [voiceModeOpen, setVoiceModeOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
+  const [historyLoaded, setHistoryLoaded] = useState(false);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [voiceOutputEnabled, setVoiceOutputEnabled] = useState(false);
+  const [confirmClear, setConfirmClear] = useState(false);
   const [lukaContext, setLukaContext] = useState<{ lifeStage?: string; mainGoal?: string; nextPaycheck?: string; rulesCount?: number } | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -268,6 +302,31 @@ export function Luka() {
     });
     return () => subscription.unsubscribe();
   }, []);
+
+  // Load conversation history when chat opens (once per session)
+  useEffect(() => {
+    if (!open || historyLoaded) return;
+    const supabase = createClient();
+    supabase.auth.getUser().then(async ({ data: { user } }) => {
+      if (!user) return;
+      const { data } = await supabase
+        .from("luka_conversations")
+        .select("id, role, content, actions, created_at")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: true })
+        .limit(40);
+      if (data && data.length > 0) {
+        setMessages(data.map((row) => ({
+          role: row.role as "user" | "assistant",
+          content: row.content,
+          actions: row.actions ?? undefined,
+          created_at: row.created_at,
+          db_id: row.id,
+        })));
+      }
+      setHistoryLoaded(true);
+    });
+  }, [open, historyLoaded]);
 
   async function loadContext(supabase: ReturnType<typeof createClient>) {
     const { data: { user } } = await supabase.auth.getUser();
@@ -288,6 +347,26 @@ export function Luka() {
     });
   }
 
+  async function saveMessageToDB(msg: Message, supabase: ReturnType<typeof createClient>, userId: string): Promise<string | null> {
+    const { data } = await supabase.from("luka_conversations").insert({
+      user_id: userId,
+      role: msg.role,
+      content: msg.content,
+      actions: msg.actions ?? null,
+    }).select("id").maybeSingle();
+    return data?.id ?? null;
+  }
+
+  async function clearConversation() {
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+    await supabase.from("luka_conversations").delete().eq("user_id", user.id);
+    setMessages([]);
+    setConfirmClear(false);
+    setHistoryLoaded(true);
+  }
+
   const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, []);
@@ -297,29 +376,45 @@ export function Luka() {
 
   const sendMessage = useCallback(async (text: string) => {
     if (!text.trim()) return;
-    const userMsg: Message = { role: "user", content: text.trim() };
-    const next = [...messages, userMsg].slice(-10);
-    setMessages(next);
+    const now = new Date().toISOString();
+    const userMsg: Message = { role: "user", content: text.trim(), created_at: now };
+
+    // Persist user message to DB
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      const id = await saveMessageToDB(userMsg, supabase, user.id);
+      if (id) userMsg.db_id = id;
+    }
+
+    // Use last 20 messages (excluding db_id/created_at) as API context
+    const contextMessages = [...messages, userMsg].slice(-20).map((m) => ({ role: m.role, content: m.content }));
+    setMessages((prev) => [...prev, userMsg]);
     setInput("");
-    // Reset textarea height
     if (inputRef.current) { inputRef.current.style.height = "auto"; }
     setLoading(true);
     try {
       const res = await fetch("/api/luka", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages: next }),
+        body: JSON.stringify({ messages: contextMessages }),
       });
       const data = await res.json();
       const assistantMsg: Message = {
         role: "assistant",
         content: data.reply,
         actions: data.actions?.length ? data.actions : undefined,
+        created_at: new Date().toISOString(),
       };
+      // Persist assistant message to DB
+      if (user) {
+        const id = await saveMessageToDB(assistantMsg, supabase, user.id);
+        if (id) assistantMsg.db_id = id;
+      }
       setMessages((prev) => [...prev, assistantMsg]);
       if (data.refreshNeeded) router.refresh();
     } catch {
-      setMessages((prev) => [...prev, { role: "assistant", content: "Something went wrong. Try again." }]);
+      setMessages((prev) => [...prev, { role: "assistant", content: "Something went wrong. Try again.", created_at: new Date().toISOString() }]);
     } finally {
       setLoading(false);
     }
@@ -432,7 +527,23 @@ export function Luka() {
             Listening
           </span>
         )}
-        <button onClick={() => setOpen(false)} className="text-[var(--text-3)] transition-colors hover:text-[var(--text-1)]">
+        {messages.length > 0 && !confirmClear && (
+          <button
+            type="button"
+            onClick={() => setConfirmClear(true)}
+            className="text-[10px] text-[var(--text-3)] hover:text-red-400 transition-colors px-1"
+            title="Clear conversation"
+          >
+            Clear
+          </button>
+        )}
+        {confirmClear && (
+          <div className="flex items-center gap-1.5">
+            <button type="button" onClick={clearConversation} className="text-[10px] text-red-400 hover:text-red-300">Confirm</button>
+            <button type="button" onClick={() => setConfirmClear(false)} className="text-[10px] text-[var(--text-3)] hover:text-[var(--text-2)]">Cancel</button>
+          </div>
+        )}
+        <button onClick={() => { setOpen(false); setConfirmClear(false); }} className="text-[var(--text-3)] transition-colors hover:text-[var(--text-1)]">
           <CloseIcon />
         </button>
       </div>

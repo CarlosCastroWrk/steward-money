@@ -249,6 +249,23 @@ export function TransactionsView({ transactions: initialTransactions, accounts, 
   const hasActiveFilters = timeRange !== "this-month" || accountFilter !== "all" || categoryFilter !== "all" || typeFilter !== "all" || search !== "";
   const selectClass = "select-pill rounded-xl border border-[var(--border)] bg-[var(--bg-elevated)] pl-3 pr-8 py-2 text-sm text-[var(--text-2)] focus:border-emerald-500/40 focus:outline-none transition cursor-pointer";
 
+  const syncAgeSeconds = lastSynced ? (Date.now() - new Date(lastSynced).getTime()) / 1000 : null;
+  const syncStale = syncAgeSeconds !== null && syncAgeSeconds > 3600;
+
+  // Auto-expand to last 30 days if no transactions this month
+  const [autoExpanded, setAutoExpanded] = useState(false);
+  useEffect(() => {
+    if (timeRange === "this-month" && txList.length > 0) {
+      const thisMonthCutoff = cutoffFor("this-month");
+      const hasThisMonth = txList.some((tx) => new Date(tx.date + "T12:00:00") >= thisMonthCutoff);
+      if (!hasThisMonth) {
+        setTimeRange("month");
+        setAutoExpanded(true);
+      }
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [txList]);
+
   return (
     <section className="min-h-screen p-4 md:p-8">
       {/* Toast */}
@@ -300,10 +317,14 @@ export function TransactionsView({ transactions: initialTransactions, accounts, 
             {/* Last synced + sync button */}
             <button
               type="button"
-              onClick={() => syncNow(false)}
+              onClick={() => { syncNow(false); setAutoExpanded(false); }}
               disabled={syncing}
-              title="Sync last 30 days"
-              className="flex items-center gap-1.5 rounded-xl border border-[var(--border)] px-3 py-2 text-xs text-[var(--text-3)] transition hover:border-emerald-700/40 hover:text-emerald-400 disabled:opacity-50"
+              title={syncStale ? "Sync may be stale — tap to refresh" : "Sync last 30 days"}
+              className={`flex items-center gap-1.5 rounded-xl border px-3 py-2 text-xs transition disabled:opacity-50 ${
+                syncStale
+                  ? "border-amber-500/40 text-amber-500 hover:border-amber-500/60"
+                  : "border-[var(--border)] text-[var(--text-3)] hover:border-emerald-700/40 hover:text-emerald-400"
+              }`}
             >
               <svg
                 viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={1.8}
@@ -311,7 +332,7 @@ export function TransactionsView({ transactions: initialTransactions, accounts, 
               >
                 <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
               </svg>
-              {lastSynced ? timeSince(lastSynced) : "Sync"}
+              {syncStale ? "Sync may be stale" : lastSynced ? timeSince(lastSynced) : "Sync"}
             </button>
             {plaidConnected && (
               <button
@@ -349,6 +370,14 @@ export function TransactionsView({ transactions: initialTransactions, accounts, 
             </div>
           ))}
         </div>
+
+        {/* Auto-expanded notice */}
+        {autoExpanded && (
+          <div className="mt-4 flex items-center gap-2 rounded-xl border border-[var(--border)] bg-[var(--bg-elevated)] px-4 py-2.5 text-xs text-[var(--text-muted)]">
+            <span>Showing last 30 days — no transactions this month yet</span>
+            <button type="button" onClick={() => setAutoExpanded(false)} className="ml-auto text-[var(--text-3)] hover:text-[var(--text-2)]">✕</button>
+          </div>
+        )}
 
         {/* Search */}
         <div className="mt-5">
@@ -412,11 +441,20 @@ export function TransactionsView({ transactions: initialTransactions, accounts, 
         <div className="mt-6 space-y-6">
           {txList.length === 0 ? (
             <div className="rounded-2xl border border-dashed border-[var(--border)] p-12 text-center">
-              <p className="font-medium text-[var(--text-2)]">No transactions yet</p>
-              <p className="mt-1 text-sm text-[var(--text-3)]">Log your first purchase or income to start tracking.</p>
-              <button type="button" onClick={() => { setEditing(null); setModalOpen(true); }} className="mt-4 rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-500">
-                Add your first transaction
-              </button>
+              <p className="font-medium text-[var(--text-2)]">No activity yet</p>
+              <p className="mt-1 text-sm text-[var(--text-3)]">
+                {plaidConnected ? "Sync your bank to pull in real transactions." : "Connect your bank or add a transaction manually."}
+              </p>
+              <div className="mt-4 flex justify-center gap-3">
+                {plaidConnected && (
+                  <button type="button" onClick={() => syncNow(false)} disabled={syncing} className="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-500 disabled:opacity-50">
+                    {syncing ? "Syncing…" : "Sync now"}
+                  </button>
+                )}
+                <button type="button" onClick={() => { setEditing(null); setModalOpen(true); }} className="rounded-xl border border-[var(--border)] px-4 py-2 text-sm font-medium text-[var(--text-2)] transition hover:border-[var(--border-strong)]">
+                  Add manually
+                </button>
+              </div>
             </div>
           ) : grouped.length === 0 ? (
             <div className="rounded-2xl border border-dashed border-[var(--border)] p-10 text-center">

@@ -44,6 +44,7 @@ export default async function DashboardPage() {
     upcomingExpensesWeekResult,
     upcomingExpensesMonthResult,
     recentTxResult,
+    lastSyncedResult,
   ] = await Promise.all([
     calculateSafeToSpend(supabase, user.id),
     supabase.from("goals").select("id, name, target_amount, current_amount, deadline").eq("user_id", user.id).order("priority", { ascending: true }),
@@ -56,6 +57,7 @@ export default async function DashboardPage() {
     supabase.from("upcoming_expenses").select("id, name, amount, expense_date").eq("user_id", user.id).eq("is_paid", false).gte("expense_date", today).lte("expense_date", sevenDaysOut).order("expense_date", { ascending: true }),
     supabase.from("upcoming_expenses").select("amount").eq("user_id", user.id).eq("is_paid", false).gte("expense_date", monthStart),
     supabase.from("transactions").select("id, merchant, amount, date, category").eq("user_id", user.id).gte("date", sevenDaysAgo).order("date", { ascending: false }).limit(5),
+    supabase.from("accounts").select("last_synced").eq("user_id", user.id).not("last_synced", "is", null).order("last_synced", { ascending: false }).limit(1).maybeSingle(),
   ]);
 
   const goals = goalsResult.data ?? [];
@@ -71,6 +73,16 @@ export default async function DashboardPage() {
 
   const in3Days = new Date(Date.now() + 3 * 86_400_000).toISOString().split("T")[0];
   const recentTx = recentTxResult.data ?? [];
+  const lastSynced = lastSyncedResult.data?.last_synced ?? null;
+  const lastSyncedLabel = lastSynced
+    ? (() => {
+        const secs = Math.floor((Date.now() - new Date(lastSynced).getTime()) / 1000);
+        if (secs < 60) return "Synced just now";
+        if (secs < 3600) return `Synced ${Math.floor(secs / 60)}m ago`;
+        if (secs < 86400) return `Synced ${Math.floor(secs / 3600)}h ago`;
+        return `Synced ${Math.floor(secs / 86400)}d ago`;
+      })()
+    : null;
 
   return (
     <div className="space-y-5 px-4 pb-10 pt-5 md:space-y-6 md:px-8 md:pt-8">
@@ -111,6 +123,11 @@ export default async function DashboardPage() {
             {formatUSD(result.safeToSpend)}
           </p>
           <p className="mt-1.5 text-xs text-white/40">After bills, buffer &amp; deductions</p>
+          {lastSyncedLabel && (
+            <a href="/transactions" className="mt-1 inline-block text-[10px] text-white/30 hover:text-white/50 transition-colors">
+              {lastSyncedLabel} · Sync
+            </a>
+          )}
           <div className="mt-4 flex gap-6 border-t border-white/10 pt-3.5">
             <div>
               <p className="text-[10px] uppercase tracking-wide text-white/50">Protected</p>
@@ -254,7 +271,8 @@ export default async function DashboardPage() {
         </div>
         {recentTx.length === 0 ? (
           <div className="rounded-xl border border-[var(--border)] bg-[var(--bg-card)] p-5 text-center">
-            <p className="text-sm text-[var(--text-3)]">Nothing this week yet — your activity will show here.</p>
+            <p className="text-sm text-[var(--text-3)]">No activity yet — sync your bank or add a transaction manually.</p>
+            <a href="/transactions" className="mt-2 inline-block text-xs text-purple-400 hover:text-purple-300">Go to Activity →</a>
           </div>
         ) : (
           <div className="overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--bg-card)] divide-y divide-[var(--border)]">

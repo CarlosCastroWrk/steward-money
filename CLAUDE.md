@@ -24,16 +24,16 @@ No test suite exists. TypeScript check is the primary correctness gate.
 2. Authed but onboarding incomplete → redirect to `/onboarding`
 3. Authed + onboarded → allow through
 
-Supabase auth uses `@supabase/ssr`. Two client factories:
+Supabase auth uses `@supabase/ssr`. Three client factories:
 - `lib/supabase/server.ts` — React `cache()`-wrapped, for Server Components and API routes
 - `lib/supabase/client.ts` — browser client for Client Components
 - `lib/supabase/admin.ts` — service role client used only in cron paths
 
 All DB queries are scoped to `user.id` via RLS on every table.
 
-### The Five Agents
+### The Ten Agents
 
-Each agent is an API route that can be called on-demand (POST) or via Vercel cron. Cron routes are identified by the `x-vercel-cron: 1` header and use the admin client to iterate all users.
+Each agent is an API route under `/api/agents/`. Cron routes are identified by the `x-vercel-cron: 1` header and use the admin client to iterate all users. All agents can call `saveAgentMemory()` from `lib/agent-memory.ts` to persist observations to the `agent_memories` table.
 
 | Agent | Route | Trigger | Storage |
 |-------|-------|---------|---------|
@@ -42,8 +42,17 @@ Each agent is an API route that can be called on-demand (POST) or via Vercel cro
 | **Solomon** | `/api/agents/solomon` | Sunday cron 9am + manual POST | `weekly_reports` table |
 | **Silas** | `/api/agents/silas` | Sunday cron 9am + manual POST | `pulse_insights` table |
 | **Kairos** | `/api/agents/kairos` | Luka `trigger_kairos` tool + event detection | `life_events` table; sets `kairos_pending` on `user_settings` |
+| **Eden** | `/api/agents/eden` | Manual POST from Pulse | `vision_moments` table; reads `personal_vision` from `user_settings` |
+| **Nova** | `/api/agents/nova` | Behavioral triggers + cron | `nova_messages` table |
+| **Manna** | `/api/agents/manna` | Dashboard load / daily | `manna_daily` table |
+| **Iron** | `/api/agents/iron` | Manual POST from Pulse | `commitments` + `commitment_checkins` tables |
+| **Echo** | `/api/agents/echo` | Read/write agent memory | `echo_memories` table |
 
-**Luka** is the only agent users interact with directly. Its system prompt is built fresh on every call using live data: safe-to-spend, active Argus alerts, top Silas insights, latest Solomon word, and whether Kairos has a pending life-change review. It uses claude-sonnet-4-6.
+**Argus sub-routes**: `GET /api/agents/argus/alerts` returns max 4 unread alerts (used by Pulse — does NOT run the full agent).
+
+**Solomon sub-routes**: `GET /api/agents/solomon/latest` returns the current week's report. `GET /api/agents/solomon/strategy` generates a 2-3 sentence strategic recommendation via claude-haiku-4-5-20251001.
+
+**Luka** is the only agent users interact with directly. Its system prompt is built fresh on every call using live data: safe-to-spend, active Argus alerts, top Silas insights, latest Solomon word, and whether Kairos has a pending life-change review. It uses `claude-sonnet-4-6`.
 
 **Kairos pending flow**: when `kairos_pending = true` in `user_settings`, Luka's system prompt instructs it to open with a plan review prompt. After the review, call `PATCH /api/agents/kairos` to clear the flag and set `last_plan_review`.
 
@@ -53,7 +62,7 @@ Each agent is an API route that can be called on-demand (POST) or via Vercel cro
 ```
 safeToSpend = liquidCash - billsDueSoon - emergencyBuffer - weeklyNeeds - giving - savings - trading
 ```
-`billsDueSoon` = bills due before the next income date (not just 7 days). This calculation is called on dashboard load, in Luka's read_financial_summary tool, and in Argus checks — always pass the Supabase client and userId, never cache across users.
+`billsDueSoon` = bills due before the next income date (not just 7 days). Always pass the Supabase client and userId — never cache across users.
 
 `lib/income.ts` — income date advancement. `advanceStaleIncomeDates()` is called on dashboard load to silently push past-due income dates forward before any UI renders.
 
@@ -61,28 +70,45 @@ safeToSpend = liquidCash - billsDueSoon - emergencyBuffer - weeklyNeeds - giving
 
 `lib/stewardship.ts` — stewardship scoring rubric and `scoreStewardship()`. Solomon uses this to compute the weekly 1–10 score.
 
+`lib/agent-memory.ts` — `saveAgentMemory(supabase, userId, agentName, summary, importance)`. Agents call this to persist key observations.
+
 ### Database Schema
 
-9 migrations in `supabase/migrations/`. Key tables:
-- `user_settings` — one row per user, holds all allocation rules (giving, savings, trading, needs budgets), `emergency_buffer`, `kairos_pending`, `last_plan_review`
+Migrations in `supabase/migrations/`. Key tables:
+- `user_settings` — one row per user, holds all allocation rules (giving, savings, trading, needs budgets), `emergency_buffer`, `kairos_pending`, `last_plan_review`, `personal_vision`, `display_name`, `life_stage`, `main_goal`
 - `income_sources` — has both `next_date` and `next_expected_date` columns (historical inconsistency). New code should update both when advancing dates.
 - `bills` — `next_due_date` is the primary field. Advancing after payment is done locally (not via DB trigger).
 - `alerts` — written by Argus. Has `agent`, `alert_type`, `is_read`, `severity`. Deduplicated by `alert_type` within 24h.
 - `pulse_insights` — written by Silas. Dismissed per-row in DB (not localStorage).
 - `weekly_reports` — one per user per `week_start` date. Upserted each Sunday.
 - `life_events` — append-only log written by Kairos. Cleared via `acknowledged = true`.
+- `nova_messages`, `manna_daily`, `commitments`, `commitment_checkins`, `vision_moments`, `echo_memories`, `agent_memories` — written by newer agents.
 
 RLS is enabled on all tables — every policy uses `auth.uid() = user_id`.
 
 ### UI Conventions
 
-**Agent avatars**: `components/AgentAvatar.tsx` — use `agent="luka"|"solomon"|"argus"|"silas"|"kairos"`. Colors: Luka=purple, Solomon=amber, Argus=blue, Silas=teal, Kairos=green.
+**Design tokens**: CSS variables in `globals.css` support light/dark via `.dark` class toggle on `<html>`. Always use CSS variables — never hardcode `text-white`, `text-zinc-*`, or `bg-white text-black`. Key tokens:
+- Background: `--bg-base`, `--bg-card`, `--bg-elevated`, `--bg-inset`, `--bg-hover`
+- Border: `--border-subtle`, `--border-default`, `--border-strong`
+- Text: `--text-primary`, `--text-secondary`, `--text-muted`, `--text-dim`
+- Accent: `--accent`, `--accent-deep`, `--accent-glow`, `--accent-border`
 
-**Toast notifications**: wrap is in `ToastProvider` (already in layout). Use `const toast = useToast()` in any Client Component, then `toast("message")` for success or `toast("message", "error")`.
+Semantic colors that work in both modes: `text-emerald-500` (income/success), `text-red-500` (danger), `text-amber-500` (warning), `text-[var(--accent)]` (purple, primary/Luka).
 
-**Design tokens**: the app targets dark mode (zinc-900 cards, zinc-800 borders). CSS variables in `globals.css` support light/dark via `.dark` class toggle. When writing new UI, use Tailwind's `zinc-*` scale for backgrounds/borders and semantic colors (green for income, red for danger, amber for warnings, purple for primary/Luka).
+**Agent avatars**: `components/AgentAvatar.tsx` — use `agent="luka"|"solomon"|"argus"|"silas"|"kairos"|"eden"|"nova"|"manna"|"iron"|"echo"`.
 
-**Page metadata**: all pages export `export const metadata: Metadata = { title: "Page Name" }`. The layout template produces `"Page Name — Steward Money"` in the browser tab.
+**Toast notifications**: `ToastProvider` is in layout. Use `const toast = useToast()` → `toast("message")` or `toast("message", "error")`.
+
+**Page metadata**: all pages export `export const metadata: Metadata = { title: "Page Name" }`. The layout template produces `"Page Name — Steward Money"`.
+
+**Settings inputs**: use `INPUT_CLASS` and `LABEL_CLASS` from `components/settings/types.ts` — these are already CSS-variable-aware. Primary action buttons use `bg-[var(--accent)] text-white`; secondary use `border-[var(--border-default)] text-[var(--text-secondary)]`.
+
+### Navigation
+
+- **Bottom nav (mobile)**: Home / Expenses / Pulse / Card — defined in `components/BottomNav.tsx`. More menu: Activity / Accounts / Goals / Decide / Council / Settings.
+- **Sidebar (desktop)**: `components/Sidebar.tsx`.
+- **Transactions page** is branded as **Activity** (`/transactions`).
 
 ### Environment Variables
 
