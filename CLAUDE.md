@@ -52,7 +52,9 @@ Each agent is an API route under `/api/agents/`. Cron routes are identified by t
 
 **Solomon sub-routes**: `GET /api/agents/solomon/latest` returns the current week's report. `GET /api/agents/solomon/strategy` generates a 2-3 sentence strategic recommendation via claude-haiku-4-5-20251001.
 
-**Luka** is the only agent users interact with directly. Its system prompt is built fresh on every call using live data: safe-to-spend, active Argus alerts, top Silas insights, latest Solomon word, and whether Kairos has a pending life-change review. It uses `claude-sonnet-4-6`.
+**Luka** is the only agent users interact with directly. Its system prompt is built fresh on every call using live data: safe-to-spend, active Argus alerts, top Silas insights, latest Solomon word, connected account list, and whether Kairos has a pending life-change review. It uses `claude-sonnet-4-6`.
+
+**Luka agentic loop**: `app/api/luka/route.ts` runs up to 6 iterations. Each iteration calls the Anthropic API; if `stop_reason === "tool_use"`, tools are executed and results are appended as a `user` role message before the next iteration. Only the final `end_turn` response text is returned to the client. Tool action cards are only added to the response when the tool returns `success: true` (never on error).
 
 **Kairos pending flow**: when `kairos_pending = true` in `user_settings`, Luka's system prompt instructs it to open with a plan review prompt. After the review, call `PATCH /api/agents/kairos` to clear the flag and set `last_plan_review`.
 
@@ -75,9 +77,11 @@ safeToSpend = liquidCash - billsDueSoon - emergencyBuffer - weeklyNeeds - giving
 ### Database Schema
 
 Migrations in `supabase/migrations/`. Key tables:
+
 - `user_settings` — one row per user, holds all allocation rules (giving, savings, trading, needs budgets), `emergency_buffer`, `kairos_pending`, `last_plan_review`, `personal_vision`, `display_name`, `life_stage`, `main_goal`
-- `income_sources` — has both `next_date` and `next_expected_date` columns (historical inconsistency). New code should update both when advancing dates.
-- `bills` — `next_due_date` is the primary field. Advancing after payment is done locally (not via DB trigger).
+- `income_sources` — primary date column is `next_expected_date` (NOT `next_date` — that column does not exist). Only update `next_expected_date` when advancing dates.
+- `bills` — `next_due_date` is the primary field. Advancing after payment is done in application code (not via DB trigger).
+- `accounts` — key columns: `plaid_type` ("depository" | "credit" | "loan" | "investment"), `plaid_subtype`, `available_balance` (only set for depository accounts — represents spendable cash after pending), `current_balance` (present balance for all types), `credit_limit` (credit/loan only), `purpose` (user-assigned label), `last_synced`. Always use `plaid_type` as the source of truth for account classification, falling back to the human-readable `type` field for manual accounts.
 - `alerts` — written by Argus. Has `agent`, `alert_type`, `is_read`, `severity`. Deduplicated by `alert_type` within 24h.
 - `pulse_insights` — written by Silas. Dismissed per-row in DB (not localStorage).
 - `weekly_reports` — one per user per `week_start` date. Upserted each Sunday.
@@ -86,15 +90,37 @@ Migrations in `supabase/migrations/`. Key tables:
 
 RLS is enabled on all tables — every policy uses `auth.uid() = user_id`.
 
+### Plaid Balance Semantics
+
+Plaid returns three balance fields — map them per account type:
+
+| Plaid type | `current_balance` | `available_balance` | `credit_limit` |
+|---|---|---|---|
+| depository | present balance | spendable cash (current minus pending) | null |
+| credit | amount owed | **do not use** (remaining credit line, not cash) | credit limit |
+| loan | amount owed | null | loan limit if available |
+
+`safe-to-spend` uses `available_balance ?? current_balance` for depository accounts only. Credit and loan balances are excluded from liquid cash.
+
 ### UI Conventions
 
-**Design tokens**: CSS variables in `globals.css` support light/dark via `.dark` class toggle on `<html>`. Always use CSS variables — never hardcode `text-white`, `text-zinc-*`, or `bg-white text-black`. Key tokens:
-- Background: `--bg-base`, `--bg-card`, `--bg-elevated`, `--bg-inset`, `--bg-hover`
-- Border: `--border-subtle`, `--border-default`, `--border-strong`
-- Text: `--text-primary`, `--text-secondary`, `--text-muted`, `--text-dim`
-- Accent: `--accent`, `--accent-deep`, `--accent-glow`, `--accent-border`
+**Design tokens**: CSS variables in `globals.css` support light/dark via `.dark` class toggle on `<html>`. Always use CSS variables — never hardcode `text-white`, `text-zinc-*`, or `bg-white text-black`.
 
-Semantic colors that work in both modes: `text-emerald-500` (income/success), `text-red-500` (danger), `text-amber-500` (warning), `text-[var(--accent)]` (purple, primary/Luka).
+Text tokens (both forms are defined; components use the shorthand):
+- `--text-1` / `--text-primary` — primary text
+- `--text-2` / `--text-secondary` — secondary/subdued text
+- `--text-3` / `--text-muted` — muted/hint text
+- `--text-dim` — faintest
+
+Background: `--bg-base`, `--bg-card`, `--bg-elevated`, `--bg-inset`, `--bg-hover`
+
+Border: `--border` (same as `--border-default`), `--border-subtle`, `--border-default`, `--border-strong`
+
+Accent: `--accent`, `--accent-deep`, `--accent-glow`, `--accent-border`
+
+Agent colors: `--luka`, `--argus`, `--solomon`, `--silas`, `--kairos`, `--eden`, `--iron`, `--nova`, `--echo`, `--manna`
+
+Semantic Tailwind colors that work in both modes: `text-emerald-500` (income/success), `text-red-500` (danger), `text-amber-500` (warning), `text-[var(--accent)]` (purple, primary/Luka).
 
 **Agent avatars**: `components/AgentAvatar.tsx` — use `agent="luka"|"solomon"|"argus"|"silas"|"kairos"|"eden"|"nova"|"manna"|"iron"|"echo"`.
 
@@ -124,6 +150,10 @@ SUPABASE_SERVICE_ROLE_KEY   # Used only in lib/supabase/admin.ts (cron paths)
 
 ### Plaid Integration
 
-Link flow: `PlaidLinkButton` → `/api/plaid/create-link-token` → Plaid Link → `/api/plaid/exchange-token` → `/api/plaid/sync`. Transactions sync via webhook at `/api/plaid/webhook` and are staged in `pending_transactions` before being written to `transactions`. Plaid connection metadata lives in `plaid_items`.
+Link flow: `PlaidLinkButton` → `/api/plaid/create-link-token` → Plaid Link → `/api/plaid/exchange-token` → `/api/plaid/sync`. Transactions sync via webhook at `/api/plaid/webhook`. Plaid connection metadata lives in `plaid_items`.
 
-`PLAID_ENV=sandbox` during development — sandbox returns synthetic transactions that include unrealistic merchants; filter these out when displaying to users.
+`/api/plaid/sync` — user-triggered sync (POST). Supports `{ deep: true }` body for 90-day lookback (default 30). Returns `item_errors` array when any Plaid item fails so the caller can surface per-institution errors.
+
+`/api/plaid/auto-sync` — cron-only (requires `x-vercel-cron: 1` header), runs daily at 6am via `vercel.json`. Uses admin client to sync all users.
+
+`PLAID_ENV=sandbox` during development — sandbox returns synthetic transactions that include unrealistic merchants.
