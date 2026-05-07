@@ -80,7 +80,7 @@ export function DecideView({ result }: Props) {
         <div className="mt-8 flex items-center rounded-2xl border border-[var(--border-default)] bg-[var(--bg-card)] px-6 py-5">
           <span className="text-3xl font-light text-[var(--text-muted)]">$</span>
           <input
-            type="number"
+            type="number" inputMode="decimal"
             min="0"
             step="0.01"
             value={input}

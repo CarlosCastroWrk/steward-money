@@ -6,6 +6,7 @@ import { BottomNav } from "./BottomNav";
 import { Luka } from "./Luka";
 import { NotificationBell } from "./NotificationBell";
 import { SessionGuard } from "./security/SessionGuard";
+import { SyncOnFocus } from "./SyncOnFocus";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -31,6 +32,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       </div>
       <Luka />
       <SessionGuard />
+      <SyncOnFocus />
     </>
   );
 }

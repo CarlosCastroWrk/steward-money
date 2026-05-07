@@ -170,7 +170,7 @@ export function AddExpenseSheet({ open, onClose, mode, accounts, prefill, onSucc
               <span className="absolute left-4 top-1/2 -translate-y-1/2 text-sm text-[var(--text-muted)]">$</span>
               <input
                 className={`${inputClass} pl-8`}
-                type="number"
+                type="number" inputMode="decimal"
                 step="0.01"
                 min="0.01"
                 value={amount}

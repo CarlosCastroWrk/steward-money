@@ -75,7 +75,7 @@ export function Step2Giving({ formData, onChange, onNext, onBack, onSkip, isSavi
                 <span className="absolute left-3 top-2 text-zinc-400">$</span>
               ) : null}
               <input
-                type="number"
+                type="number" inputMode="decimal"
                 className={`${INPUT} ${formData.giving_type === "fixed" ? "pl-7" : "pr-8"}`}
                 value={formData.giving_value}
                 onChange={(e) => onChange({ giving_value: Number(e.target.value) })}

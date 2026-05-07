@@ -101,7 +101,7 @@ export function Step7Income({ formData, onChange, onNext, onBack, isSaving, erro
           <div>
             <label className="mb-1 block text-sm text-zinc-400">Hourly rate ($)</label>
             <input
-              type="number"
+              type="number" inputMode="decimal"
               min="0"
               step="0.01"
               className={INPUT}
@@ -113,7 +113,7 @@ export function Step7Income({ formData, onChange, onNext, onBack, isSaving, erro
           <div>
             <label className="mb-1 block text-sm text-zinc-400">Est. weekly hours</label>
             <input
-              type="number"
+              type="number" inputMode="decimal"
               min="0"
               step="0.5"
               className={INPUT}
@@ -135,7 +135,7 @@ export function Step7Income({ formData, onChange, onNext, onBack, isSaving, erro
           <div className="relative">
             <span className="absolute left-3 top-2 text-zinc-400">$</span>
             <input
-              type="number"
+              type="number" inputMode="decimal"
               min="0"
               step="0.01"
               className={`${INPUT} pl-7`}

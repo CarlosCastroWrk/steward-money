@@ -69,12 +69,14 @@ export function AccountCard({ account }: { account: Account }) {
     router.refresh();
   };
 
-  const lastSyncedLabel = account.last_synced
-    ? new Date(account.last_synced).toLocaleString(undefined, {
-        dateStyle: "medium",
-        timeStyle: "short"
-      })
-    : null;
+  const { lastSyncedLabel, isStale } = (() => {
+    if (!account.last_synced) return { lastSyncedLabel: null, isStale: false };
+    const secs = Math.floor((Date.now() - new Date(account.last_synced).getTime()) / 1000);
+    if (secs < 60) return { lastSyncedLabel: "Updated just now", isStale: false };
+    if (secs < 3600) return { lastSyncedLabel: `Updated ${Math.floor(secs / 60)}m ago`, isStale: false };
+    if (secs < 86400) return { lastSyncedLabel: `Updated ${Math.floor(secs / 3600)}h ago`, isStale: secs > 7200 };
+    return { lastSyncedLabel: `Updated ${Math.floor(secs / 86400)}d ago`, isStale: true };
+  })();
 
   return (
     <div className="rounded-xl border border-[var(--border)] bg-[var(--bg-card)] p-5">
@@ -94,7 +96,7 @@ export function AccountCard({ account }: { account: Account }) {
       {editing ? (
         <div className="mt-4 space-y-3">
           <input
-            type="number"
+            type="number" inputMode="decimal"
             step="any"
             className="w-full max-w-xs rounded-lg border border-[var(--border)] bg-[var(--bg-elevated)] px-3 py-2 text-sm text-[var(--text-1)]"
             value={balanceInput}
@@ -125,7 +127,9 @@ export function AccountCard({ account }: { account: Account }) {
           <p className={`mt-4 text-2xl font-semibold ${balanceNum < 0 ? "text-red-400" : "text-[var(--text-1)]"}`}>
             {formatCurrency(balanceNum)}
           </p>
-          {lastSyncedLabel ? <p className="mt-2 text-xs text-[var(--text-3)]">Last synced {lastSyncedLabel}</p> : null}
+          {lastSyncedLabel ? (
+            <p className={`mt-2 text-xs ${isStale ? "text-amber-400" : "text-[var(--text-3)]"}`}>{lastSyncedLabel}</p>
+          ) : null}
           <div className="mt-4 flex flex-wrap gap-2">
             <button
               type="button"

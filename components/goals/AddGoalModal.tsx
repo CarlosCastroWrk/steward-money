@@ -155,7 +155,7 @@ export function AddGoalModal({ open, onClose, goal }: Props) {
             </label>
             <input
               id="goal-target"
-              type="number"
+              type="number" inputMode="decimal"
               step="0.01"
               min="1"
               className={inputClass}
@@ -171,7 +171,7 @@ export function AddGoalModal({ open, onClose, goal }: Props) {
             </label>
             <input
               id="goal-current"
-              type="number"
+              type="number" inputMode="decimal"
               step="0.01"
               min="0"
               className={inputClass}
@@ -197,7 +197,7 @@ export function AddGoalModal({ open, onClose, goal }: Props) {
             </label>
             <input
               id="goal-priority"
-              type="number"
+              type="number" inputMode="decimal"
               min="1"
               max="10"
               className={inputClass}

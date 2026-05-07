@@ -4,7 +4,6 @@ import { advanceStaleIncomeDates } from "@/lib/income";
 import { createClient } from "@/lib/supabase/server";
 import { formatUSD, formatUSDCents, formatDate } from "@/lib/format";
 import { GreetingHeader } from "@/components/dashboard/GreetingHeader";
-import { AllocationCard } from "@/components/dashboard/AllocationCard";
 
 export const metadata: Metadata = {
   title: "Dashboard — Steward Money",
@@ -160,10 +159,44 @@ export default async function DashboardPage() {
         ))}
       </div>
 
-      {/* 5. Allocation card */}
-      {result.nextIncomeAmount > 0 && (
-        <AllocationCard income={result.nextIncomeAmount} />
-      )}
+      {/* 5. Recent activity — visible without scrolling */}
+      <section>
+        <div className="mb-3 flex items-center justify-between">
+          <div>
+            <h2 className="text-[10px] font-semibold uppercase tracking-widest text-[var(--text-3)]">Recent Activity</h2>
+            <p className="text-[10px] text-[var(--text-3)] mt-0.5">Last 7 days</p>
+          </div>
+          <a href="/transactions" className="text-xs text-purple-400 transition-colors hover:text-purple-300">See all</a>
+        </div>
+        {recentTx.length === 0 ? (
+          <div className="rounded-xl border border-[var(--border)] bg-[var(--bg-card)] p-5 text-center">
+            <p className="text-sm text-[var(--text-3)]">No activity yet — sync your bank or add a transaction manually.</p>
+            <a href="/transactions" className="mt-2 inline-block text-xs text-purple-400 hover:text-purple-300">Go to Activity →</a>
+          </div>
+        ) : (
+          <div className="overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--bg-card)] divide-y divide-[var(--border)]">
+            {recentTx.map((tx) => {
+              const isIncome = Number(tx.amount) > 0;
+              return (
+                <div key={tx.id} className="flex items-center justify-between px-4 py-3.5 gap-3">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className={`h-7 w-7 flex-shrink-0 rounded-full flex items-center justify-center text-[10px] font-bold ${isIncome ? "bg-green-500/15 text-green-500" : "bg-[var(--bg-elevated)] text-[var(--text-3)]"}`}>
+                      {isIncome ? "+" : tx.category?.slice(0, 1).toUpperCase() ?? "?"}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-[var(--text-1)] truncate">{tx.merchant ?? (isIncome ? "Income" : "Transaction")}</p>
+                      <p className="text-xs text-[var(--text-3)] mt-0.5">{formatDate(tx.date)}{tx.category ? ` · ${tx.category}` : ""}</p>
+                    </div>
+                  </div>
+                  <span className={`text-sm font-semibold flex-shrink-0 ${isIncome ? "text-[var(--color-income)]" : "text-[var(--color-expense)]"}`}>
+                    {isIncome ? "+" : ""}{formatUSDCents(Math.abs(Number(tx.amount)))}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </section>
 
       {/* 6. Expenses this week */}
       <section>
@@ -253,45 +286,6 @@ export default async function DashboardPage() {
                       style={{ width: `${pct}%` }}
                     />
                   </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </section>
-
-      {/* 8. Recent activity */}
-      <section>
-        <div className="mb-3 flex items-center justify-between">
-          <div>
-            <h2 className="text-[10px] font-semibold uppercase tracking-widest text-[var(--text-3)]">Recent Activity</h2>
-            <p className="text-[10px] text-[var(--text-3)] mt-0.5">Last 7 days</p>
-          </div>
-          <a href="/transactions" className="text-xs text-purple-400 transition-colors hover:text-purple-300">See all</a>
-        </div>
-        {recentTx.length === 0 ? (
-          <div className="rounded-xl border border-[var(--border)] bg-[var(--bg-card)] p-5 text-center">
-            <p className="text-sm text-[var(--text-3)]">No activity yet — sync your bank or add a transaction manually.</p>
-            <a href="/transactions" className="mt-2 inline-block text-xs text-purple-400 hover:text-purple-300">Go to Activity →</a>
-          </div>
-        ) : (
-          <div className="overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--bg-card)] divide-y divide-[var(--border)]">
-            {recentTx.map((tx) => {
-              const isIncome = Number(tx.amount) > 0;
-              return (
-                <div key={tx.id} className="flex items-center justify-between px-4 py-3.5 gap-3">
-                  <div className="flex items-center gap-3 min-w-0">
-                    <div className={`h-7 w-7 flex-shrink-0 rounded-full flex items-center justify-center text-[10px] font-bold ${isIncome ? "bg-green-500/15 text-green-500" : "bg-[var(--bg-elevated)] text-[var(--text-3)]"}`}>
-                      {isIncome ? "+" : tx.category?.slice(0, 1).toUpperCase() ?? "?"}
-                    </div>
-                    <div className="min-w-0">
-                      <p className="text-sm font-medium text-[var(--text-1)] truncate">{tx.merchant ?? (isIncome ? "Income" : "Transaction")}</p>
-                      <p className="text-xs text-[var(--text-3)] mt-0.5">{formatDate(tx.date)}{tx.category ? ` · ${tx.category}` : ""}</p>
-                    </div>
-                  </div>
-                  <span className={`text-sm font-semibold flex-shrink-0 ${isIncome ? "text-[var(--color-income)]" : "text-[var(--color-expense)]"}`}>
-                    {isIncome ? "+" : ""}{formatUSDCents(Math.abs(Number(tx.amount)))}
-                  </span>
                 </div>
               );
             })}

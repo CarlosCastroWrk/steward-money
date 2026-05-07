@@ -184,7 +184,7 @@ export function DecisionHub({ safeToSpend, weeklyNeedsTotal, recentDecisions: in
               <div className="relative flex-1">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-[var(--text-3)]">$</span>
                 <input
-                  type="number"
+                  type="number" inputMode="decimal"
                   value={amount}
                   onChange={(e) => setAmount(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && check()}

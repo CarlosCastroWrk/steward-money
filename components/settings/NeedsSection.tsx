@@ -13,7 +13,7 @@ function MoneyField({ label, value, onChange }: { label: string; value: number; 
       <label className={LABEL_CLASS}>{label}</label>
       <div className="relative">
         <span className="absolute left-3 top-2 text-[var(--text-muted)]">$</span>
-        <input type="number" className={`${INPUT_CLASS} pl-7`} value={value} onChange={(e) => onChange(Number(e.target.value))} />
+        <input type="number" inputMode="decimal" className={`${INPUT_CLASS} pl-7`} value={value} onChange={(e) => onChange(Number(e.target.value))} />
       </div>
     </div>
   );

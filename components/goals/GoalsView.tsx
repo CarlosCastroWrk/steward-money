@@ -290,7 +290,7 @@ export function GoalsView({ goals }: Props) {
                     <div className="mt-4 border-t border-[var(--border)] pt-4">
                       <div className="flex items-center gap-2">
                         <input
-                          type="number"
+                          type="number" inputMode="decimal"
                           step="0.01"
                           min="0.01"
                           placeholder="Amount to add"

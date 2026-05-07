@@ -45,7 +45,7 @@ export function Step5Trading({ formData, onChange, onNext, onBack, onSkip, isSav
         <div>
           <label className="mb-1 block text-sm text-zinc-400">Trading value</label>
           <input
-            type="number"
+            type="number" inputMode="decimal"
             className={INPUT}
             value={formData.trading_value}
             onChange={(e) => onChange({ trading_value: Number(e.target.value) })}

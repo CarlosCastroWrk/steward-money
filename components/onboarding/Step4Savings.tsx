@@ -44,7 +44,7 @@ export function Step4Savings({ formData, onChange, onNext, onBack, isSaving, err
         <div>
           <label className="mb-1 block text-sm text-zinc-400">Savings value</label>
           <input
-            type="number"
+            type="number" inputMode="decimal"
             className={INPUT}
             value={formData.savings_value}
             onChange={(e) => onChange({ savings_value: Number(e.target.value) })}

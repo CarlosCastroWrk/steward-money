@@ -146,7 +146,7 @@ export function AddAccountModal({ open, onClose }: Props) {
             </label>
             <input
               id="acc-bal"
-              type="number"
+              type="number" inputMode="decimal"
               step="any"
               className={inputClass}
               value={currentBalance}

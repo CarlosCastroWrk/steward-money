@@ -187,11 +187,12 @@ export function TransactionsView({ transactions: initialTransactions, accounts, 
     return [...map.entries()].sort((a, b) => b[1] - a[1]);
   }, [filtered]);
 
-  const totalExpenses = filtered.filter((tx) => tx.amount < 0).reduce((s, tx) => s + Math.abs(tx.amount), 0);
-  const totalIncome   = filtered.filter((tx) => tx.amount > 0).reduce((s, tx) => s + tx.amount, 0);
-  const netAmount     = totalIncome - totalExpenses;
-  const needsTotal    = filtered.filter((tx) => tx.amount < 0 && tx.is_need === true).reduce((s, tx) => s + Math.abs(tx.amount), 0);
-  const wantsTotal    = filtered.filter((tx) => tx.amount < 0 && tx.is_need === false).reduce((s, tx) => s + Math.abs(tx.amount), 0);
+  const totalExpenses  = filtered.filter((tx) => tx.amount < 0).reduce((s, tx) => s + Math.abs(tx.amount), 0);
+  const totalIncome    = filtered.filter((tx) => tx.amount > 0).reduce((s, tx) => s + tx.amount, 0);
+  const netAmount      = totalIncome - totalExpenses;
+  const needsTotal     = filtered.filter((tx) => tx.amount < 0 && tx.is_need === true).reduce((s, tx) => s + Math.abs(tx.amount), 0);
+  const wantsTotal     = filtered.filter((tx) => tx.amount < 0 && tx.is_need === false).reduce((s, tx) => s + Math.abs(tx.amount), 0);
+  const pendingCount   = filtered.filter((tx) => tx.is_pending).length;
 
   const grouped = useMemo(() => {
     const map = new Map<string, Transaction[]>();
@@ -435,6 +436,13 @@ export function TransactionsView({ transactions: initialTransactions, accounts, 
               })}
             </div>
           </div>
+        )}
+
+        {/* Pending note */}
+        {pendingCount > 0 && (
+          <p className="mt-4 text-xs text-[var(--text-3)]">
+            {pendingCount} pending — charges that haven&apos;t cleared yet. They&apos;ll update automatically.
+          </p>
         )}
 
         {/* Grouped transaction list */}

@@ -35,7 +35,7 @@ export function BufferSection({ initialData }: { initialData: UserSettingsData |
       </div>
       <div className="mt-4 max-w-sm">
         <label className={LABEL_CLASS}>Or enter custom amount</label>
-        <input type="number" className={INPUT_CLASS} value={emergency_buffer} onChange={(e) => setEmergencyBuffer(Number(e.target.value))} />
+        <input type="number" inputMode="decimal" className={INPUT_CLASS} value={emergency_buffer} onChange={(e) => setEmergencyBuffer(Number(e.target.value))} />
       </div>
       <div className="mt-4"><SaveButton onClick={handleSave} status={status} /></div>
     </SettingSection>

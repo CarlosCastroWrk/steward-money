@@ -53,7 +53,7 @@ export function GivingSection({ initialData }: { initialData: UserSettingsData |
             </div>
             <div className="relative max-w-sm">
               {giving_type === "fixed" ? <span className="absolute left-3 top-2 text-[var(--text-muted)]">$</span> : null}
-              <input type="number" className={`${INPUT_CLASS} ${giving_type === "fixed" ? "pl-7" : "pr-8"}`} value={giving_value} onChange={(e) => setGivingValue(Number(e.target.value))} />
+              <input type="number" inputMode="decimal" className={`${INPUT_CLASS} ${giving_type === "fixed" ? "pl-7" : "pr-8"}`} value={giving_value} onChange={(e) => setGivingValue(Number(e.target.value))} />
               {giving_type === "percentage" ? <span className="absolute right-3 top-2 text-[var(--text-muted)]">%</span> : null}
             </div>
             <div className="flex items-center justify-between">

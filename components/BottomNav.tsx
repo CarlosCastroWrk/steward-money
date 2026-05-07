@@ -4,18 +4,18 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { ThemeToggle } from "./ThemeToggle";
-import { Home, CreditCard, ArrowLeftRight, FileText, LayoutGrid, Activity, Layers } from "lucide-react";
+import { Home, ArrowLeftRight, LayoutGrid, Activity, Wallet } from "lucide-react";
 
 const PRIMARY_NAV = [
-  { label: "Home",     href: "/",       icon: <Home size={22} strokeWidth={1.6} /> },
-  { label: "Expenses", href: "/bills",  icon: <FileText size={22} strokeWidth={1.6} /> },
-  { label: "Pulse",    href: "/pulse",  icon: <Activity size={22} strokeWidth={1.6} /> },
-  { label: "Card",     href: "/card",   icon: <Layers size={22} strokeWidth={1.6} /> },
+  { label: "Home",     href: "/",             icon: <Home size={22} strokeWidth={1.6} /> },
+  { label: "Pulse",    href: "/pulse",        icon: <Activity size={22} strokeWidth={1.6} /> },
+  { label: "Activity", href: "/transactions", icon: <ArrowLeftRight size={22} strokeWidth={1.6} /> },
+  { label: "Accounts", href: "/accounts",     icon: <Wallet size={22} strokeWidth={1.6} /> },
 ];
 
 const MORE_NAV = [
-  { label: "Activity", href: "/transactions" },
-  { label: "Accounts", href: "/accounts" },
+  { label: "Expenses", href: "/bills" },
+  { label: "Card",     href: "/card" },
   { label: "Goals",    href: "/goals" },
   { label: "Decide",   href: "/decide" },
   { label: "Council",  href: "/council" },

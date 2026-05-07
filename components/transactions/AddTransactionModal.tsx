@@ -185,7 +185,7 @@ export function AddTransactionModal({ open, onClose, accounts, transaction }: Pr
             </label>
             <input
               id="tx-amount"
-              type="number"
+              type="number" inputMode="decimal"
               step="0.01"
               min="0.01"
               className={inputClass}

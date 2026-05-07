@@ -1,6 +1,10 @@
 {
   "crons": [
     {
+      "path": "/api/plaid/auto-sync",
+      "schedule": "0 * * * *"
+    },
+    {
       "path": "/api/agents/argus",
       "schedule": "0 8 * * *"
     },

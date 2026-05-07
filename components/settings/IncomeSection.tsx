@@ -319,7 +319,7 @@ function IncomeDraftForm({
           <div>
             <label className={LABEL_CLASS}>Hourly rate ($)</label>
             <input
-              type="number"
+              type="number" inputMode="decimal"
               min="0"
               step="0.01"
               className={INPUT_CLASS}
@@ -331,7 +331,7 @@ function IncomeDraftForm({
           <div>
             <label className={LABEL_CLASS}>Est. weekly hours</label>
             <input
-              type="number"
+              type="number" inputMode="decimal"
               min="0"
               step="0.5"
               className={INPUT_CLASS}
@@ -353,7 +353,7 @@ function IncomeDraftForm({
         <div>
           <label className={LABEL_CLASS}>Amount per paycheck ($)</label>
           <input
-            type="number"
+            type="number" inputMode="decimal"
             min="0"
             step="0.01"
             className={INPUT_CLASS}

@@ -45,7 +45,7 @@ export function SavingsSection({ initialData }: { initialData: UserSettingsData 
       {!['manual', 'leftover'].includes(savings_rule) ? (
         <div className="mt-4 max-w-sm">
           <label className={LABEL_CLASS}>Savings value</label>
-          <input type="number" className={INPUT_CLASS} value={savings_value} onChange={(e) => setSavingsValue(Number(e.target.value))} />
+          <input type="number" inputMode="decimal" className={INPUT_CLASS} value={savings_value} onChange={(e) => setSavingsValue(Number(e.target.value))} />
         </div>
       ) : null}
       <div className="mt-4"><SaveButton onClick={handleSave} status={status} /></div>

@@ -59,7 +59,7 @@ export function Step9Accounts({ formData, onChange, onNext, onBack, isSaving, er
       <div>
         <label className="mb-1 block text-sm text-zinc-400">Current balance</label>
         <input
-          type="number"
+          type="number" inputMode="decimal"
           className={INPUT}
           value={draft.current_balance}
           onChange={(e) => setDraft({ ...draft, current_balance: Number(e.target.value) })}

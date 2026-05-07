@@ -44,7 +44,7 @@ export function TradingSection({ initialData }: { initialData: UserSettingsData 
       {!['manual', 'surplus_only'].includes(trading_rule) ? (
         <div className="mt-4 max-w-sm">
           <label className={LABEL_CLASS}>Trading value</label>
-          <input type="number" className={INPUT_CLASS} value={trading_value} onChange={(e) => setTradingValue(Number(e.target.value))} />
+          <input type="number" inputMode="decimal" className={INPUT_CLASS} value={trading_value} onChange={(e) => setTradingValue(Number(e.target.value))} />
         </div>
       ) : null}
       <div className="mt-4 rounded-lg border border-amber-500/30 bg-amber-500/8 p-4 text-sm text-amber-700 dark:text-amber-300">

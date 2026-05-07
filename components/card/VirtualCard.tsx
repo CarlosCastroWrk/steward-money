@@ -196,7 +196,7 @@ export function VirtualCard({
           <div className="relative flex-1">
             <span className="absolute left-3 top-1/2 -translate-y-1/2 font-mono text-[var(--text-muted)] text-sm">$</span>
             <input
-              type="number"
+              type="number" inputMode="decimal"
               value={purchaseAmount}
               onChange={(e) => { setPurchaseAmount(e.target.value); setVerdict(null); setVerdictDetail(""); }}
               onKeyDown={(e) => e.key === "Enter" && simulate()}

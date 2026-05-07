@@ -37,7 +37,7 @@ export function Step3Buffer({ formData, onChange, onNext, onBack, isSaving, erro
       <div>
         <label className="mb-1 block text-sm text-zinc-400">Or enter custom amount</label>
         <input
-          type="number"
+          type="number" inputMode="decimal"
           className={INPUT}
           value={formData.emergency_buffer}
           onChange={(e) => onChange({ emergency_buffer: Number(e.target.value) })}

@@ -142,7 +142,7 @@ export function AddSubscriptionModal({ open, onClose, accounts, subscription }: 
             </label>
             <input
               id="sub-amount"
-              type="number"
+              type="number" inputMode="decimal"
               step="0.01"
               min="0.01"
               className={inputClass}
@@ -173,7 +173,7 @@ export function AddSubscriptionModal({ open, onClose, accounts, subscription }: 
             </label>
             <input
               id="sub-day"
-              type="number"
+              type="number" inputMode="decimal"
               min="1"
               max="31"
               className={inputClass}
@@ -211,7 +211,7 @@ export function AddSubscriptionModal({ open, onClose, accounts, subscription }: 
             </label>
             <input
               id="sub-value"
-              type="number"
+              type="number" inputMode="decimal"
               min="1"
               max="10"
               className={inputClass}
