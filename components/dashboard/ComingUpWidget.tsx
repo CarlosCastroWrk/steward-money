@@ -32,10 +32,29 @@ const TYPE_COLORS: Record<ComingItem["type"], { bg: string; text: string; icon: 
 
 const GOOGLE_CLIENT_ID_SET = Boolean(process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID);
 
+declare global {
+  interface Window {
+    google?: {
+      accounts: {
+        oauth2: {
+          initTokenClient: (config: {
+            client_id: string;
+            scope: string;
+            callback: (resp: { access_token?: string; error?: string }) => void;
+          }) => { requestAccessToken: () => void };
+        };
+      };
+    };
+  }
+}
+
 export function ComingUpWidget() {
   const [items, setItems] = useState<ComingItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [calendarConnected, setCalendarConnected] = useState<boolean | null>(null);
+  const [gsiLoaded, setGsiLoaded] = useState(false);
+  const [calConnecting, setCalConnecting] = useState(false);
+  const [calJustConnected, setCalJustConnected] = useState(false);
 
   useEffect(() => {
     async function load() {
@@ -55,6 +74,19 @@ export function ComingUpWidget() {
       ]);
 
       setCalendarConnected(!!calRes.data);
+
+      // Preload Google Identity Services if calendar not connected
+      if (!calRes.data && GOOGLE_CLIENT_ID_SET) {
+        if (window.google?.accounts) {
+          setGsiLoaded(true);
+        } else {
+          const script = document.createElement("script");
+          script.src = "https://accounts.google.com/gsi/client";
+          script.async = true;
+          script.onload = () => setGsiLoaded(true);
+          document.head.appendChild(script);
+        }
+      }
 
       const combined: ComingItem[] = [];
 
@@ -81,6 +113,28 @@ export function ComingUpWidget() {
     load();
   }, []);
 
+  function handleCalendarConnect() {
+    const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID ?? "";
+    if (!clientId || !gsiLoaded || !window.google) return;
+    setCalConnecting(true);
+    const client = window.google.accounts.oauth2.initTokenClient({
+      client_id: clientId,
+      scope: "https://www.googleapis.com/auth/calendar.readonly",
+      callback: async (resp) => {
+        if (resp.error || !resp.access_token) { setCalConnecting(false); return; }
+        await fetch("/api/calendar/connect", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ access_token: resp.access_token }),
+        });
+        await fetch("/api/calendar/sync", { method: "POST" });
+        setCalJustConnected(true);
+        setCalConnecting(false);
+      },
+    });
+    client.requestAccessToken();
+  }
+
   if (loading) return null;
 
   return (
@@ -90,12 +144,21 @@ export function ComingUpWidget() {
         <a href="/transactions" className="text-xs text-purple-400 hover:text-purple-300 transition-colors">See all →</a>
       </div>
 
-      {items.length === 0 && calendarConnected === false && GOOGLE_CLIENT_ID_SET ? (
+      {calJustConnected ? (
+        <div className="rounded-xl border border-emerald-800/40 bg-emerald-950/20 p-4 text-center">
+          <p className="text-sm text-emerald-400">Calendar connected! Events will appear here shortly.</p>
+        </div>
+      ) : items.length === 0 && calendarConnected === false && GOOGLE_CLIENT_ID_SET ? (
         <div className="rounded-xl border border-dashed border-[var(--border)] p-4 text-center">
           <p className="text-sm text-[var(--text-3)]">Connect your calendar to see what&apos;s coming</p>
-          <a href="/settings?tab=integrations" className="mt-1 inline-block text-xs text-[var(--accent)] hover:opacity-80 transition-opacity">
-            Connect Google Calendar →
-          </a>
+          <button
+            type="button"
+            onClick={handleCalendarConnect}
+            disabled={calConnecting || !gsiLoaded}
+            className="mt-2 inline-block text-xs text-[var(--accent)] transition-opacity hover:opacity-80 disabled:opacity-40"
+          >
+            {calConnecting ? "Connecting…" : "Connect Google Calendar →"}
+          </button>
         </div>
       ) : items.length === 0 ? (
         <div className="rounded-xl border border-dashed border-[var(--border)] p-4 text-center">

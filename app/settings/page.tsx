@@ -37,12 +37,19 @@ export default async function SettingsPage() {
       .order("rank", { ascending: true }),
   ]);
 
+  const buildId = (process.env.VERCEL_GIT_COMMIT_SHA ?? "dev").slice(0, 7);
+
   return (
-    <SettingsView
-      settings={settingsResult.data ?? null}
-      incomeSources={incomeResult.data ?? []}
-      accounts={accountsResult.data ?? []}
-      priorities={prioritiesResult.data ?? []}
-    />
+    <>
+      <SettingsView
+        settings={settingsResult.data ?? null}
+        incomeSources={incomeResult.data ?? []}
+        accounts={accountsResult.data ?? []}
+        priorities={prioritiesResult.data ?? []}
+      />
+      <p className="mt-2 pb-6 text-center text-xs text-[var(--text-dim)]">
+        build {buildId}
+      </p>
+    </>
   );
 }

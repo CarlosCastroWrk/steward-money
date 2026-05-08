@@ -3,6 +3,16 @@ const nextConfig = {
   async headers() {
     return [
       {
+        // HTML pages: never cache — ensures phone always loads latest deploy
+        source: "/((?!_next/static|_next/image|favicon\\.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "no-store, max-age=0",
+          },
+        ],
+      },
+      {
         source: "/(.*)",
         headers: [
           {

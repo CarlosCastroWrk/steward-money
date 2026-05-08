@@ -7,6 +7,7 @@ import { LukaVoiceMode } from "@/components/luka/LukaVoiceMode";
 
 type Action = { tool: string; label: string; detail: string };
 type Message = { role: "user" | "assistant"; content: string; actions?: Action[]; created_at?: string; db_id?: string };
+type Conversation = { id: string; title: string | null; updatedAt: string };
 
 type LukaContext = {
   displayName: string;
@@ -47,19 +48,13 @@ function computeGreeting(ctx: LukaContext): { greeting: string; subline: string 
   } else {
     subline = "Your financial co-pilot. What's on your mind?";
   }
-
   return { greeting, subline };
 }
 
 function computeChips(ctx: LukaContext): string[] {
   const chips: string[] = [];
-  if (ctx.recentIncome) {
-    chips.push("Allocate my paycheck");
-    chips.push("What's next on my plan?");
-  }
-  if (ctx.nextBill && ctx.nextBill.daysUntil <= 7 && chips.length < 3) {
-    chips.push(`How am I covering ${ctx.nextBill.name}?`);
-  }
+  if (ctx.recentIncome) { chips.push("Allocate my paycheck"); chips.push("What's next on my plan?"); }
+  if (ctx.nextBill && ctx.nextBill.daysUntil <= 7 && chips.length < 3) chips.push(`How am I covering ${ctx.nextBill.name}?`);
   if (ctx.subscriptionCount >= 3 && chips.length < 3) chips.push("Review my subscriptions");
   if (chips.length < 3) chips.push("How am I doing?");
   if (chips.length < 4) chips.push("What should I focus on?");
@@ -77,6 +72,32 @@ function dateSeparatorLabel(isoStr: string): string {
   if (msgDay.getTime() === today.getTime()) return "Today";
   if (msgDay.getTime() === yesterday.getTime()) return "Yesterday";
   return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+}
+
+function formatConvTime(isoStr: string): string {
+  const d = new Date(isoStr);
+  const diff = Date.now() - d.getTime();
+  const days = Math.floor(diff / 86_400_000);
+  if (days === 0) return d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
+  if (days === 1) return "Yesterday";
+  if (days < 7) return d.toLocaleDateString("en-US", { weekday: "short" });
+  return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+}
+
+async function saveMsgToDB(
+  msg: Message,
+  supabase: ReturnType<typeof createClient>,
+  userId: string,
+  convId: string,
+): Promise<string | null> {
+  const { data } = await supabase.from("luka_conversations").insert({
+    user_id: userId,
+    conversation_id: convId,
+    role: msg.role,
+    content: msg.content,
+    actions: msg.actions ?? null,
+  }).select("id").maybeSingle();
+  return data?.id ?? null;
 }
 
 // ── Icons ──────────────────────────────────────────────────────────────────
@@ -110,6 +131,22 @@ function CloseIcon() {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4">
       <path d="M18 6 6 18M6 6l12 12" />
+    </svg>
+  );
+}
+
+function MenuIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4">
+      <path d="M3 6h18M3 12h18M3 18h18" />
+    </svg>
+  );
+}
+
+function PlusIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="h-3.5 w-3.5">
+      <path d="M12 5v14M5 12h14" />
     </svg>
   );
 }
@@ -208,8 +245,7 @@ function MessageList({
     if (!voiceOutputEnabled || typeof window === "undefined" || !window.speechSynthesis) return;
     window.speechSynthesis.cancel();
     const utt = new SpeechSynthesisUtterance(text);
-    utt.rate = 1.0;
-    utt.pitch = 1.0;
+    utt.rate = 1.0; utt.pitch = 1.0;
     const voices = window.speechSynthesis.getVoices();
     const preferred = voices.find((v) => v.lang.startsWith("en") && v.name.toLowerCase().includes("female"))
       ?? voices.find((v) => v.lang.startsWith("en")) ?? voices[0];
@@ -228,7 +264,9 @@ function MessageList({
   const { greeting, subline } = lukaContext
     ? computeGreeting(lukaContext)
     : { greeting: "Hey there", subline: "Your financial co-pilot. Ask me anything." };
-  const chips = lukaContext ? computeChips(lukaContext) : ["How am I doing?", "What can I spend today?", "Review my subscriptions", "What should I focus on?"];
+  const chips = lukaContext
+    ? computeChips(lukaContext)
+    : ["How am I doing?", "What can I spend today?", "Review my subscriptions", "What should I focus on?"];
 
   const rendered: React.ReactNode[] = [];
   let lastDateLabel = "";
@@ -282,18 +320,15 @@ function MessageList({
     <div className="flex flex-col overflow-y-auto px-4 py-4" style={{ flex: 1, overscrollBehavior: "contain" }}>
       {messages.length === 0 && (
         <div className="flex flex-1 flex-col items-center justify-center gap-3 py-8 text-center">
-          {/* Avatar */}
           <div className="flex h-14 w-14 items-center justify-center rounded-full bg-purple-600 shadow-lg shadow-purple-900/40">
             <SparkleIcon className="h-7 w-7 text-white" />
           </div>
-          {/* Greeting in display font */}
           <div className="space-y-1">
             <p className="text-xl text-[var(--text-1)]" style={{ fontFamily: "var(--font-display, inherit)" }}>
               {greeting}
             </p>
             <p className="text-sm text-[var(--text-3)] max-w-xs leading-relaxed">{subline}</p>
           </div>
-          {/* Dynamic chips */}
           <div className="mt-2 flex flex-wrap justify-center gap-2">
             {chips.map((s) => (
               <button
@@ -342,10 +377,12 @@ function useSpeechRecognition(onResult: (text: string) => void, onEnd: () => voi
   const start = useCallback(() => {
     const SR = getSpeechRecognitionClass();
     if (!SR) return;
-    const rec = new (SR as new () => unknown & { lang: string; continuous: boolean; interimResults: boolean; onresult: unknown; onend: unknown; onerror: unknown; start: () => void; stop: () => void })();
-    rec.lang = "en-US";
-    rec.continuous = false;
-    rec.interimResults = true;
+    const rec = new (SR as new () => unknown & {
+      lang: string; continuous: boolean; interimResults: boolean;
+      onresult: unknown; onend: unknown; onerror: unknown;
+      start: () => void; stop: () => void;
+    })();
+    rec.lang = "en-US"; rec.continuous = false; rec.interimResults = true;
     rec.onresult = (e: unknown) => {
       const transcript = Array.from((e as { results: unknown[] }).results as { [0]: { transcript: string } }[])
         .map((r) => r[0].transcript).join("");
@@ -366,6 +403,64 @@ function useSpeechRecognition(onResult: (text: string) => void, onEnd: () => voi
   return { listening, supported, start, stop };
 }
 
+// ── Conversation sidebar ───────────────────────────────────────────────────
+
+function ConversationList({
+  conversations,
+  activeId,
+  onSelect,
+  onNew,
+}: {
+  conversations: Conversation[];
+  activeId: string | null;
+  onSelect: (id: string) => void;
+  onNew: () => void;
+}) {
+  return (
+    <div className="flex h-full flex-col">
+      <div className="flex items-center justify-between border-b border-[var(--border)] px-3 py-3">
+        <div className="flex items-center gap-2">
+          <div className="flex h-6 w-6 items-center justify-center rounded-full bg-purple-600">
+            <SparkleIcon className="h-3 w-3 text-white" />
+          </div>
+          <span className="text-sm font-semibold text-[var(--text-1)]">Luka</span>
+        </div>
+        <button
+          type="button"
+          onClick={onNew}
+          title="New conversation"
+          className="flex h-7 w-7 items-center justify-center rounded-lg text-[var(--text-3)] transition-colors hover:bg-[var(--bg-hover)] hover:text-[var(--text-1)]"
+        >
+          <PlusIcon />
+        </button>
+      </div>
+      <div className="flex-1 overflow-y-auto py-1">
+        {conversations.length === 0 ? (
+          <p className="px-3 py-4 text-[11px] text-[var(--text-dim)]">No conversations yet</p>
+        ) : (
+          conversations.map((conv) => (
+            <button
+              key={conv.id}
+              type="button"
+              onClick={() => onSelect(conv.id)}
+              className={`w-full px-3 py-2.5 text-left transition-colors ${
+                conv.id === activeId
+                  ? "bg-purple-600/10 text-[var(--text-1)]"
+                  : "text-[var(--text-2)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-1)]"
+              }`}
+            >
+              <p className="truncate text-[12px] font-medium leading-tight">
+                {conv.title ?? "New conversation"}
+              </p>
+              <p className="mt-0.5 text-[10px] text-[var(--text-dim)]">{formatConvTime(conv.updatedAt)}</p>
+            </button>
+          ))
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ── Main Luka component ────────────────────────────────────────────────────
 
 export function Luka() {
@@ -379,7 +474,14 @@ export function Luka() {
   const [voiceOutputEnabled, setVoiceOutputEnabled] = useState(false);
   const [confirmClear, setConfirmClear] = useState(false);
   const [lukaContext, setLukaContext] = useState<LukaContext | null>(null);
-  // Visual viewport tracking for mobile keyboard
+
+  // Conversation history
+  const [activeConvId, setActiveConvId] = useState<string | null>(null);
+  const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [showConvDrawer, setShowConvDrawer] = useState(false);
+  const [userMsgCount, setUserMsgCount] = useState(0);
+
+  // Mobile keyboard avoidance
   const [vpHeight, setVpHeight] = useState<number | null>(null);
   const [vpOffsetTop, setVpOffsetTop] = useState(0);
 
@@ -390,27 +492,17 @@ export function Luka() {
 
   // ── Visual viewport (mobile keyboard) ─────────────────────────────────────
   useEffect(() => {
-    if (!open) {
-      setVpHeight(null);
-      setVpOffsetTop(0);
-      return;
-    }
+    if (!open) { setVpHeight(null); setVpOffsetTop(0); return; }
     const vv = window.visualViewport;
     if (!vv) return;
-    const handler = () => {
-      setVpHeight(vv.height);
-      setVpOffsetTop(vv.offsetTop ?? 0);
-    };
+    const handler = () => { setVpHeight(vv.height); setVpOffsetTop(vv.offsetTop ?? 0); };
     handler();
     vv.addEventListener("resize", handler);
     vv.addEventListener("scroll", handler);
-    return () => {
-      vv.removeEventListener("resize", handler);
-      vv.removeEventListener("scroll", handler);
-    };
+    return () => { vv.removeEventListener("resize", handler); vv.removeEventListener("scroll", handler); };
   }, [open]);
 
-  // ── External open trigger (AskLukaButton) ─────────────────────────────────
+  // ── External open trigger ──────────────────────────────────────────────────
   useEffect(() => {
     const handler = (e: Event) => {
       const detail = (e as CustomEvent<{ prefill?: string }>).detail;
@@ -438,35 +530,22 @@ export function Luka() {
   async function loadContextData(supabase: ReturnType<typeof createClient>) {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
-
     const today = new Date().toISOString().split("T")[0];
     const in7Days = new Date(Date.now() + 7 * 86_400_000).toISOString().split("T")[0];
     const twoDaysAgo = new Date(Date.now() - 2 * 86_400_000).toISOString().split("T")[0];
-
     const [settings, rules, upcomingBill, lastConv, recentIncomeTx, goals, subs] = await Promise.all([
       supabase.from("user_settings").select("life_stage, main_goal, display_name").eq("user_id", user.id).maybeSingle(),
       supabase.from("personal_rules").select("id").eq("user_id", user.id),
-      supabase.from("bills").select("name, next_due_date").eq("user_id", user.id)
-        .gte("next_due_date", today).lte("next_due_date", in7Days)
-        .order("next_due_date").limit(1).maybeSingle(),
-      supabase.from("luka_conversations").select("created_at").eq("user_id", user.id)
-        .order("created_at", { ascending: false }).limit(1).maybeSingle(),
-      supabase.from("transactions").select("amount").eq("user_id", user.id)
-        .gte("date", twoDaysAgo).gt("amount", 200).limit(1).maybeSingle(),
+      supabase.from("bills").select("name, next_due_date").eq("user_id", user.id).gte("next_due_date", today).lte("next_due_date", in7Days).order("next_due_date").limit(1).maybeSingle(),
+      supabase.from("luka_conversations").select("created_at").eq("user_id", user.id).order("created_at", { ascending: false }).limit(1).maybeSingle(),
+      supabase.from("transactions").select("amount").eq("user_id", user.id).gte("date", twoDaysAgo).gt("amount", 200).limit(1).maybeSingle(),
       supabase.from("goals").select("id").eq("user_id", user.id),
       supabase.from("bills").select("id").eq("user_id", user.id).eq("is_subscription", true),
     ]);
-
     const lastConvDate = lastConv.data?.created_at;
-    const lastConvDaysAgo = lastConvDate
-      ? Math.floor((Date.now() - new Date(lastConvDate).getTime()) / 86_400_000)
-      : null;
-
+    const lastConvDaysAgo = lastConvDate ? Math.floor((Date.now() - new Date(lastConvDate).getTime()) / 86_400_000) : null;
     const nextBillDate = upcomingBill.data?.next_due_date;
-    const nextBillDaysUntil = nextBillDate
-      ? Math.max(0, Math.ceil((new Date(nextBillDate + "T12:00:00").getTime() - Date.now()) / 86_400_000))
-      : null;
-
+    const nextBillDaysUntil = nextBillDate ? Math.max(0, Math.ceil((new Date(nextBillDate + "T12:00:00").getTime() - Date.now()) / 86_400_000)) : null;
     setLukaContext({
       displayName: (settings.data?.display_name ?? "there").trim(),
       lifeStage: settings.data?.life_stage ?? undefined,
@@ -480,49 +559,93 @@ export function Luka() {
     });
   }
 
-  // ── History loading ────────────────────────────────────────────────────────
+  // ── Conversation loading ───────────────────────────────────────────────────
+
+  async function fetchConversationList(supabase: ReturnType<typeof createClient>, userId: string): Promise<Conversation[]> {
+    const { data } = await supabase
+      .from("luka_conversations")
+      .select("conversation_id, title, created_at")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false })
+      .limit(300);
+    if (!data) return [];
+    const seen = new Set<string>();
+    const convs: Conversation[] = [];
+    for (const row of data) {
+      if (!seen.has(row.conversation_id)) {
+        seen.add(row.conversation_id);
+        convs.push({ id: row.conversation_id, title: row.title ?? null, updatedAt: row.created_at });
+      }
+    }
+    return convs;
+  }
+
+  async function fetchConversationMessages(supabase: ReturnType<typeof createClient>, userId: string, convId: string) {
+    const { data } = await supabase
+      .from("luka_conversations")
+      .select("id, role, content, actions, created_at")
+      .eq("user_id", userId)
+      .eq("conversation_id", convId)
+      .order("created_at", { ascending: true })
+      .limit(60);
+    if (data) {
+      setMessages(data.map((row) => ({
+        role: row.role as "user" | "assistant",
+        content: row.content,
+        actions: row.actions ?? undefined,
+        created_at: row.created_at,
+        db_id: row.id,
+      })));
+      setUserMsgCount(data.filter((m) => m.role === "user").length);
+    }
+  }
+
+  // Initial history load
   useEffect(() => {
     if (!open || historyLoaded) return;
     const supabase = createClient();
     supabase.auth.getUser().then(async ({ data: { user } }) => {
       if (!user) return;
-      const { data } = await supabase
-        .from("luka_conversations")
-        .select("id, role, content, actions, created_at")
-        .eq("user_id", user.id)
-        .order("created_at", { ascending: true })
-        .limit(40);
-      if (data && data.length > 0) {
-        setMessages(data.map((row) => ({
-          role: row.role as "user" | "assistant",
-          content: row.content,
-          actions: row.actions ?? undefined,
-          created_at: row.created_at,
-          db_id: row.id,
-        })));
+      const convs = await fetchConversationList(supabase, user.id);
+      setConversations(convs);
+      if (convs.length > 0) {
+        const latestId = convs[0].id;
+        setActiveConvId(latestId);
+        await fetchConversationMessages(supabase, user.id, latestId);
+      } else {
+        setActiveConvId(crypto.randomUUID());
       }
       setHistoryLoaded(true);
     });
   }, [open, historyLoaded]);
 
-  async function saveMessageToDB(msg: Message, supabase: ReturnType<typeof createClient>, userId: string): Promise<string | null> {
-    const { data } = await supabase.from("luka_conversations").insert({
-      user_id: userId,
-      role: msg.role,
-      content: msg.content,
-      actions: msg.actions ?? null,
-    }).select("id").maybeSingle();
-    return data?.id ?? null;
+  function startNewConversation() {
+    setActiveConvId(crypto.randomUUID());
+    setMessages([]);
+    setUserMsgCount(0);
+    setShowConvDrawer(false);
+    setConfirmClear(false);
+  }
+
+  async function switchConversation(convId: string) {
+    if (convId === activeConvId) { setShowConvDrawer(false); return; }
+    setMessages([]);
+    setActiveConvId(convId);
+    setShowConvDrawer(false);
+    setConfirmClear(false);
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) await fetchConversationMessages(supabase, user.id, convId);
   }
 
   async function clearConversation() {
+    if (!activeConvId) return;
     const supabase = createClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
-    await supabase.from("luka_conversations").delete().eq("user_id", user.id);
-    setMessages([]);
-    setConfirmClear(false);
-    setHistoryLoaded(true);
+    await supabase.from("luka_conversations").delete().eq("user_id", user.id).eq("conversation_id", activeConvId);
+    setConversations((prev) => prev.filter((c) => c.id !== activeConvId));
+    startNewConversation();
   }
 
   const scrollToBottom = useCallback(() => {
@@ -531,28 +654,37 @@ export function Luka() {
 
   useEffect(() => { scrollToBottom(); }, [messages, loading, scrollToBottom]);
   useEffect(() => {
-    if (open && inputRef.current) {
-      // Small delay so the panel animation finishes first
-      setTimeout(() => inputRef.current?.focus(), 150);
-    }
+    if (open && inputRef.current) setTimeout(() => inputRef.current?.focus(), 150);
   }, [open]);
 
   const sendMessage = useCallback(async (text: string) => {
-    if (!text.trim()) return;
+    if (!text.trim() || !activeConvId) return;
     const now = new Date().toISOString();
     const userMsg: Message = { role: "user", content: text.trim(), created_at: now };
 
     const supabase = createClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (user) {
-      const id = await saveMessageToDB(userMsg, supabase, user.id);
+      const id = await saveMsgToDB(userMsg, supabase, user.id, activeConvId);
       if (id) userMsg.db_id = id;
     }
+
+    const newCount = userMsgCount + 1;
+    setUserMsgCount(newCount);
+
+    // Keep conversation list current
+    const convNow = now;
+    const convId = activeConvId;
+    setConversations((prev) => {
+      const exists = prev.find((c) => c.id === convId);
+      if (exists) return [{ ...exists, updatedAt: convNow }, ...prev.filter((c) => c.id !== convId)];
+      return [{ id: convId, title: null, updatedAt: convNow }, ...prev];
+    });
 
     const contextMessages = [...messages, userMsg].slice(-20).map((m) => ({ role: m.role, content: m.content }));
     setMessages((prev) => [...prev, userMsg]);
     setInput("");
-    if (inputRef.current) { inputRef.current.style.height = "auto"; }
+    if (inputRef.current) inputRef.current.style.height = "auto";
     setLoading(true);
 
     try {
@@ -569,27 +701,32 @@ export function Luka() {
         created_at: new Date().toISOString(),
       };
       if (user) {
-        const id = await saveMessageToDB(assistantMsg, supabase, user.id);
+        const id = await saveMsgToDB(assistantMsg, supabase, user.id, convId);
         if (id) assistantMsg.db_id = id;
       }
       setMessages((prev) => [...prev, assistantMsg]);
       if (data.refreshNeeded) router.refresh();
+
+      // Auto-title after the 2nd user message
+      if (newCount === 2) {
+        fetch("/api/luka/title", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ conversation_id: convId }),
+        }).then((r) => r.json()).then(({ title }) => {
+          if (title) setConversations((prev) => prev.map((c) => c.id === convId ? { ...c, title } : c));
+        }).catch(() => {});
+      }
     } catch {
-      setMessages((prev) => [...prev, {
-        role: "assistant",
-        content: "Something went wrong. Try again.",
-        created_at: new Date().toISOString(),
-      }]);
+      setMessages((prev) => [...prev, { role: "assistant", content: "Something went wrong. Try again.", created_at: new Date().toISOString() }]);
     } finally {
       setLoading(false);
     }
-  }, [messages, router]);
+  }, [messages, router, activeConvId, userMsgCount]);
 
   const handleVoiceResult = useCallback((text: string) => setInput(text), []);
   const handleVoiceEnd = useCallback(() => {
-    setTimeout(() => {
-      setInput((prev) => { if (prev.trim()) sendMessage(prev); return prev; });
-    }, 200);
+    setTimeout(() => { setInput((prev) => { if (prev.trim()) sendMessage(prev); return prev; }); }, 200);
   }, [sendMessage]);
 
   const { listening, supported: micSupported, start: startListening, stop: stopListening } = useSpeechRecognition(handleVoiceResult, handleVoiceEnd);
@@ -607,13 +744,6 @@ export function Luka() {
     ta.style.height = "auto";
     ta.style.height = `${Math.min(ta.scrollHeight, 120)}px`;
   }
-
-  // Context pill text
-  const contextParts = [
-    lukaContext?.lifeStage,
-    lukaContext?.mainGoal,
-    lukaContext?.rulesCount ? `${lukaContext.rulesCount} rule${lukaContext.rulesCount !== 1 ? "s" : ""}` : null,
-  ].filter(Boolean);
 
   // ── Shared sub-views ───────────────────────────────────────────────────────
 
@@ -678,7 +808,8 @@ export function Luka() {
     </div>
   );
 
-  const header = (
+  // Chat header — desktop version (no hamburger, uses sidebar instead)
+  const desktopChatHeader = (
     <div className="flex-shrink-0 flex flex-col border-b border-[var(--border)] bg-[var(--luka-bg)]">
       <div className="flex items-center gap-2.5 px-4 py-3">
         <div className={`flex h-7 w-7 items-center justify-center rounded-full bg-purple-600 flex-shrink-0 ${loading ? "luka-avatar-pulse" : ""}`}>
@@ -689,22 +820,17 @@ export function Luka() {
             <p className="text-sm font-medium text-[var(--text-1)]">Luka</p>
             <span className="flex items-center gap-1 rounded-full border border-[var(--border)] px-2 py-0.5 text-[9px] text-[var(--text-3)]">
               <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
-              {contextParts.length > 0 ? "Knows your situation" : "Online"}
+              {lukaContext ? "Knows your situation" : "Online"}
             </span>
           </div>
         </div>
         {listening && (
           <span className="flex items-center gap-1 rounded-full bg-red-500/15 px-2 py-0.5 text-[10px] text-red-400">
-            <span className="h-1.5 w-1.5 rounded-full bg-red-400 animate-pulse" />
-            Listening
+            <span className="h-1.5 w-1.5 rounded-full bg-red-400 animate-pulse" /> Listening
           </span>
         )}
         {messages.length > 0 && !confirmClear && (
-          <button
-            type="button"
-            onClick={() => setConfirmClear(true)}
-            className="text-[10px] text-[var(--text-3)] hover:text-red-400 transition-colors px-1"
-          >
+          <button type="button" onClick={() => setConfirmClear(true)} className="text-[10px] text-[var(--text-3)] hover:text-red-400 transition-colors px-1">
             Clear
           </button>
         )}
@@ -715,6 +841,51 @@ export function Luka() {
           </div>
         )}
         <button onClick={() => { setOpen(false); setConfirmClear(false); }} className="flex-shrink-0 text-[var(--text-3)] transition-colors hover:text-[var(--text-1)]">
+          <CloseIcon />
+        </button>
+      </div>
+    </div>
+  );
+
+  // Mobile header — with hamburger + new chat
+  const mobileChatHeader = (
+    <div className="flex-shrink-0 flex flex-col border-b border-[var(--border)] bg-[var(--luka-bg)]">
+      <div className="flex items-center gap-2 px-4 py-3">
+        <button
+          type="button"
+          onClick={() => setShowConvDrawer(true)}
+          className="flex h-8 w-8 items-center justify-center rounded-lg text-[var(--text-3)] transition-colors hover:bg-[var(--bg-hover)] hover:text-[var(--text-1)]"
+          aria-label="Conversation history"
+        >
+          <MenuIcon />
+        </button>
+        <div className={`flex h-7 w-7 items-center justify-center rounded-full bg-purple-600 flex-shrink-0 ${loading ? "luka-avatar-pulse" : ""}`}>
+          <SparkleIcon className="h-4 w-4 text-white" />
+        </div>
+        <p className="flex-1 text-sm font-medium text-[var(--text-1)]">Luka</p>
+        {listening && (
+          <span className="flex items-center gap-1 rounded-full bg-red-500/15 px-2 py-0.5 text-[10px] text-red-400">
+            <span className="h-1.5 w-1.5 rounded-full bg-red-400 animate-pulse" />
+          </span>
+        )}
+        {messages.length > 0 && !confirmClear && (
+          <button type="button" onClick={() => setConfirmClear(true)} className="text-[10px] text-[var(--text-3)] hover:text-red-400 px-1">Clear</button>
+        )}
+        {confirmClear && (
+          <div className="flex items-center gap-1.5 mr-1">
+            <button type="button" onClick={clearConversation} className="text-[10px] text-red-400">Confirm</button>
+            <button type="button" onClick={() => setConfirmClear(false)} className="text-[10px] text-[var(--text-3)]">Cancel</button>
+          </div>
+        )}
+        <button
+          type="button"
+          onClick={startNewConversation}
+          title="New conversation"
+          className="flex h-7 w-7 items-center justify-center rounded-lg text-[var(--text-3)] transition-colors hover:bg-[var(--bg-hover)] hover:text-purple-400"
+        >
+          <PlusIcon />
+        </button>
+        <button onClick={() => { setOpen(false); setConfirmClear(false); }} className="flex-shrink-0 text-[var(--text-3)] transition-colors hover:text-[var(--text-1)] ml-1">
           <CloseIcon />
         </button>
       </div>
@@ -732,8 +903,6 @@ export function Luka() {
     />
   );
 
-  // Mobile chat panel style — uses visualViewport when available so it always
-  // sits above the iOS keyboard
   const mobilePanelStyle: React.CSSProperties = vpHeight != null
     ? { top: vpOffsetTop, height: vpHeight, left: 0, right: 0, position: "fixed" }
     : { top: 0, left: 0, right: 0, bottom: 0, position: "fixed" };
@@ -753,12 +922,17 @@ export function Luka() {
           from { opacity: 0; }
           to   { opacity: 1; }
         }
+        @keyframes lukaDrawerIn {
+          from { opacity: 0; transform: translateX(-100%); }
+          to   { opacity: 1; transform: translateX(0); }
+        }
         @keyframes lukaAvatarPulse {
           0%, 100% { box-shadow: 0 0 0 0 rgba(147, 51, 234, 0.5); }
           60% { box-shadow: 0 0 0 5px rgba(147, 51, 234, 0); }
         }
         .luka-panel { animation: lukaSlideIn 0.22s cubic-bezier(0.16,1,0.3,1) both; }
         .luka-sheet { animation: lukaFadeIn 0.18s cubic-bezier(0.16,1,0.3,1) both; }
+        .luka-drawer { animation: lukaDrawerIn 0.22s cubic-bezier(0.16,1,0.3,1) both; }
         .luka-avatar-pulse { animation: lukaAvatarPulse 1.4s ease-out infinite; }
       `}</style>
 
@@ -781,18 +955,56 @@ export function Luka() {
 
       {/* Mobile backdrop */}
       {open && (
-        <div className="fixed inset-0 z-[51] bg-black/60 md:hidden" onClick={() => setOpen(false)} />
+        <div className="fixed inset-0 z-[51] bg-black/60 md:hidden" onClick={() => { setShowConvDrawer(false); if (!showConvDrawer) setOpen(false); }} />
       )}
 
-      {/* Mobile full-screen chat — respects visualViewport so keyboard doesn't cover input */}
+      {/* Mobile full-screen chat */}
       {open && (
         <div
           className="luka-sheet z-[52] flex flex-col overflow-hidden bg-[var(--luka-bg)] md:hidden"
           style={mobilePanelStyle}
         >
-          {header}
+          {mobileChatHeader}
           {messageListEl}
           {inputArea}
+
+          {/* Mobile conversation drawer (slides in from left) */}
+          {showConvDrawer && (
+            <>
+              <div
+                className="absolute inset-0 z-[10] bg-black/50"
+                onClick={() => setShowConvDrawer(false)}
+              />
+              <div className="luka-drawer absolute left-0 top-0 z-[11] h-full w-[280px] overflow-hidden border-r border-[var(--border)] bg-[var(--bg-base)]">
+                <div className="flex items-center justify-between border-b border-[var(--border)] px-4 py-3">
+                  <span className="text-sm font-semibold text-[var(--text-1)]">Conversations</span>
+                  <button type="button" onClick={() => setShowConvDrawer(false)} className="text-[var(--text-3)]"><CloseIcon /></button>
+                </div>
+                <div className="overflow-y-auto" style={{ height: "calc(100% - 50px)" }}>
+                  <button
+                    type="button"
+                    onClick={startNewConversation}
+                    className="flex w-full items-center gap-2 px-4 py-3 text-left text-sm text-purple-400 hover:bg-[var(--bg-hover)]"
+                  >
+                    <PlusIcon /> New conversation
+                  </button>
+                  {conversations.map((conv) => (
+                    <button
+                      key={conv.id}
+                      type="button"
+                      onClick={() => switchConversation(conv.id)}
+                      className={`w-full px-4 py-3 text-left transition-colors ${
+                        conv.id === activeConvId ? "bg-purple-600/10 text-[var(--text-1)]" : "text-[var(--text-2)] hover:bg-[var(--bg-hover)]"
+                      }`}
+                    >
+                      <p className="truncate text-[13px] font-medium">{conv.title ?? "New conversation"}</p>
+                      <p className="mt-0.5 text-[11px] text-[var(--text-dim)]">{formatConvTime(conv.updatedAt)}</p>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </>
+          )}
         </div>
       )}
 
@@ -805,17 +1017,26 @@ export function Luka() {
         {open ? <CloseIcon /> : <SparkleIcon />}
       </button>
 
-      {/* Desktop side panel */}
+      {/* Desktop side panel — 720px wide: 220px sidebar + 500px chat */}
       {open && (
         <>
-          <div
-            className="fixed inset-0 z-[50] hidden bg-black/30 md:block"
-            onClick={() => setOpen(false)}
-          />
-          <div className="luka-panel fixed top-0 right-0 z-[51] hidden h-screen w-[520px] flex-col overflow-hidden border-l border-[var(--border)] bg-[var(--luka-bg)] shadow-2xl shadow-black/40 md:flex">
-            {header}
-            {messageListEl}
-            {inputArea}
+          <div className="fixed inset-0 z-[50] hidden bg-black/30 md:block" onClick={() => setOpen(false)} />
+          <div className="luka-panel fixed top-0 right-0 z-[51] hidden h-screen w-[720px] overflow-hidden border-l border-[var(--border)] bg-[var(--luka-bg)] shadow-2xl shadow-black/40 md:flex">
+            {/* Left conversation sidebar */}
+            <div className="h-full w-[220px] flex-shrink-0 overflow-hidden border-r border-[var(--border)] bg-[var(--bg-inset)]">
+              <ConversationList
+                conversations={conversations}
+                activeId={activeConvId}
+                onSelect={switchConversation}
+                onNew={startNewConversation}
+              />
+            </div>
+            {/* Right chat area */}
+            <div className="flex flex-1 flex-col overflow-hidden">
+              {desktopChatHeader}
+              {messageListEl}
+              {inputArea}
+            </div>
           </div>
         </>
       )}

@@ -26,6 +26,9 @@ export const metadata: Metadata = {
     statusBarStyle: "black-translucent",
     title: "Steward",
   },
+  other: {
+    "build-id": process.env.VERCEL_GIT_COMMIT_SHA ?? "dev",
+  },
 };
 
 export const viewport: Viewport = {

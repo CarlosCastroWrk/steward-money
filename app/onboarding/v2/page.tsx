@@ -309,31 +309,44 @@ function StepHeader({ step, total, onBack }: { step: number; total: number; onBa
 function PlaidConnectButton({ onConnected }: { onConnected: () => void }) {
   const [linkToken, setLinkToken] = useState<string | null>(null);
   const [fetchError, setFetchError] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    fetch("/api/plaid/create-link-token", { method: "POST" })
-      .then((r) => r.json())
-      .then((d) => {
-        if (d.link_token) {
-          setLinkToken(d.link_token);
-        } else {
-          setFetchError("Could not initialize bank connection.");
-        }
-      })
-      .catch(() => setFetchError("Could not reach server. You can skip and connect later."));
-  }, []);
+  async function fetchLinkToken() {
+    setLoading(true);
+    setFetchError("");
+    setLinkToken(null);
+    try {
+      const r = await fetch("/api/plaid/create-link-token", { method: "POST" });
+      const text = await r.text();
+      let d: { link_token?: string; error?: string } = {};
+      try { d = JSON.parse(text); } catch { /* non-JSON response */ }
+      if (d.link_token) {
+        setLinkToken(d.link_token);
+      } else {
+        setFetchError(d.error ?? `Could not initialize bank connection (${r.status})`);
+      }
+    } catch {
+      setFetchError("Network error — check your connection and try again.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { fetchLinkToken(); }, []);
 
   if (fetchError) {
     return (
       <div className="space-y-2">
+        <p className="text-center text-xs text-[var(--color-expense)]">{fetchError}</p>
         <button
           type="button"
-          disabled
-          className="flex w-full items-center justify-center gap-2 rounded-2xl bg-[var(--accent)] py-3.5 text-[15px] font-semibold text-white opacity-40"
+          onClick={fetchLinkToken}
+          disabled={loading}
+          className="flex w-full items-center justify-center gap-2 rounded-2xl bg-[var(--accent)] py-3.5 text-[15px] font-semibold text-white shadow-lg shadow-[var(--accent)]/30 transition-all hover:bg-[var(--accent-deep)] disabled:opacity-40 active:scale-[0.98]"
         >
-          Connect my bank
+          {loading ? "Retrying…" : "Try again"}
         </button>
-        <p className="text-center text-xs text-[var(--color-expense)]">{fetchError}</p>
       </div>
     );
   }
@@ -345,7 +358,7 @@ function PlaidConnectButton({ onConnected }: { onConnected: () => void }) {
         disabled
         className="flex w-full items-center justify-center gap-2 rounded-2xl bg-[var(--accent)] py-3.5 text-[15px] font-semibold text-white opacity-40"
       >
-        Loading…
+        {loading ? "Loading…" : "Connect my bank"}
       </button>
     );
   }

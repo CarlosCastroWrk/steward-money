@@ -8,6 +8,7 @@ import { CalendarOptInCard } from "@/components/dashboard/CalendarOptInCard";
 import { CalendarCard } from "@/components/dashboard/CalendarCard";
 import { ComingUpWidget } from "@/components/dashboard/ComingUpWidget";
 import { DashboardTabs } from "@/components/dashboard/DashboardTabs";
+import { ConnectBankCard } from "@/components/dashboard/ConnectBankCard";
 
 export const metadata: Metadata = {
   title: "Dashboard — Steward Money",
@@ -48,6 +49,7 @@ export default async function DashboardPage() {
     upcomingExpensesMonthResult,
     recentTxResult,
     lastSyncedResult,
+    accountsCheckResult,
   ] = await Promise.all([
     calculateSafeToSpend(supabase, user.id),
     supabase.from("goals").select("id, name, target_amount, current_amount, deadline").eq("user_id", user.id).order("priority", { ascending: true }),
@@ -61,6 +63,7 @@ export default async function DashboardPage() {
     supabase.from("upcoming_expenses").select("amount").eq("user_id", user.id).eq("is_paid", false).gte("expense_date", monthStart),
     supabase.from("transactions").select("id, merchant, amount, date, category").eq("user_id", user.id).gte("date", sevenDaysAgo).order("date", { ascending: false }).limit(5),
     supabase.from("accounts").select("last_synced").eq("user_id", user.id).not("last_synced", "is", null).order("last_synced", { ascending: false }).limit(1).maybeSingle(),
+    supabase.from("accounts").select("id").eq("user_id", user.id).eq("is_active", true).limit(1),
   ]);
 
   const goals = goalsResult.data ?? [];
@@ -77,6 +80,8 @@ export default async function DashboardPage() {
   const in3Days = new Date(Date.now() + 3 * 86_400_000).toISOString().split("T")[0];
   const recentTx = recentTxResult.data ?? [];
   const lastSynced = lastSyncedResult.data?.last_synced ?? null;
+  const hasAccounts = (accountsCheckResult.data?.length ?? 0) > 0;
+  const isNewUser = !!user.created_at && (Date.now() - new Date(user.created_at).getTime()) < 7 * 86_400_000;
   const { lastSyncedLabel, syncIsStale } = (() => {
     if (!lastSynced) return { lastSyncedLabel: null, syncIsStale: true };
     const secs = Math.floor((Date.now() - new Date(lastSynced).getTime()) / 1000);
@@ -92,6 +97,13 @@ export default async function DashboardPage() {
 
       {/* 1. Greeting + date */}
       <GreetingHeader displayName={displayName} />
+
+      {/* Welcome banner — first 7 days only */}
+      {isNewUser && !hasAccounts && (
+        <div className="rounded-xl border border-[var(--accent)]/20 bg-[var(--accent)]/8 px-4 py-3 text-sm text-[var(--text-2)]">
+          Welcome to Steward, {displayName}! Connect your bank below to unlock your full financial picture.
+        </div>
+      )}
 
       {/* 2. Argus alerts — urgent only, max 2 */}
       {alerts.length > 0 && (
@@ -116,7 +128,10 @@ export default async function DashboardPage() {
         </div>
       )}
 
-      {/* 3. Safe-to-spend hero */}
+      {/* 3. Safe-to-spend hero — or connect bank nudge if no accounts */}
+      {!hasAccounts ? (
+        <ConnectBankCard />
+      ) : (
       <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#3d1f7d] via-[#4a1d96] to-[#2a1f6e] p-6 shadow-2xl shadow-purple-900/40">
         <div className="absolute -right-8 -top-8 h-36 w-36 rounded-full bg-white/5 blur-2xl" />
         <div className="absolute -bottom-8 -left-4 h-28 w-52 rounded-full bg-purple-400/10 blur-2xl" />
@@ -156,6 +171,7 @@ export default async function DashboardPage() {
           </div>
         </div>
       </div>
+      )}
 
       {/* 3.5 Calendar (connected users) + opt-in (unconnected, env set) */}
       <CalendarCard />
