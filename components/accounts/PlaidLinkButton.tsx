@@ -4,19 +4,12 @@ import { useCallback, useEffect, useState } from "react";
 import { usePlaidLink, PlaidLinkOnSuccess } from "react-plaid-link";
 import { useRouter } from "next/navigation";
 
-export function PlaidLinkButton() {
+// Inner: only rendered once a real token exists — usePlaidLink never sees "" or null.
+function PlaidLinkReady({ token }: { token: string }) {
   const router = useRouter();
-  const [linkToken, setLinkToken] = useState<string | null>(null);
   const [syncing, setSyncing] = useState(false);
   const [result, setResult] = useState<{ accounts: number; transactions: number } | null>(null);
   const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    fetch("/api/plaid/create-link-token", { method: "POST" })
-      .then((r) => r.json())
-      .then((d) => setLinkToken(d.link_token))
-      .catch(() => setError("Failed to initialize bank connection."));
-  }, []);
 
   const onSuccess = useCallback<PlaidLinkOnSuccess>(
     async (publicToken, metadata) => {
@@ -45,7 +38,7 @@ export function PlaidLinkButton() {
     [router]
   );
 
-  const { open, ready } = usePlaidLink({ token: linkToken ?? "", onSuccess });
+  const { open, ready } = usePlaidLink({ token, onSuccess });
 
   if (result) {
     return (
@@ -63,9 +56,46 @@ export function PlaidLinkButton() {
         disabled={!ready || syncing}
         className="rounded-lg bg-white px-4 py-2 text-sm font-medium text-black disabled:opacity-40"
       >
-        {syncing ? "Syncing…" : "Connect bank"}
+        {syncing ? "Syncing…" : ready ? "Connect bank" : "Preparing…"}
       </button>
       {error && <p className="text-xs text-red-400">{error}</p>}
     </div>
   );
+}
+
+// Outer: fetches the link token, then hands off to PlaidLinkReady.
+export function PlaidLinkButton() {
+  const [linkToken, setLinkToken] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetch("/api/plaid/create-link-token", { method: "POST" })
+      .then(async (r) => {
+        const d = await r.json().catch(() => ({}));
+        if (d.link_token) setLinkToken(d.link_token);
+        else setError(d.error ?? `Failed to initialize bank connection (${r.status})`);
+      })
+      .catch(() => setError("Network error — check your connection."));
+  }, []);
+
+  if (error) {
+    return (
+      <div className="flex flex-col items-start gap-2">
+        <button type="button" disabled className="rounded-lg bg-white px-4 py-2 text-sm font-medium text-black opacity-40">
+          Connect bank
+        </button>
+        <p className="text-xs text-red-400">{error}</p>
+      </div>
+    );
+  }
+
+  if (!linkToken) {
+    return (
+      <button type="button" disabled className="rounded-lg bg-white px-4 py-2 text-sm font-medium text-black opacity-40">
+        Loading…
+      </button>
+    );
+  }
+
+  return <PlaidLinkReady token={linkToken} />;
 }

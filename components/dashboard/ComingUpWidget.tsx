@@ -55,6 +55,7 @@ export function ComingUpWidget() {
   const [gsiLoaded, setGsiLoaded] = useState(false);
   const [calConnecting, setCalConnecting] = useState(false);
   const [calJustConnected, setCalJustConnected] = useState(false);
+  const [calOAuthError, setCalOAuthError] = useState<string | null>(null);
 
   useEffect(() => {
     async function load() {
@@ -121,7 +122,11 @@ export function ComingUpWidget() {
       client_id: clientId,
       scope: "https://www.googleapis.com/auth/calendar.readonly",
       callback: async (resp) => {
-        if (resp.error || !resp.access_token) { setCalConnecting(false); return; }
+        if (resp.error || !resp.access_token) {
+          setCalConnecting(false);
+          setCalOAuthError(resp.error === "access_denied" ? "Access denied — try again." : `Google error: ${resp.error ?? "no token returned"}. Check the /api/calendar/diagnostic page.`);
+          return;
+        }
         await fetch("/api/calendar/connect", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -159,6 +164,9 @@ export function ComingUpWidget() {
           >
             {calConnecting ? "Connecting…" : "Connect Google Calendar →"}
           </button>
+          {calOAuthError && (
+            <p className="mt-1 text-[10px] text-red-400">{calOAuthError}</p>
+          )}
         </div>
       ) : items.length === 0 ? (
         <div className="rounded-xl border border-dashed border-[var(--border)] p-4 text-center">

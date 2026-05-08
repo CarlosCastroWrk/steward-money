@@ -10,6 +10,7 @@ export function CalendarOptInCard() {
   const [connecting, setConnecting] = useState(false);
   const [gsiLoaded, setGsiLoaded] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
+  const [oauthError, setOauthError] = useState<string | null>(null);
 
   const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID ?? "";
 
@@ -56,6 +57,7 @@ export function CalendarOptInCard() {
       callback: async (resp: { access_token?: string; error?: string }) => {
         if (resp.error || !resp.access_token) {
           setConnecting(false);
+          setOauthError(resp.error === "access_denied" ? "Access denied." : `Google error: ${resp.error ?? "no token"}. Visit /api/calendar/diagnostic for setup instructions.`);
           return;
         }
         await fetch("/api/calendar/connect", {
@@ -129,6 +131,9 @@ export function CalendarOptInCard() {
               Maybe later
             </button>
           </div>
+          {oauthError && (
+            <p className="mt-2 text-[11px] text-red-400">{oauthError}</p>
+          )}
         </div>
       </div>
     </div>

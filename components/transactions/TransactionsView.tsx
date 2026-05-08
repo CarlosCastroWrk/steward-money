@@ -82,6 +82,7 @@ export function TransactionsView({ transactions: initialTransactions, accounts, 
   const [editing, setEditing] = useState<Transaction | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [timeRange, setTimeRange] = useState<TimeRange>("this-month");
+  const swipeRef = useRef({ x: 0, y: 0 });
   const [accountFilter, setAccountFilter] = useState("all");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [typeFilter, setTypeFilter] = useState<TxTypeFilter>("all");
@@ -394,8 +395,19 @@ export function TransactionsView({ transactions: initialTransactions, accounts, 
           </div>
         )}
 
-        {/* Time range pill tabs */}
-        <div className="mt-5">
+        {/* Time range pill tabs — swipeable */}
+        <div
+          className="mt-5"
+          onTouchStart={(e) => { swipeRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY }; }}
+          onTouchEnd={(e) => {
+            const dx = e.changedTouches[0].clientX - swipeRef.current.x;
+            const dy = e.changedTouches[0].clientY - swipeRef.current.y;
+            if (Math.abs(dx) < 50 || Math.abs(dx) <= Math.abs(dy)) return;
+            const idx = TIME_TABS.findIndex((t) => t.id === timeRange);
+            if (dx < 0 && idx < TIME_TABS.length - 1) { setTimeRange(TIME_TABS[idx + 1].id as TimeRange); setAutoExpanded(false); }
+            else if (dx > 0 && idx > 0) { setTimeRange(TIME_TABS[idx - 1].id as TimeRange); setAutoExpanded(false); }
+          }}
+        >
           <TabPills
             tabs={TIME_TABS}
             active={timeRange}
