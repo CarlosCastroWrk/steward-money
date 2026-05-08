@@ -3,14 +3,22 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { CalendarEventDetailModal } from "./CalendarEventDetailModal";
+
+type EventType = "income" | "expense" | "social" | "personal" | "needs_clarification";
 
 interface ComingItem {
   id: string;
+  // cacheId is the raw UUID from calendar_events_cache (for calendar events only)
+  cacheId?: string;
   type: "bill" | "event" | "income" | "goal";
-  eventType?: "income" | "expense" | "social" | "personal" | "needs_clarification";
+  eventType?: EventType;
   userConfirmed?: boolean;
   title: string;
   date: string;
+  location?: string | null;
+  description?: string | null;
+  userNotes?: string | null;
   amount?: number;
 }
 
@@ -26,9 +34,7 @@ function fmt(n: number): string {
   return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(n);
 }
 
-// Returns card styles based on type + eventType
 function getCardStyle(item: ComingItem): { bg: string; text: string; icon: string } {
-  // Calendar events use eventType for styling
   if (item.type === "event" || (item.type === "income" && item.eventType)) {
     switch (item.eventType) {
       case "income":
@@ -47,8 +53,6 @@ function getCardStyle(item: ComingItem): { bg: string; text: string; icon: strin
         return { bg: "bg-purple-900/20 border-purple-800/30", text: "text-purple-400", icon: "📅" };
     }
   }
-
-  // Bills, income sources, goals use type
   switch (item.type) {
     case "income": return { bg: "bg-emerald-900/30 border-emerald-800/40", text: "text-emerald-400", icon: "💵" };
     case "bill":   return { bg: "bg-red-900/20 border-red-800/30",        text: "text-red-400",     icon: "📄" };
@@ -84,6 +88,7 @@ export function ComingUpWidget() {
   const [calConnecting, setCalConnecting] = useState(false);
   const [calJustConnected, setCalJustConnected] = useState(false);
   const [calOAuthError, setCalOAuthError] = useState<string | null>(null);
+  const [selectedEvent, setSelectedEvent] = useState<ComingItem | null>(null);
 
   useEffect(() => {
     async function load() {
@@ -99,7 +104,13 @@ export function ComingUpWidget() {
         supabase.from("income_sources").select("id, name, amount, next_expected_date").eq("user_id", user.id).eq("is_active", true).gte("next_expected_date", today).lte("next_expected_date", in14).order("next_expected_date", { ascending: true }).limit(3),
         supabase.from("goals").select("id, name, target_amount, current_amount, deadline").eq("user_id", user.id).gte("deadline", today).lte("deadline", in14).limit(3),
         supabase.from("calendar_connections").select("user_id").eq("user_id", user.id).maybeSingle(),
-        supabase.from("calendar_events_cache").select("id, title, start_time, spending_estimate, is_income_event, event_type, user_confirmed").eq("user_id", user.id).gte("start_time", new Date().toISOString()).lte("start_time", new Date(Date.now() + 14 * 86_400_000).toISOString()).order("start_time", { ascending: true }).limit(5),
+        supabase.from("calendar_events_cache")
+          .select("id, title, start_time, spending_estimate, is_income_event, event_type, user_confirmed, location, description, user_notes")
+          .eq("user_id", user.id)
+          .gte("start_time", new Date().toISOString())
+          .lte("start_time", new Date(Date.now() + 14 * 86_400_000).toISOString())
+          .order("start_time", { ascending: true })
+          .limit(5),
       ]);
 
       setCalendarConnected(!!calRes.data);
@@ -135,15 +146,16 @@ export function ComingUpWidget() {
 
         combined.push({
           id: `event-${e.id}`,
+          cacheId: e.id,
           type: isIncome ? "income" : "event",
           eventType: e.event_type ?? (isIncome ? "income" : "needs_clarification"),
           userConfirmed: e.user_confirmed ?? false,
           title: e.title,
           date: e.start_time,
-          // Only show amount for confirmed expenses and income events with known amounts
-          amount: isConfirmedExpense && e.spending_estimate > 0
-            ? Number(e.spending_estimate)
-            : undefined,
+          location: e.location,
+          description: e.description,
+          userNotes: e.user_notes,
+          amount: isConfirmedExpense && e.spending_estimate > 0 ? Number(e.spending_estimate) : undefined,
         });
       }
 
@@ -164,7 +176,7 @@ export function ComingUpWidget() {
       callback: async (resp) => {
         if (resp.error || !resp.access_token) {
           setCalConnecting(false);
-          setCalOAuthError(resp.error === "access_denied" ? "Access denied — try again." : `Google error: ${resp.error ?? "no token returned"}. Check the /api/calendar/diagnostic page.`);
+          setCalOAuthError(resp.error === "access_denied" ? "Access denied — try again." : `Google error: ${resp.error ?? "no token returned"}.`);
           return;
         }
         await fetch("/api/calendar/connect", {
@@ -182,76 +194,126 @@ export function ComingUpWidget() {
     client.requestAccessToken();
   }
 
+  function handleEventUpdated(
+    cacheId: string,
+    update: { eventType: EventType; userConfirmed: boolean; amount?: number }
+  ) {
+    setItems((prev) =>
+      prev.map((item) => {
+        if (item.cacheId !== cacheId) return item;
+        const isConfirmedExpense = update.eventType === "expense" && update.userConfirmed;
+        return {
+          ...item,
+          eventType: update.eventType,
+          userConfirmed: update.userConfirmed,
+          type: update.eventType === "income" ? "income" : "event",
+          amount: isConfirmedExpense && update.amount ? update.amount : undefined,
+        };
+      })
+    );
+  }
+
   if (loading) return null;
 
   return (
-    <section>
-      <div className="mb-3 flex items-center justify-between">
-        <h2 className="text-[10px] font-semibold uppercase tracking-widest text-[var(--text-3)]">Coming up · next 14 days</h2>
-        <a href="/transactions" className="text-xs text-purple-400 hover:text-purple-300 transition-colors">See all →</a>
-      </div>
+    <>
+      <section>
+        <div className="mb-3 flex items-center justify-between">
+          <h2 className="text-[10px] font-semibold uppercase tracking-widest text-[var(--text-3)]">Coming up · next 14 days</h2>
+          <a href="/transactions" className="text-xs text-purple-400 hover:text-purple-300 transition-colors">See all →</a>
+        </div>
 
-      {calJustConnected ? (
-        <div className="rounded-xl border border-emerald-800/40 bg-emerald-950/20 p-4 text-center">
-          <p className="text-sm text-emerald-400">Calendar connected! Events will appear here shortly.</p>
-        </div>
-      ) : items.length === 0 && calendarConnected === false && GOOGLE_CLIENT_ID_SET ? (
-        <div className="rounded-xl border border-dashed border-[var(--border)] p-4 text-center">
-          <p className="text-sm text-[var(--text-3)]">Connect your calendar to see what&apos;s coming</p>
-          <button
-            type="button"
-            onClick={handleCalendarConnect}
-            disabled={calConnecting || !gsiLoaded}
-            className="mt-2 inline-block text-xs text-[var(--accent)] transition-opacity hover:opacity-80 disabled:opacity-40"
-          >
-            {calConnecting ? "Connecting…" : "Connect Google Calendar →"}
-          </button>
-          {calOAuthError && (
-            <p className="mt-1 text-[10px] text-red-400">{calOAuthError}</p>
-          )}
-        </div>
-      ) : items.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-[var(--border)] p-4 text-center">
-          <p className="text-sm text-[var(--text-3)]">Clear skies for the next two weeks.</p>
-        </div>
-      ) : (
-        <div className="flex gap-3 overflow-x-auto pb-1" style={{ scrollbarWidth: "none" }}>
-          {items.map((item) => {
-            const { bg, text, icon } = getCardStyle(item);
-            const isEarning = item.eventType === "income" || (item.type === "income" && !item.eventType);
-            const needsClarification = item.eventType === "needs_clarification";
+        {calJustConnected ? (
+          <div className="rounded-xl border border-emerald-800/40 bg-emerald-950/20 p-4 text-center">
+            <p className="text-sm text-emerald-400">Calendar connected! Events will appear here shortly.</p>
+          </div>
+        ) : items.length === 0 && calendarConnected === false && GOOGLE_CLIENT_ID_SET ? (
+          <div className="rounded-xl border border-dashed border-[var(--border)] p-4 text-center">
+            <p className="text-sm text-[var(--text-3)]">Connect your calendar to see what&apos;s coming</p>
+            <button
+              type="button"
+              onClick={handleCalendarConnect}
+              disabled={calConnecting || !gsiLoaded}
+              className="mt-2 inline-block text-xs text-[var(--accent)] transition-opacity hover:opacity-80 disabled:opacity-40"
+            >
+              {calConnecting ? "Connecting…" : "Connect Google Calendar →"}
+            </button>
+            {calOAuthError && (
+              <p className="mt-1 text-[10px] text-red-400">{calOAuthError}</p>
+            )}
+          </div>
+        ) : items.length === 0 ? (
+          <div className="rounded-xl border border-dashed border-[var(--border)] p-4 text-center">
+            <p className="text-sm text-[var(--text-3)]">Clear skies for the next two weeks.</p>
+          </div>
+        ) : (
+          <div className="flex gap-3 overflow-x-auto pb-1" style={{ scrollbarWidth: "none" }}>
+            {items.map((item) => {
+              const { bg, text, icon } = getCardStyle(item);
+              const isEarning = item.eventType === "income" || (item.type === "income" && !item.eventType);
+              const needsClarification = item.eventType === "needs_clarification";
+              const isCalendarEvent = !!item.cacheId;
 
-            return (
-              <div
-                key={item.id}
-                className={`flex-shrink-0 rounded-xl border ${bg} p-3 min-w-[130px] max-w-[160px]`}
-              >
-                <div className="flex items-center gap-1.5 mb-2">
-                  <span className="text-sm">{icon}</span>
-                  <span className={`text-[10px] font-semibold uppercase tracking-wide ${text}`}>
-                    {daysLabel(item.date)}
-                  </span>
-                  {needsClarification && (
-                    <span className="ml-auto text-[10px] text-amber-400 font-bold">?</span>
+              const card = (
+                <div className={`flex-shrink-0 rounded-xl border ${bg} p-3 min-w-[130px] max-w-[160px] ${isCalendarEvent ? "cursor-pointer active:scale-[0.97] transition-transform" : ""}`}>
+                  <div className="flex items-center gap-1.5 mb-2">
+                    <span className="text-sm">{icon}</span>
+                    <span className={`text-[10px] font-semibold uppercase tracking-wide ${text}`}>
+                      {daysLabel(item.date)}
+                    </span>
+                    {needsClarification && (
+                      <span className="ml-auto text-[10px] text-amber-400 font-bold">?</span>
+                    )}
+                  </div>
+                  <p className="text-xs font-medium text-[var(--text-1)] leading-tight truncate">{item.title}</p>
+                  {isEarning && item.amount != null && item.amount > 0 && (
+                    <p className={`mt-1 text-sm font-semibold ${text}`}>+{fmt(item.amount)}</p>
+                  )}
+                  {isEarning && (item.amount == null || item.amount === 0) && (
+                    <p className="mt-1 text-[10px] font-semibold text-emerald-400 uppercase tracking-wide">earning</p>
+                  )}
+                  {!isEarning && !needsClarification && item.amount != null && item.amount > 0 && (
+                    <p className={`mt-1 text-sm font-semibold ${text}`}>{fmt(item.amount)}</p>
                   )}
                 </div>
-                <p className="text-xs font-medium text-[var(--text-1)] leading-tight truncate">{item.title}</p>
-                {/* Income: show "earning" badge */}
-                {isEarning && item.amount != null && item.amount > 0 && (
-                  <p className={`mt-1 text-sm font-semibold ${text}`}>+{fmt(item.amount)}</p>
-                )}
-                {isEarning && (item.amount == null || item.amount === 0) && (
-                  <p className="mt-1 text-[10px] font-semibold text-emerald-400 uppercase tracking-wide">earning</p>
-                )}
-                {/* Expense: only show if user confirmed */}
-                {!isEarning && !needsClarification && item.amount != null && item.amount > 0 && (
-                  <p className={`mt-1 text-sm font-semibold ${text}`}>{fmt(item.amount)}</p>
-                )}
-              </div>
-            );
-          })}
-        </div>
+              );
+
+              if (isCalendarEvent) {
+                return (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => setSelectedEvent(item)}
+                    className="text-left"
+                  >
+                    {card}
+                  </button>
+                );
+              }
+
+              return <div key={item.id}>{card}</div>;
+            })}
+          </div>
+        )}
+      </section>
+
+      {selectedEvent?.cacheId && (
+        <CalendarEventDetailModal
+          event={{
+            cacheId: selectedEvent.cacheId,
+            title: selectedEvent.title,
+            date: selectedEvent.date,
+            location: selectedEvent.location,
+            description: selectedEvent.description,
+            eventType: selectedEvent.eventType ?? null,
+            userConfirmed: selectedEvent.userConfirmed ?? false,
+            spendingEstimate: selectedEvent.amount,
+            userNotes: selectedEvent.userNotes,
+          }}
+          onClose={() => setSelectedEvent(null)}
+          onUpdated={handleEventUpdated}
+        />
       )}
-    </section>
+    </>
   );
 }

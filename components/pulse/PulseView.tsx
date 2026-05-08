@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { AgentAvatar } from "@/components/AgentAvatar";
 import { AgentChatModal } from "./AgentChatModal";
 import { TabPills } from "@/components/ui/TabPills";
@@ -217,7 +217,6 @@ export function PulseView() {
   const [filter, setFilter] = useState<DateFilter>("all");
   const [chatItem, setChatItem] = useState<FeedItem | null>(null);
   const [refreshing, setRefreshing] = useState(false);
-  const swipeRef = useRef({ x: 0, y: 0 });
   const FILTER_TABS: { id: DateFilter }[] = [{ id: "today" }, { id: "week" }, { id: "all" }];
 
   const loadAll = useCallback(async () => {
@@ -475,18 +474,8 @@ export function PulseView() {
           </div>
         </div>
 
-        {/* Date filter as pills — swipeable */}
-        <div
-          onTouchStart={(e) => { swipeRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY }; }}
-          onTouchEnd={(e) => {
-            const dx = e.changedTouches[0].clientX - swipeRef.current.x;
-            const dy = e.changedTouches[0].clientY - swipeRef.current.y;
-            if (Math.abs(dx) < 50 || Math.abs(dx) <= Math.abs(dy)) return;
-            const idx = FILTER_TABS.findIndex((t) => t.id === filter);
-            if (dx < 0 && idx < FILTER_TABS.length - 1) setFilter(FILTER_TABS[idx + 1].id);
-            else if (dx > 0 && idx > 0) setFilter(FILTER_TABS[idx - 1].id);
-          }}
-        >
+        {/* Date filter pills */}
+        <div>
           <TabPills
             tabs={[
               { id: "today", label: "Today" },
