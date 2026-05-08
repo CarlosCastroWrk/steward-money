@@ -108,7 +108,7 @@ export function AgentChatModal({ agent, initialMessage, context, onClose }: Prop
   return (
     <div className="fixed inset-0 z-50 flex flex-col bg-[var(--bg-base)]">
       {/* Header */}
-      <div className="flex items-center gap-3 border-b border-[var(--border)] px-4 py-3 bg-[var(--bg-card)]">
+      <div className="flex items-center gap-3 border-b border-[var(--border)] px-4 pb-3 bg-[var(--bg-card)]" style={{ paddingTop: "max(env(safe-area-inset-top), 0.75rem)" }}>
         <button
           onClick={onClose}
           className="flex h-8 w-8 items-center justify-center rounded-full text-[var(--text-3)] hover:text-[var(--text-1)] hover:bg-[var(--bg-elevated)] transition-colors"

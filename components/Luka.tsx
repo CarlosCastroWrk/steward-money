@@ -748,7 +748,7 @@ export function Luka() {
   // ── Shared sub-views ───────────────────────────────────────────────────────
 
   const inputArea = (
-    <div className="flex-shrink-0 border-t border-[var(--border)] bg-[var(--luka-bg)] px-3 py-3">
+    <div className="flex-shrink-0 border-t border-[var(--border)] bg-[var(--luka-bg)] px-3 pt-3" style={{ paddingBottom: "max(env(safe-area-inset-bottom), 0.75rem)" }}>
       <div className="flex items-end gap-2 rounded-2xl bg-[var(--luka-msg-bg)] px-3.5 py-2.5">
         <textarea
           ref={inputRef}
@@ -849,7 +849,7 @@ export function Luka() {
 
   // Mobile header — with hamburger + new chat
   const mobileChatHeader = (
-    <div className="flex-shrink-0 flex flex-col border-b border-[var(--border)] bg-[var(--luka-bg)]">
+    <div className="flex-shrink-0 flex flex-col border-b border-[var(--border)] bg-[var(--luka-bg)] pt-[env(safe-area-inset-top)]">
       <div className="flex items-center gap-2 px-4 py-3">
         <button
           type="button"

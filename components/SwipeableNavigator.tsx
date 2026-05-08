@@ -1,12 +1,11 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 
-// Primary bottom nav routes in order. "More" is a modal button, not a route.
 const NAV_ROUTES = ["/", "/pulse", "/transactions", "/accounts"];
 
-// Routes where nav-swipe should be disabled (detail pages, modals, etc.)
 const SWIPE_DISABLED_PREFIXES = [
   "/merchant/",
   "/category/",
@@ -17,50 +16,65 @@ const SWIPE_DISABLED_PREFIXES = [
   "/auth/",
 ];
 
+const slideVariants = {
+  enter: (dir: number) => ({ x: dir >= 0 ? "100%" : "-100%" }),
+  center: { x: 0 },
+  exit: (dir: number) => ({ x: dir >= 0 ? "-100%" : "100%" }),
+};
+
 export function SwipeableNavigator({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
+  const [direction, setDirection] = useState(0);
 
   const swipeDisabled = SWIPE_DISABLED_PREFIXES.some((p) => pathname.startsWith(p));
-
   const currentIndex = NAV_ROUTES.findIndex((r) =>
     r === "/" ? pathname === "/" : pathname.startsWith(r)
   );
-
-  // Not in primary nav (e.g. /goals, /bills, /card) — still allow content, no nav swipe
   const inPrimaryNav = currentIndex !== -1;
 
-  function handleDragEnd(_: unknown, info: { offset: { x: number }; velocity: { x: number } }) {
-    if (swipeDisabled || !inPrimaryNav) return;
+  useEffect(() => {
+    function onNavDirection(e: Event) {
+      setDirection((e as CustomEvent<{ direction: number }>).detail.direction);
+    }
+    window.addEventListener("nav:direction", onNavDirection);
+    return () => window.removeEventListener("nav:direction", onNavDirection);
+  }, []);
 
-    const SWIPE_THRESHOLD = 80;
-    const VELOCITY_THRESHOLD = 600;
+  function handlePanEnd(_: unknown, info: { offset: { x: number }; velocity: { x: number } }) {
+    if (swipeDisabled || !inPrimaryNav) return;
     const { x: dx } = info.offset;
     const { x: vx } = info.velocity;
-
-    if (Math.abs(dx) < SWIPE_THRESHOLD && Math.abs(vx) < VELOCITY_THRESHOLD) return;
+    if (Math.abs(dx) < 80 && Math.abs(vx) < 600) return;
 
     if (dx < 0 && currentIndex < NAV_ROUTES.length - 1) {
+      setDirection(1);
       router.push(NAV_ROUTES[currentIndex + 1]);
     } else if (dx > 0 && currentIndex > 0) {
+      setDirection(-1);
       router.push(NAV_ROUTES[currentIndex - 1]);
     }
   }
 
-  if (swipeDisabled || !inPrimaryNav) {
-    return <>{children}</>;
-  }
+  if (swipeDisabled || !inPrimaryNav) return <>{children}</>;
 
   return (
-    <motion.div
-      drag="x"
-      dragConstraints={{ left: 0, right: 0 }}
-      dragElastic={0.1}
-      onDragEnd={handleDragEnd}
-      style={{ touchAction: "pan-y" }}
-      className="h-full"
-    >
-      {children}
-    </motion.div>
+    <div style={{ display: "grid", overflow: "hidden" }}>
+      <AnimatePresence initial={false} custom={direction}>
+        <motion.div
+          key={pathname}
+          custom={direction}
+          variants={slideVariants}
+          initial="enter"
+          animate="center"
+          exit="exit"
+          transition={{ type: "spring", stiffness: 350, damping: 30, mass: 0.8 }}
+          onPanEnd={handlePanEnd}
+          style={{ gridColumn: 1, gridRow: 1, touchAction: "pan-y" }}
+        >
+          {children}
+        </motion.div>
+      </AnimatePresence>
+    </div>
   );
 }

@@ -6,9 +6,11 @@ import { AgentChatModal } from "./AgentChatModal";
 import { TabPills } from "@/components/ui/TabPills";
 import { createClient } from "@/lib/supabase/client";
 import { formatUSD } from "@/lib/format";
+import { CalendarEventDetailModal } from "@/components/dashboard/CalendarEventDetailModal";
 
 type AgentName = "argus" | "iron" | "manna" | "nova" | "eden" | "solomon" | "silas" | "echo" | "kairos";
 type DateFilter = "today" | "week" | "all";
+type CalEventType = "income" | "expense" | "social" | "personal" | "needs_clarification";
 
 interface FeedItem {
   id: string;
@@ -35,6 +37,19 @@ interface ClarificationCard {
   event_date: string;
   question: string;
   choices: ClarificationChoice[];
+}
+
+interface CalendarEvent {
+  id: string;
+  title: string;
+  start_time: string;
+  event_type: CalEventType | null;
+  user_confirmed: boolean;
+  spending_estimate: number;
+  is_income_event: boolean;
+  location: string | null;
+  description: string | null;
+  user_notes: string | null;
 }
 
 const AGENT_COLOR: Record<AgentName, string> = {
@@ -79,6 +94,14 @@ function isWithin(iso: string, filter: DateFilter): boolean {
   return true;
 }
 
+function formatEventDate(iso: string): string {
+  const d = new Date(iso);
+  const diff = Math.ceil((d.getTime() - Date.now()) / 86_400_000);
+  if (diff <= 0) return "Today";
+  if (diff === 1) return "Tomorrow";
+  return `in ${diff}d`;
+}
+
 // ─── Standard insight card ────────────────────────────────────────────────────
 
 function InsightCard({ item, onTap, index }: { item: FeedItem; onTap: (item: FeedItem) => void; index: number }) {
@@ -110,7 +133,7 @@ function InsightCard({ item, onTap, index }: { item: FeedItem; onTap: (item: Fee
   );
 }
 
-// ─── Kairos clarification card (inline action buttons) ────────────────────────
+// ─── Kairos clarification card ────────────────────────────────────────────────
 
 function KairosClarificationCard({
   card,
@@ -137,7 +160,6 @@ function KairosClarificationCard({
         }),
       });
 
-      // For recurring pattern: confirm all matching events
       if (card.card_type === "recurring_pattern" && choice.event_type === "income") {
         await fetch("/api/calendar/confirm", {
           method: "POST",
@@ -149,7 +171,7 @@ function KairosClarificationCard({
           }),
         });
       }
-    } catch { /* ignore, card still dismisses */ }
+    } catch { /* ignore */ }
 
     setDone(true);
     setTimeout(() => onResolved(card.id), 600);
@@ -159,10 +181,7 @@ function KairosClarificationCard({
 
   if (done) {
     return (
-      <div
-        className="rounded-2xl border border-[var(--border)] bg-[var(--bg-card)] px-4 py-3 overflow-hidden"
-        style={{ borderLeft: `3px solid ${kairosGreen}` }}
-      >
+      <div className="rounded-2xl border border-[var(--border)] bg-[var(--bg-card)] px-4 py-3" style={{ borderLeft: `3px solid ${kairosGreen}` }}>
         <p className="text-xs text-[var(--text-3)]">Got it — updated.</p>
       </div>
     );
@@ -175,10 +194,7 @@ function KairosClarificationCard({
   };
 
   return (
-    <div
-      className="rounded-2xl border border-[var(--border)] bg-[var(--bg-card)] overflow-hidden"
-      style={{ animationDelay: `${index * 50}ms`, borderLeft: `3px solid ${kairosGreen}` }}
-    >
+    <div className="rounded-2xl border border-[var(--border)] bg-[var(--bg-card)] overflow-hidden" style={{ animationDelay: `${index * 50}ms`, borderLeft: `3px solid ${kairosGreen}` }}>
       <div className="px-4 py-4">
         <div className="flex items-start gap-3 mb-3">
           <AgentAvatar agent="kairos" size="sm" />
@@ -208,20 +224,90 @@ function KairosClarificationCard({
   );
 }
 
+// ─── Calendar event card ──────────────────────────────────────────────────────
+
+function CalendarEventCard({ event, onTap }: { event: CalendarEvent; onTap: () => void }) {
+  const isIncome = event.event_type === "income" || (event.is_income_event && !event.event_type);
+  const needsClarification = !event.event_type || event.event_type === "needs_clarification";
+
+  let borderColor = "var(--border)";
+  let labelColor = "var(--text-3)";
+  if (isIncome) { borderColor = "#059669"; labelColor = "#34d399"; }
+  else if (event.event_type === "expense") { borderColor = "#dc2626"; labelColor = "#f87171"; }
+  else if (event.event_type === "social") { borderColor = "#2563eb"; labelColor = "#60a5fa"; }
+  else if (needsClarification) { borderColor = "#d97706"; labelColor = "#fbbf24"; }
+
+  return (
+    <button
+      type="button"
+      onClick={onTap}
+      className="w-full text-left rounded-2xl border bg-[var(--bg-card)] overflow-hidden transition-all duration-150 active:scale-[0.98] hover:border-[var(--border-strong)]"
+      style={{ borderLeft: `3px solid ${borderColor}` }}
+    >
+      <div className="px-4 py-3 flex items-center gap-3">
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 mb-0.5">
+            <span className="text-[10px] font-semibold uppercase tracking-wide" style={{ color: labelColor }}>
+              {formatEventDate(event.start_time)}
+            </span>
+            {needsClarification && (
+              <span className="text-[10px] text-amber-400 font-bold">· needs label</span>
+            )}
+          </div>
+          <p className="text-sm font-medium text-[var(--text-1)] leading-snug truncate">{event.title}</p>
+          {event.location && (
+            <p className="mt-0.5 text-[10px] text-[var(--text-3)] truncate">📍 {event.location}</p>
+          )}
+        </div>
+        {isIncome && event.spending_estimate > 0 && (
+          <p className="text-sm font-semibold text-emerald-400 flex-shrink-0">+{formatUSD(event.spending_estimate)}</p>
+        )}
+        {!isIncome && event.event_type === "expense" && event.user_confirmed && event.spending_estimate > 0 && (
+          <p className="text-sm font-semibold text-red-400 flex-shrink-0">{formatUSD(event.spending_estimate)}</p>
+        )}
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4 text-[var(--text-3)] flex-shrink-0">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M9 18l6-6-6-6" />
+        </svg>
+      </div>
+    </button>
+  );
+}
+
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 export function PulseView() {
   const [feed, setFeed] = useState<FeedItem[]>([]);
   const [clarificationCards, setClarificationCards] = useState<ClarificationCard[]>([]);
+  const [calendarEvents, setCalendarEvents] = useState<CalendarEvent[]>([]);
+  const [calendarConnected, setCalendarConnected] = useState<boolean | null>(null);
+  const [selectedCalEvent, setSelectedCalEvent] = useState<CalendarEvent | null>(null);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<DateFilter>("all");
   const [chatItem, setChatItem] = useState<FeedItem | null>(null);
   const [refreshing, setRefreshing] = useState(false);
-  const FILTER_TABS: { id: DateFilter }[] = [{ id: "today" }, { id: "week" }, { id: "all" }];
 
   const loadAll = useCallback(async () => {
     const now = new Date().toISOString();
     const items: FeedItem[] = [];
+
+    // Fetch calendar events directly from Supabase
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (user) {
+      const [calConnRes, calEventsRes] = await Promise.all([
+        supabase.from("calendar_connections").select("user_id").eq("user_id", user.id).maybeSingle(),
+        supabase.from("calendar_events_cache")
+          .select("id, title, start_time, spending_estimate, is_income_event, event_type, user_confirmed, location, description, user_notes")
+          .eq("user_id", user.id)
+          .gte("start_time", new Date().toISOString())
+          .lte("start_time", new Date(Date.now() + 14 * 86_400_000).toISOString())
+          .order("start_time", { ascending: true })
+          .limit(10),
+      ]);
+      setCalendarConnected(!!calConnRes.data);
+      setCalendarEvents((calEventsRes.data ?? []).filter((e) => e.title) as CalendarEvent[]);
+    }
 
     const [
       argusRes,
@@ -257,7 +343,6 @@ export function PulseView() {
           createdAt: alert.created_at ?? now,
           context: `Financial alert — ${alert.severity} severity. Alert type: ${alert.alert_type}. Message: ${alert.message}`,
           onDismiss: async () => {
-            const supabase = createClient();
             await supabase.from("alerts").update({ is_read: true }).eq("id", alert.id);
             setFeed((prev) => prev.filter((i) => i.id !== `argus-${alert.id}`));
           },
@@ -382,7 +467,6 @@ export function PulseView() {
           createdAt: insight.created_at ?? now,
           context: `Behavioral pattern observed. Type: ${insight.insight_type}. Insight: "${insight.insight_text}"`,
           onDismiss: async () => {
-            const supabase = createClient();
             await supabase.from("pulse_insights").update({ is_dismissed: true }).eq("id", insight.id);
             setFeed((prev) => prev.filter((i) => i.id !== `silas-${insight.id}`));
           },
@@ -392,10 +476,8 @@ export function PulseView() {
 
     // 8. Kairos — life events + calendar insights — priority 70
     if (kairosRes.status === "fulfilled") {
-      // Clarification cards — handled separately
       setClarificationCards(kairosRes.value.clarification_cards ?? []);
 
-      // Life events from DB
       const events: Array<{ id: string; event_type: string; event_description: string; created_at?: string }> = kairosRes.value.events ?? [];
       events.forEach((ev) => {
         items.push({
@@ -407,14 +489,12 @@ export function PulseView() {
           createdAt: ev.created_at ?? now,
           context: `Life transition event. Type: ${ev.event_type}. Description: "${ev.event_description}"`,
           onDismiss: async () => {
-            const supabase = createClient();
             await supabase.from("life_events").update({ acknowledged: true }).eq("id", ev.id);
             setFeed((prev) => prev.filter((i) => i.id !== `kairos-${ev.id}`));
           },
         });
       });
 
-      // Calendar-based insights — time-sensitive, shown at priority 15
       const calendarInsights: Array<{ id: string; type: string; headline: string; detail: string; event_date: string; spending_estimate: number }> = kairosRes.value.calendar_insights ?? [];
       calendarInsights.forEach((insight) => {
         items.push({
@@ -430,7 +510,6 @@ export function PulseView() {
     }
 
     items.sort((a, b) => a.priority - b.priority || new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-
     setFeed(items);
     setLoading(false);
   }, []);
@@ -448,12 +527,31 @@ export function PulseView() {
     setRefreshing(false);
   }
 
+  function handleCalEventUpdated(
+    cacheId: string,
+    update: { eventType: CalEventType; userConfirmed: boolean; amount?: number }
+  ) {
+    setCalendarEvents((prev) =>
+      prev.map((e) => {
+        if (e.id !== cacheId) return e;
+        return {
+          ...e,
+          event_type: update.eventType,
+          user_confirmed: update.userConfirmed,
+          spending_estimate: update.amount ?? e.spending_estimate,
+        };
+      })
+    );
+  }
+
   const today = new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" });
   const visible = feed.filter((item) => isWithin(item.createdAt, filter));
+  const hasCalendar = calendarConnected === true;
+  const calendarLoaded = calendarConnected !== null;
 
   return (
     <>
-      <div className="space-y-5 px-4 pb-10 pt-5 md:px-8 md:pt-8">
+      <div className="space-y-6 px-4 pb-10 pt-5 md:px-8 md:pt-8">
 
         {/* Header */}
         <div>
@@ -474,71 +572,118 @@ export function PulseView() {
           </div>
         </div>
 
-        {/* Date filter pills */}
-        <div>
-          <TabPills
-            tabs={[
-              { id: "today", label: "Today" },
-              { id: "week", label: "This Week" },
-              { id: "all", label: "All" },
-            ]}
-            active={filter}
-            onChange={(id) => setFilter(id as DateFilter)}
-          />
-        </div>
+        {/* ── Calendar section ──────────────────────────────────────────────── */}
+        <section>
+          <p className="mb-3 text-[10px] font-semibold uppercase tracking-widest text-[var(--text-3)]">Calendar · Next 14 days</p>
 
-        {/* Loading skeletons */}
-        {loading && (
-          <div className="space-y-3">
-            {[1, 2, 3, 4].map((i) => (
-              <div key={i} className="h-24 w-full rounded-2xl bg-[var(--bg-elevated)] shimmer" />
-            ))}
-          </div>
-        )}
-
-        {/* Kairos clarification cards — always show, above the feed */}
-        {!loading && clarificationCards.length > 0 && (
-          <div className="space-y-3">
-            {clarificationCards.map((card, index) => (
-              <KairosClarificationCard
-                key={card.id}
-                card={card}
-                index={index}
-                onResolved={(id) => setClarificationCards((prev) => prev.filter((c) => c.id !== id))}
-              />
-            ))}
-          </div>
-        )}
-
-        {/* Feed */}
-        {!loading && visible.length > 0 && (
-          <div className="space-y-3">
-            {visible.map((item, index) => (
-              <InsightCard key={item.id} item={item} onTap={setChatItem} index={index} />
-            ))}
-          </div>
-        )}
-
-        {/* Empty state */}
-        {!loading && visible.length === 0 && clarificationCards.length === 0 && (
-          <div className="rounded-2xl border border-dashed border-[var(--border)] p-10 text-center">
-            <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-[var(--bg-elevated)] text-[var(--text-3)]">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="h-5 w-5">
-                <rect x="3" y="4" width="18" height="18" rx="2" />
-                <path d="M16 2v4M8 2v4M3 10h18" />
-              </svg>
+          {loading && (
+            <div className="space-y-2">
+              {[1, 2].map((i) => (
+                <div key={i} className="h-16 w-full rounded-2xl bg-[var(--bg-elevated)] shimmer" />
+              ))}
             </div>
-            <p className="text-sm font-medium text-[var(--text-2)]">
-              {filter !== "all" ? "No insights in this time range." : "Your agents are still learning your patterns."}
-            </p>
-            <p className="mt-1 text-xs text-[var(--text-3)]">
-              {filter !== "all" ? (
-                <button onClick={() => setFilter("all")} className="text-[var(--accent)] hover:opacity-80">View all time →</button>
-              ) : "Check back tomorrow."}
-            </p>
+          )}
+
+          {!loading && calendarLoaded && !hasCalendar && (
+            <div className="rounded-2xl border border-dashed border-[var(--border)] p-5 text-center">
+              <p className="text-sm text-[var(--text-3)]">Connect your Google Calendar to see upcoming events here.</p>
+              <a href="/settings" className="mt-2 inline-block text-xs text-[var(--accent)] hover:opacity-80">
+                Connect calendar →
+              </a>
+            </div>
+          )}
+
+          {!loading && hasCalendar && clarificationCards.length === 0 && calendarEvents.length === 0 && (
+            <div className="rounded-2xl border border-dashed border-[var(--border)] p-5 text-center">
+              <p className="text-sm text-[var(--text-3)]">Clear skies for the next two weeks.</p>
+            </div>
+          )}
+
+          {!loading && (clarificationCards.length > 0 || calendarEvents.length > 0) && (
+            <div className="space-y-2">
+              {clarificationCards.map((card, index) => (
+                <KairosClarificationCard
+                  key={card.id}
+                  card={card}
+                  index={index}
+                  onResolved={(id) => setClarificationCards((prev) => prev.filter((c) => c.id !== id))}
+                />
+              ))}
+              {calendarEvents.map((event) => (
+                <CalendarEventCard
+                  key={event.id}
+                  event={event}
+                  onTap={() => setSelectedCalEvent(event)}
+                />
+              ))}
+            </div>
+          )}
+        </section>
+
+        {/* ── Agent insights section ────────────────────────────────────────── */}
+        <section>
+          <div className="mb-3 flex items-center justify-between">
+            <p className="text-[10px] font-semibold uppercase tracking-widest text-[var(--text-3)]">Agent insights</p>
+            <TabPills
+              tabs={[
+                { id: "today", label: "Today" },
+                { id: "week", label: "Week" },
+                { id: "all", label: "All" },
+              ]}
+              active={filter}
+              onChange={(id) => setFilter(id as DateFilter)}
+            />
           </div>
-        )}
+
+          {loading && (
+            <div className="space-y-3">
+              {[1, 2, 3, 4].map((i) => (
+                <div key={i} className="h-24 w-full rounded-2xl bg-[var(--bg-elevated)] shimmer" />
+              ))}
+            </div>
+          )}
+
+          {!loading && visible.length > 0 && (
+            <div className="space-y-3">
+              {visible.map((item, index) => (
+                <InsightCard key={item.id} item={item} onTap={setChatItem} index={index} />
+              ))}
+            </div>
+          )}
+
+          {!loading && visible.length === 0 && (
+            <div className="rounded-2xl border border-dashed border-[var(--border)] p-8 text-center">
+              <p className="text-sm font-medium text-[var(--text-2)]">
+                {filter !== "all" ? "No insights in this time range." : "Your agents are still learning your patterns."}
+              </p>
+              <p className="mt-1 text-xs text-[var(--text-3)]">
+                {filter !== "all" ? (
+                  <button onClick={() => setFilter("all")} className="text-[var(--accent)] hover:opacity-80">View all time →</button>
+                ) : "Check back tomorrow."}
+              </p>
+            </div>
+          )}
+        </section>
       </div>
+
+      {/* Calendar event detail modal */}
+      {selectedCalEvent && (
+        <CalendarEventDetailModal
+          event={{
+            cacheId: selectedCalEvent.id,
+            title: selectedCalEvent.title,
+            date: selectedCalEvent.start_time,
+            location: selectedCalEvent.location,
+            description: selectedCalEvent.description,
+            eventType: selectedCalEvent.event_type,
+            userConfirmed: selectedCalEvent.user_confirmed,
+            spendingEstimate: selectedCalEvent.spending_estimate,
+            userNotes: selectedCalEvent.user_notes,
+          }}
+          onClose={() => setSelectedCalEvent(null)}
+          onUpdated={handleCalEventUpdated}
+        />
+      )}
 
       {/* Agent chat overlay */}
       {chatItem && (
