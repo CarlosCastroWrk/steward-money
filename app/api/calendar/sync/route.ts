@@ -14,6 +14,25 @@ interface GoogleCalendarEvent {
   end?: { dateTime?: string; date?: string };
 }
 
+type EventType = "income" | "expense" | "social" | "personal" | "needs_clarification";
+type Confidence = "high" | "medium" | "low";
+
+interface Classification {
+  event_type: EventType;
+  confidence: Confidence;
+  category: string;
+  cost_estimate: number | null;
+  is_income_event: boolean;
+  analysis_notes: string;
+}
+
+interface CalendarPattern {
+  pattern_match: string;
+  event_type: string;
+  category: string;
+  confidence: number;
+}
+
 async function refreshTokenIfNeeded(supabase: ReturnType<typeof createClient>, userId: string, conn: { access_token: string; refresh_token: string | null; expires_at: string | null }) {
   if (!conn.expires_at) return conn.access_token;
   const expiresAt = new Date(conn.expires_at);
@@ -43,6 +62,14 @@ async function refreshTokenIfNeeded(supabase: ReturnType<typeof createClient>, u
   }).eq("user_id", userId);
 
   return data.access_token as string;
+}
+
+function matchesPattern(title: string, patterns: CalendarPattern[]): CalendarPattern | null {
+  const lower = title.toLowerCase();
+  for (const p of patterns) {
+    if (lower.includes(p.pattern_match.toLowerCase())) return p;
+  }
+  return null;
 }
 
 export async function POST(req: NextRequest) {
@@ -84,57 +111,140 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: true, events: [], classified: 0 });
   }
 
-  // Classify events with Claude in a single batch call
-  const eventSummaries = rawEvents
-    .slice(0, 20)
-    .map((e) => `"${e.summary ?? "Untitled"}" on ${e.start?.dateTime ?? e.start?.date ?? "?"}${e.location ? ` at ${e.location}` : ""}`)
-    .join("\n");
+  // Load user's learned patterns for instant categorization
+  const { data: patternsData } = await supabase
+    .from("calendar_patterns")
+    .select("pattern_match, event_type, category, confidence")
+    .eq("user_id", user.id)
+    .order("match_count", { ascending: false });
 
-  const classifyMsg = await anthropic.messages.create({
-    model: "claude-sonnet-4-6",
-    max_tokens: 1200,
-    messages: [{
-      role: "user",
-      content: `Classify each calendar event for its financial impact. For each, return a JSON array (same order as input) with:
-- spending_estimate: number (0 if not a spending event, estimated $ cost in USD if yes — be realistic)
-- is_income_event: boolean
-- category: string (one of: dining, entertainment, travel, personal_care, health, work, social, gift, family, other, income)
-- financial_relevance_score: number 0.0-1.0 (0 = no financial impact, 1 = major financial event)
-- analysis_notes: string (1 short sentence on financial implication, or empty string if irrelevant)
+  const patterns: CalendarPattern[] = (patternsData ?? []) as CalendarPattern[];
+
+  const eventsToProcess = rawEvents.slice(0, 20);
+
+  // Separate events that already match a pattern from those needing AI
+  const patternMatched: Map<number, Classification> = new Map();
+  const needsAI: { index: number; event: GoogleCalendarEvent }[] = [];
+
+  for (let i = 0; i < eventsToProcess.length; i++) {
+    const e = eventsToProcess[i];
+    const title = e.summary ?? "";
+    const match = title ? matchesPattern(title, patterns) : null;
+
+    if (match && match.confidence >= 0.85) {
+      patternMatched.set(i, {
+        event_type: match.event_type as EventType,
+        confidence: "high",
+        category: match.category,
+        cost_estimate: null,
+        is_income_event: match.event_type === "income",
+        analysis_notes: `Auto-categorized from learned pattern.`,
+      });
+    } else {
+      needsAI.push({ index: i, event: e });
+    }
+  }
+
+  // AI classification for events without a pattern match
+  const aiResults: Map<number, Classification> = new Map();
+
+  if (needsAI.length > 0) {
+    const eventList = needsAI.map(({ event: e }) => {
+      const parts = [`"${e.summary ?? "Untitled"}"`];
+      if (e.start?.dateTime ?? e.start?.date) parts.push(`on ${e.start?.dateTime ?? e.start?.date}`);
+      if (e.location) parts.push(`at ${e.location}`);
+      if (e.description) parts.push(`(${e.description.slice(0, 100)})`);
+      return parts.join(" ");
+    }).join("\n");
+
+    const classifyMsg = await anthropic.messages.create({
+      model: "claude-haiku-4-5-20251001",
+      max_tokens: 1500,
+      messages: [{
+        role: "user",
+        content: `Classify each calendar event for a personal finance app. Be conservative — when uncertain, use needs_clarification.
+
+Categories:
+- income: user is working/earning (shifts, refereeing, freelance gigs, paid speaking)
+- expense: clear spending event with specific cost signals (named restaurant reservation, medical with copay, hotel, flight)
+- social: casual hangout, coffee with friend, birthday party — could go either way, low stakes
+- personal: no money implication (workout, meditation, family time at home, religious service)
+- needs_clarification: ambiguous name, missing context, could be income OR expense
+
+RULES:
+- Only set cost_estimate if event_type="expense" AND confidence="high" AND event has a specific named business location
+- When in doubt: needs_clarification, never guess costs
+- Work events (shifts, gigs, tournaments the user is running) = income
+- Casual social events = social, NOT expense
+
+Return a JSON array (same order as input) with objects:
+{ "event_type": string, "confidence": "high"|"medium"|"low", "category": string, "cost_estimate": number|null, "is_income_event": boolean, "analysis_notes": string }
 
 Events:
-${eventSummaries}
+${eventList}
 
-Return ONLY a JSON array of objects, no other text.`,
-    }],
+Return ONLY the JSON array, no other text.`,
+      }],
+    });
+
+    let parsed: Classification[] = [];
+    try {
+      const text = (classifyMsg.content[0] as { type: string; text: string }).text;
+      const jsonMatch = text.match(/\[[\s\S]*\]/);
+      if (jsonMatch) parsed = JSON.parse(jsonMatch[0]);
+    } catch { /* use defaults */ }
+
+    needsAI.forEach(({ index }, arrIdx) => {
+      const c = parsed[arrIdx];
+      if (c) {
+        aiResults.set(index, {
+          event_type: (c.event_type as EventType) ?? "needs_clarification",
+          confidence: (c.confidence as Confidence) ?? "low",
+          category: c.category ?? "other",
+          cost_estimate: c.cost_estimate ?? null,
+          is_income_event: c.is_income_event ?? false,
+          analysis_notes: c.analysis_notes ?? "",
+        });
+      }
+    });
+  }
+
+  // Upsert events — preserve user_confirmed if event already exists
+  const rows = eventsToProcess.map((e, i) => {
+    const cls = patternMatched.get(i) ?? aiResults.get(i) ?? {
+      event_type: "needs_clarification" as EventType,
+      confidence: "low" as Confidence,
+      category: "other",
+      cost_estimate: null,
+      is_income_event: false,
+      analysis_notes: "",
+    };
+
+    return {
+      user_id: user.id,
+      event_id: e.id,
+      title: e.summary ?? null,
+      start_time: e.start?.dateTime ?? e.start?.date ?? null,
+      end_time: e.end?.dateTime ?? e.end?.date ?? null,
+      description: e.description ?? null,
+      location: e.location ?? null,
+      spending_estimate: cls.cost_estimate ?? 0,
+      category: cls.category,
+      is_income_event: cls.is_income_event,
+      event_type: cls.event_type,
+      confidence: cls.confidence,
+      financial_relevance_score: cls.event_type === "expense" || cls.event_type === "income" ? 0.7 : 0.2,
+      analysis_notes: cls.analysis_notes || null,
+      synced_at: new Date().toISOString(),
+    };
   });
 
-  let classifications: Array<{ spending_estimate: number; is_income_event: boolean; category: string; financial_relevance_score: number; analysis_notes: string }> = [];
-  try {
-    const text = (classifyMsg.content[0] as { type: string; text: string }).text;
-    const jsonMatch = text.match(/\[[\s\S]*\]/);
-    if (jsonMatch) classifications = JSON.parse(jsonMatch[0]);
-  } catch { /* use empty defaults */ }
-
-  // Upsert events to cache
-  const rows = rawEvents.slice(0, 20).map((e, i) => ({
-    user_id: user.id,
-    event_id: e.id,
-    title: e.summary ?? null,
-    start_time: e.start?.dateTime ?? e.start?.date ?? null,
-    end_time: e.end?.dateTime ?? e.end?.date ?? null,
-    description: e.description ?? null,
-    location: e.location ?? null,
-    spending_estimate: classifications[i]?.spending_estimate ?? 0,
-    category: classifications[i]?.category ?? "other",
-    is_income_event: classifications[i]?.is_income_event ?? false,
-    financial_relevance_score: classifications[i]?.financial_relevance_score ?? 0,
-    analysis_notes: classifications[i]?.analysis_notes ?? null,
-    synced_at: new Date().toISOString(),
-  }));
-
   for (const row of rows) {
-    await supabase.from("calendar_events_cache").upsert(row, { onConflict: "user_id,event_id" });
+    // Don't overwrite user_confirmed events with AI guesses
+    await supabase
+      .from("calendar_events_cache")
+      .upsert(row, { onConflict: "user_id,event_id", ignoreDuplicates: false })
+      .eq("user_confirmed", false);
   }
 
   return NextResponse.json({ ok: true, synced: rows.length, events: rows });
@@ -148,7 +258,7 @@ export async function GET() {
 
   const { data } = await supabase
     .from("calendar_events_cache")
-    .select("id, title, start_time, end_time, spending_estimate, category, is_income_event")
+    .select("id, title, start_time, end_time, spending_estimate, category, is_income_event, event_type, confidence, user_confirmed")
     .eq("user_id", user.id)
     .gte("start_time", new Date().toISOString())
     .order("start_time", { ascending: true })

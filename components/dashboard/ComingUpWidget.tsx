@@ -7,8 +7,10 @@ import { createClient } from "@/lib/supabase/client";
 interface ComingItem {
   id: string;
   type: "bill" | "event" | "income" | "goal";
+  eventType?: "income" | "expense" | "social" | "personal" | "needs_clarification";
+  userConfirmed?: boolean;
   title: string;
-  date: string; // YYYY-MM-DD or ISO
+  date: string;
   amount?: number;
 }
 
@@ -24,12 +26,36 @@ function fmt(n: number): string {
   return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(n);
 }
 
-const TYPE_COLORS: Record<ComingItem["type"], { bg: string; text: string; icon: string }> = {
-  income: { bg: "bg-emerald-900/30 border-emerald-800/40", text: "text-emerald-400", icon: "💵" },
-  bill:   { bg: "bg-red-900/20 border-red-800/30",        text: "text-red-400",     icon: "📄" },
-  event:  { bg: "bg-purple-900/20 border-purple-800/30",  text: "text-purple-400",  icon: "📅" },
-  goal:   { bg: "bg-amber-900/20 border-amber-800/30",    text: "text-amber-400",   icon: "🎯" },
-};
+// Returns card styles based on type + eventType
+function getCardStyle(item: ComingItem): { bg: string; text: string; icon: string } {
+  // Calendar events use eventType for styling
+  if (item.type === "event" || (item.type === "income" && item.eventType)) {
+    switch (item.eventType) {
+      case "income":
+        return { bg: "bg-emerald-900/30 border-emerald-800/40", text: "text-emerald-400", icon: "💼" };
+      case "expense":
+        return item.userConfirmed
+          ? { bg: "bg-red-900/20 border-red-800/30", text: "text-red-400", icon: "📋" }
+          : { bg: "bg-[var(--bg-elevated)] border-[var(--border)]", text: "text-[var(--text-2)]", icon: "📅" };
+      case "social":
+        return { bg: "bg-blue-900/20 border-blue-800/30", text: "text-blue-400", icon: "🤝" };
+      case "personal":
+        return { bg: "bg-[var(--bg-elevated)] border-[var(--border)]", text: "text-[var(--text-3)]", icon: "🧘" };
+      case "needs_clarification":
+        return { bg: "bg-amber-900/20 border-amber-800/30", text: "text-amber-400", icon: "📅" };
+      default:
+        return { bg: "bg-purple-900/20 border-purple-800/30", text: "text-purple-400", icon: "📅" };
+    }
+  }
+
+  // Bills, income sources, goals use type
+  switch (item.type) {
+    case "income": return { bg: "bg-emerald-900/30 border-emerald-800/40", text: "text-emerald-400", icon: "💵" };
+    case "bill":   return { bg: "bg-red-900/20 border-red-800/30",        text: "text-red-400",     icon: "📄" };
+    case "goal":   return { bg: "bg-amber-900/20 border-amber-800/30",    text: "text-amber-400",   icon: "🎯" };
+    default:       return { bg: "bg-purple-900/20 border-purple-800/30",  text: "text-purple-400",  icon: "📅" };
+  }
+}
 
 const GOOGLE_CLIENT_ID_SET = Boolean(process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID);
 
@@ -73,12 +99,11 @@ export function ComingUpWidget() {
         supabase.from("income_sources").select("id, name, amount, next_expected_date").eq("user_id", user.id).eq("is_active", true).gte("next_expected_date", today).lte("next_expected_date", in14).order("next_expected_date", { ascending: true }).limit(3),
         supabase.from("goals").select("id, name, target_amount, current_amount, deadline").eq("user_id", user.id).gte("deadline", today).lte("deadline", in14).limit(3),
         supabase.from("calendar_connections").select("user_id").eq("user_id", user.id).maybeSingle(),
-        supabase.from("calendar_events_cache").select("id, title, start_time, spending_estimate, is_income_event").eq("user_id", user.id).gte("start_time", new Date().toISOString()).lte("start_time", new Date(Date.now() + 14 * 86_400_000).toISOString()).order("start_time", { ascending: true }).limit(5),
+        supabase.from("calendar_events_cache").select("id, title, start_time, spending_estimate, is_income_event, event_type, user_confirmed").eq("user_id", user.id).gte("start_time", new Date().toISOString()).lte("start_time", new Date(Date.now() + 14 * 86_400_000).toISOString()).order("start_time", { ascending: true }).limit(5),
       ]);
 
       setCalendarConnected(!!calRes.data);
 
-      // Preload Google Identity Services if calendar not connected
       if (!calRes.data && GOOGLE_CLIENT_ID_SET) {
         if (window.google?.accounts) {
           setGsiLoaded(true);
@@ -105,10 +130,23 @@ export function ComingUpWidget() {
       }
       for (const e of eventsRes.data ?? []) {
         if (!e.title) continue;
-        combined.push({ id: `event-${e.id}`, type: e.is_income_event ? "income" : "event", title: e.title, date: e.start_time, amount: e.spending_estimate > 0 ? Number(e.spending_estimate) : undefined });
+        const isIncome = e.event_type === "income" || (e.is_income_event && !e.event_type);
+        const isConfirmedExpense = e.event_type === "expense" && e.user_confirmed;
+
+        combined.push({
+          id: `event-${e.id}`,
+          type: isIncome ? "income" : "event",
+          eventType: e.event_type ?? (isIncome ? "income" : "needs_clarification"),
+          userConfirmed: e.user_confirmed ?? false,
+          title: e.title,
+          date: e.start_time,
+          // Only show amount for confirmed expenses and income events with known amounts
+          amount: isConfirmedExpense && e.spending_estimate > 0
+            ? Number(e.spending_estimate)
+            : undefined,
+        });
       }
 
-      // Sort chronologically
       combined.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
       setItems(combined);
       setLoading(false);
@@ -179,7 +217,10 @@ export function ComingUpWidget() {
       ) : (
         <div className="flex gap-3 overflow-x-auto pb-1" style={{ scrollbarWidth: "none" }}>
           {items.map((item) => {
-            const { bg, text, icon } = TYPE_COLORS[item.type];
+            const { bg, text, icon } = getCardStyle(item);
+            const isEarning = item.eventType === "income" || (item.type === "income" && !item.eventType);
+            const needsClarification = item.eventType === "needs_clarification";
+
             return (
               <div
                 key={item.id}
@@ -190,9 +231,20 @@ export function ComingUpWidget() {
                   <span className={`text-[10px] font-semibold uppercase tracking-wide ${text}`}>
                     {daysLabel(item.date)}
                   </span>
+                  {needsClarification && (
+                    <span className="ml-auto text-[10px] text-amber-400 font-bold">?</span>
+                  )}
                 </div>
                 <p className="text-xs font-medium text-[var(--text-1)] leading-tight truncate">{item.title}</p>
-                {item.amount != null && item.amount > 0 && (
+                {/* Income: show "earning" badge */}
+                {isEarning && item.amount != null && item.amount > 0 && (
+                  <p className={`mt-1 text-sm font-semibold ${text}`}>+{fmt(item.amount)}</p>
+                )}
+                {isEarning && (item.amount == null || item.amount === 0) && (
+                  <p className="mt-1 text-[10px] font-semibold text-emerald-400 uppercase tracking-wide">earning</p>
+                )}
+                {/* Expense: only show if user confirmed */}
+                {!isEarning && !needsClarification && item.amount != null && item.amount > 0 && (
                   <p className={`mt-1 text-sm font-semibold ${text}`}>{fmt(item.amount)}</p>
                 )}
               </div>

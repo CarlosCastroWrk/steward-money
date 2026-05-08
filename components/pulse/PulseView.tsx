@@ -15,13 +15,28 @@ interface FeedItem {
   agent: AgentName;
   headline: string;
   detail: string;
-  priority: number; // lower = higher priority
+  priority: number;
   createdAt: string;
-  context: string; // passed to chat for rich context
+  context: string;
   onDismiss?: () => void;
 }
 
-// Agent brand colors for left border accent
+interface ClarificationChoice {
+  label: string;
+  event_type: string;
+  category: string;
+}
+
+interface ClarificationCard {
+  id: string;
+  card_type: "clarify" | "confirm_expense" | "recurring_pattern";
+  event_cache_id: string;
+  event_title: string;
+  event_date: string;
+  question: string;
+  choices: ClarificationChoice[];
+}
+
 const AGENT_COLOR: Record<AgentName, string> = {
   argus:   "#4da6ff",
   iron:    "#ff6b8a",
@@ -64,7 +79,7 @@ function isWithin(iso: string, filter: DateFilter): boolean {
   return true;
 }
 
-// ─── Individual card ──────────────────────────────────────────────────────────
+// ─── Standard insight card ────────────────────────────────────────────────────
 
 function InsightCard({ item, onTap, index }: { item: FeedItem; onTap: (item: FeedItem) => void; index: number }) {
   const color = AGENT_COLOR[item.agent];
@@ -73,10 +88,7 @@ function InsightCard({ item, onTap, index }: { item: FeedItem; onTap: (item: Fee
       type="button"
       onClick={() => onTap(item)}
       className="w-full text-left rounded-2xl border border-[var(--border)] bg-[var(--bg-card)] overflow-hidden transition-all duration-150 active:scale-[0.98] hover:border-[var(--border-strong)] hover:shadow-sm"
-      style={{
-        animationDelay: `${index * 50}ms`,
-        borderLeft: `3px solid ${color}`,
-      }}
+      style={{ animationDelay: `${index * 50}ms`, borderLeft: `3px solid ${color}` }}
     >
       <div className="px-4 py-4">
         <div className="flex items-start gap-3">
@@ -98,10 +110,109 @@ function InsightCard({ item, onTap, index }: { item: FeedItem; onTap: (item: Fee
   );
 }
 
+// ─── Kairos clarification card (inline action buttons) ────────────────────────
+
+function KairosClarificationCard({
+  card,
+  onResolved,
+  index,
+}: {
+  card: ClarificationCard;
+  onResolved: (cardId: string) => void;
+  index: number;
+}) {
+  const [answering, setAnswering] = useState<string | null>(null);
+  const [done, setDone] = useState(false);
+
+  async function handleChoice(choice: ClarificationChoice) {
+    setAnswering(choice.label);
+    try {
+      await fetch("/api/calendar/confirm", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          event_id: card.event_cache_id,
+          event_type: choice.event_type,
+          category: choice.category,
+        }),
+      });
+
+      // For recurring pattern: confirm all matching events
+      if (card.card_type === "recurring_pattern" && choice.event_type === "income") {
+        await fetch("/api/calendar/confirm", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            event_id: card.event_cache_id,
+            event_type: "income",
+            category: "work",
+          }),
+        });
+      }
+    } catch { /* ignore, card still dismisses */ }
+
+    setDone(true);
+    setTimeout(() => onResolved(card.id), 600);
+  }
+
+  const kairosGreen = "#00ff87";
+
+  if (done) {
+    return (
+      <div
+        className="rounded-2xl border border-[var(--border)] bg-[var(--bg-card)] px-4 py-3 overflow-hidden"
+        style={{ borderLeft: `3px solid ${kairosGreen}` }}
+      >
+        <p className="text-xs text-[var(--text-3)]">Got it — updated.</p>
+      </div>
+    );
+  }
+
+  const subtitleMap = {
+    clarify: "Quick question",
+    confirm_expense: "Heads up",
+    recurring_pattern: "I noticed",
+  };
+
+  return (
+    <div
+      className="rounded-2xl border border-[var(--border)] bg-[var(--bg-card)] overflow-hidden"
+      style={{ animationDelay: `${index * 50}ms`, borderLeft: `3px solid ${kairosGreen}` }}
+    >
+      <div className="px-4 py-4">
+        <div className="flex items-start gap-3 mb-3">
+          <AgentAvatar agent="kairos" size="sm" />
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 mb-1.5">
+              <span className="text-xs font-semibold" style={{ color: kairosGreen }}>Kairos</span>
+              <span className="text-[10px] text-[var(--text-3)]">{subtitleMap[card.card_type]}</span>
+            </div>
+            <p className="text-sm font-medium text-[var(--text-1)] leading-snug">{card.question}</p>
+          </div>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {card.choices.map((choice) => (
+            <button
+              key={choice.label}
+              type="button"
+              onClick={() => handleChoice(choice)}
+              disabled={answering !== null}
+              className="rounded-xl border border-[var(--border)] bg-[var(--bg-elevated)] px-3 py-1.5 text-xs font-medium text-[var(--text-1)] transition-all hover:border-[var(--border-strong)] disabled:opacity-50 active:scale-[0.97]"
+            >
+              {answering === choice.label ? "Saving…" : choice.label}
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 export function PulseView() {
   const [feed, setFeed] = useState<FeedItem[]>([]);
+  const [clarificationCards, setClarificationCards] = useState<ClarificationCard[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<DateFilter>("all");
   const [chatItem, setChatItem] = useState<FeedItem | null>(null);
@@ -280,8 +391,11 @@ export function PulseView() {
       });
     }
 
-    // 9. Kairos — life events + calendar insights — priority 70
+    // 8. Kairos — life events + calendar insights — priority 70
     if (kairosRes.status === "fulfilled") {
+      // Clarification cards — handled separately
+      setClarificationCards(kairosRes.value.clarification_cards ?? []);
+
       // Life events from DB
       const events: Array<{ id: string; event_type: string; event_description: string; created_at?: string }> = kairosRes.value.events ?? [];
       events.forEach((ev) => {
@@ -301,7 +415,7 @@ export function PulseView() {
         });
       });
 
-      // Calendar-based insights from Kairos — shown at higher priority (15) since they're time-sensitive
+      // Calendar-based insights — time-sensitive, shown at priority 15
       const calendarInsights: Array<{ id: string; type: string; headline: string; detail: string; event_date: string; spending_estimate: number }> = kairosRes.value.calendar_insights ?? [];
       calendarInsights.forEach((insight) => {
         items.push({
@@ -309,14 +423,13 @@ export function PulseView() {
           agent: "kairos",
           headline: insight.headline,
           detail: insight.detail,
-          priority: insight.spending_estimate >= 200 ? 8 : 15, // expensive events near Argus in priority
+          priority: insight.spending_estimate >= 200 ? 8 : 15,
           createdAt: insight.event_date,
           context: `Calendar event coming up. Type: ${insight.type}. ${insight.detail} Estimated cost: $${insight.spending_estimate}.`,
         });
       });
     }
 
-    // Sort by priority then by date (most recent first within same priority)
     items.sort((a, b) => a.priority - b.priority || new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
     setFeed(items);
@@ -374,15 +487,15 @@ export function PulseView() {
             else if (dx > 0 && idx > 0) setFilter(FILTER_TABS[idx - 1].id);
           }}
         >
-        <TabPills
-          tabs={[
-            { id: "today", label: "Today" },
-            { id: "week", label: "This Week" },
-            { id: "all", label: "All" },
-          ]}
-          active={filter}
-          onChange={(id) => setFilter(id as DateFilter)}
-        />
+          <TabPills
+            tabs={[
+              { id: "today", label: "Today" },
+              { id: "week", label: "This Week" },
+              { id: "all", label: "All" },
+            ]}
+            active={filter}
+            onChange={(id) => setFilter(id as DateFilter)}
+          />
         </div>
 
         {/* Loading skeletons */}
@@ -390,6 +503,20 @@ export function PulseView() {
           <div className="space-y-3">
             {[1, 2, 3, 4].map((i) => (
               <div key={i} className="h-24 w-full rounded-2xl bg-[var(--bg-elevated)] shimmer" />
+            ))}
+          </div>
+        )}
+
+        {/* Kairos clarification cards — always show, above the feed */}
+        {!loading && clarificationCards.length > 0 && (
+          <div className="space-y-3">
+            {clarificationCards.map((card, index) => (
+              <KairosClarificationCard
+                key={card.id}
+                card={card}
+                index={index}
+                onResolved={(id) => setClarificationCards((prev) => prev.filter((c) => c.id !== id))}
+              />
             ))}
           </div>
         )}
@@ -404,7 +531,7 @@ export function PulseView() {
         )}
 
         {/* Empty state */}
-        {!loading && visible.length === 0 && (
+        {!loading && visible.length === 0 && clarificationCards.length === 0 && (
           <div className="rounded-2xl border border-dashed border-[var(--border)] p-10 text-center">
             <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-[var(--bg-elevated)] text-[var(--text-3)]">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="h-5 w-5">

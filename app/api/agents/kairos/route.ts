@@ -12,8 +12,23 @@ type KairosEvent = {
   new_value?: Record<string, unknown>;
 };
 
+interface ClarificationChoice {
+  label: string;
+  event_type: string;
+  category: string;
+}
+
+interface ClarificationCard {
+  id: string;
+  card_type: "clarify" | "confirm_expense" | "recurring_pattern";
+  event_cache_id: string;
+  event_title: string;
+  event_date: string;
+  question: string;
+  choices: ClarificationChoice[];
+}
+
 async function detectKairosEvents(supabase: ReturnType<typeof createClient>, userId: string): Promise<KairosEvent[]> {
-  const sixtyDaysAgo = new Date(Date.now() - 60 * 86_400_000).toISOString().split("T")[0];
   const sevenDaysAgo = new Date(Date.now() - 7 * 86_400_000).toISOString().split("T")[0];
   const today = new Date().toISOString().split("T")[0];
 
@@ -25,9 +40,11 @@ async function detectKairosEvents(supabase: ReturnType<typeof createClient>, use
     supabase.from("transactions").select("amount").eq("user_id", userId).lt("amount", 0).gte("date", new Date(new Date().getFullYear(), new Date().getMonth() - 1, 1).toISOString().split("T")[0]).lt("date", new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split("T")[0]),
   ]);
 
+  // suppress unused var warning
+  void incomeRes; void today;
+
   const events: KairosEvent[] = [];
 
-  // Check: goal completed
   for (const g of goalsRes.data ?? []) {
     if (g.current_amount >= g.target_amount && g.target_amount > 0) {
       events.push({
@@ -39,7 +56,6 @@ async function detectKairosEvents(supabase: ReturnType<typeof createClient>, use
     }
   }
 
-  // Check: safe-to-spend negative 7+ consecutive days
   const negativeDays = (safeRes.data ?? []).filter((t) => Number(t.amount) < 0);
   if (negativeDays.length >= 7) {
     events.push({
@@ -49,7 +65,6 @@ async function detectKairosEvents(supabase: ReturnType<typeof createClient>, use
     });
   }
 
-  // Check: monthly spending shift > 35%
   const thisMonthTotal = (monthlySpendRes.data ?? []).reduce((s, t) => s + Math.abs(Number(t.amount)), 0);
   const priorMonthTotal = (priorMonthSpendRes.data ?? []).reduce((s, t) => s + Math.abs(Number(t.amount)), 0);
   if (priorMonthTotal > 0 && Math.abs(thisMonthTotal - priorMonthTotal) / priorMonthTotal > 0.35) {
@@ -65,6 +80,14 @@ async function detectKairosEvents(supabase: ReturnType<typeof createClient>, use
   return events;
 }
 
+function buildClarifyQuestion(title: string, dateLabel: string): string {
+  return `You have "${title}" ${dateLabel}. Are you working that one or attending?`;
+}
+
+function buildExpenseQuestion(title: string, dateLabel: string): string {
+  return `"${title}" is coming up ${dateLabel}. Do you usually pay out of pocket for this?`;
+}
+
 export async function POST(req: NextRequest) {
   const supabase = createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -76,11 +99,7 @@ export async function POST(req: NextRequest) {
   const events: KairosEvent[] = [];
 
   if (manualReason) {
-    events.push({
-      user_id: user.id,
-      event_type: "user_triggered",
-      event_description: manualReason,
-    });
+    events.push({ user_id: user.id, event_type: "user_triggered", event_description: manualReason });
   } else {
     const detected = await detectKairosEvents(supabase, user.id);
     events.push(...detected);
@@ -109,50 +128,52 @@ export async function GET() {
     getUpcomingEvents(supabase, user.id, 21),
   ]);
 
-  // Build calendar-based Kairos insights
+  const now = Date.now();
+
+  // ── Calendar insights (confirmed events only) ───────────────────────────
   const calendarInsights: Array<{
     id: string; type: string; headline: string; detail: string; event_date: string; spending_estimate: number;
   }> = [];
 
-  const now = Date.now();
-
   for (const event of calendarEvents) {
-    const daysAway = Math.ceil((new Date(event.start_time).getTime() - now) / 86_400_000);
-    const dateLabel = formatDate(event.start_time.split("T")[0]);
-
     if (!event.title) continue;
 
-    if (event.spending_estimate >= 100) {
+    const daysAway = Math.ceil((new Date(event.start_time).getTime() - now) / 86_400_000);
+    const dateLabel = formatDate(event.start_time.split("T")[0]);
+    const isConfirmedExpense = event.event_type === "expense" && event.user_confirmed;
+    const isIncome = event.event_type === "income" || event.is_income_event;
+
+    if (isConfirmedExpense && event.spending_estimate >= 100) {
       calendarInsights.push({
         id: `cal-${event.id}`,
         type: "big_expense",
-        headline: `⏳ ${event.title} in ${daysAway} day${daysAway !== 1 ? "s" : ""} · est. $${event.spending_estimate.toFixed(0)}`,
-        detail: `${dateLabel}${event.analysis_notes ? ` — ${event.analysis_notes}` : ""}`,
+        headline: `${event.title} in ${daysAway} day${daysAway !== 1 ? "s" : ""} · ~$${event.spending_estimate.toFixed(0)}`,
+        detail: `${dateLabel}${event.analysis_notes ? ` — ${event.analysis_notes}` : ""}. Want to plan ahead?`,
         event_date: event.start_time,
         spending_estimate: event.spending_estimate,
       });
-    } else if (event.category === "travel") {
+    } else if (isIncome) {
+      calendarInsights.push({
+        id: `cal-${event.id}`,
+        type: "income_event",
+        headline: `${event.title} · ${dateLabel}`,
+        detail: "Work event coming up. Any prep needed?",
+        event_date: event.start_time,
+        spending_estimate: 0,
+      });
+    } else if (event.category === "travel" && isConfirmedExpense) {
       calendarInsights.push({
         id: `cal-${event.id}`,
         type: "travel",
-        headline: `⏳ ${event.title} · ${dateLabel}`,
+        headline: `${event.title} · ${dateLabel}`,
         detail: "Travel weeks tend to run higher than normal. Want to plan ahead?",
-        event_date: event.start_time,
-        spending_estimate: event.spending_estimate,
-      });
-    } else if (event.category === "gift" || event.category === "family") {
-      calendarInsights.push({
-        id: `cal-${event.id}`,
-        type: "gift",
-        headline: `⏳ ${event.title} · ${dateLabel}`,
-        detail: "Want help planning a gift budget?",
         event_date: event.start_time,
         spending_estimate: event.spending_estimate,
       });
     }
   }
 
-  // One "busy season" card if 5+ events in next 14 days
+  // Busy season card — only if enough events in next 14 days
   const busyEvents = calendarEvents.filter((e) => {
     const days = (new Date(e.start_time).getTime() - now) / 86_400_000;
     return days >= 0 && days <= 14;
@@ -161,11 +182,87 @@ export async function GET() {
     calendarInsights.push({
       id: "cal-busy-season",
       type: "busy_season",
-      headline: `You've got ${busyEvents.length} events in the next 2 weeks. That's a busy season.`,
+      headline: `You've got ${busyEvents.length} events in the next 2 weeks`,
       detail: "Busy schedules usually mean unplanned spending. Want to review your buffer?",
       event_date: busyEvents[0].start_time,
       spending_estimate: 0,
     });
+  }
+
+  // ── Clarification cards for ambiguous events ────────────────────────────
+  const clarificationCards: ClarificationCard[] = [];
+
+  // Find events needing clarification in the next 14 days
+  const ambiguousEvents = calendarEvents.filter((e) =>
+    e.title &&
+    !e.user_confirmed &&
+    (new Date(e.start_time).getTime() - now) / 86_400_000 <= 14 &&
+    (e.event_type === "needs_clarification" || (e.event_type === "expense" && !e.user_confirmed))
+  );
+
+  for (const event of ambiguousEvents.slice(0, 3)) {
+    if (!event.title) continue;
+    const dateLabel = formatDate(event.start_time.split("T")[0]).toLowerCase();
+
+    if (event.event_type === "needs_clarification") {
+      clarificationCards.push({
+        id: `clarify-${event.id}`,
+        card_type: "clarify",
+        event_cache_id: event.id,
+        event_title: event.title,
+        event_date: event.start_time,
+        question: buildClarifyQuestion(event.title, dateLabel),
+        choices: [
+          { label: "Working — I get paid", event_type: "income", category: "work" },
+          { label: "Attending — might spend", event_type: "expense", category: "entertainment" },
+          { label: "Just a hangout", event_type: "social", category: "social" },
+        ],
+      });
+    } else if (event.event_type === "expense" && !event.user_confirmed) {
+      clarificationCards.push({
+        id: `clarify-${event.id}`,
+        card_type: "confirm_expense",
+        event_cache_id: event.id,
+        event_title: event.title,
+        event_date: event.start_time,
+        question: buildExpenseQuestion(event.title, dateLabel),
+        choices: [
+          { label: "Yes, out of pocket", event_type: "expense", category: event.category ?? "health" },
+          { label: "Covered / free", event_type: "personal", category: "personal" },
+          { label: "Not sure", event_type: "needs_clarification", category: "other" },
+        ],
+      });
+    }
+  }
+
+  // Recurring pattern card: 3+ unconfirmed events with the same first word
+  const titleGroups: Map<string, typeof calendarEvents> = new Map();
+  for (const e of calendarEvents) {
+    if (!e.title || e.user_confirmed) continue;
+    const key = e.title.split(/\s+/)[0].toLowerCase();
+    if (key.length < 3) continue;
+    const existing = titleGroups.get(key) ?? [];
+    existing.push(e);
+    titleGroups.set(key, existing);
+  }
+
+  for (const [key, group] of titleGroups.entries()) {
+    if (group.length >= 3 && clarificationCards.length < 4) {
+      const sample = group[0];
+      clarificationCards.push({
+        id: `pattern-${key}`,
+        card_type: "recurring_pattern",
+        event_cache_id: sample.id,
+        event_title: sample.title ?? key,
+        event_date: sample.start_time,
+        question: `You have ${group.length} "${sample.title?.split(/\s+/)[0] ?? key}" events coming up. Want me to track all of these as work?`,
+        choices: [
+          { label: "Yes — all work", event_type: "income", category: "work" },
+          { label: "No — ask each time", event_type: "needs_clarification", category: "other" },
+        ],
+      });
+      break; // one pattern card max
+    }
   }
 
   return NextResponse.json({
@@ -173,6 +270,7 @@ export async function GET() {
     last_plan_review: settingsRes.data?.last_plan_review ?? null,
     events: lifeEventsRes.data ?? [],
     calendar_insights: calendarInsights.slice(0, 4),
+    clarification_cards: clarificationCards,
   });
 }
 

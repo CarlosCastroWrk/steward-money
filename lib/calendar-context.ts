@@ -11,6 +11,9 @@ export interface CalendarEvent {
   is_income_event: boolean;
   analysis_notes: string | null;
   location: string | null;
+  event_type: "income" | "expense" | "social" | "personal" | "needs_clarification" | null;
+  confidence: "high" | "medium" | "low" | null;
+  user_confirmed: boolean;
 }
 
 export async function getUpcomingEvents(
@@ -31,7 +34,7 @@ export async function getUpcomingEvents(
 
   const { data } = await supabase
     .from("calendar_events_cache")
-    .select("id, title, start_time, spending_estimate, financial_relevance_score, category, is_income_event, analysis_notes, location")
+    .select("id, title, start_time, spending_estimate, financial_relevance_score, category, is_income_event, analysis_notes, location, event_type, confidence, user_confirmed")
     .eq("user_id", userId)
     .gte("start_time", now)
     .lte("start_time", future)
@@ -41,16 +44,21 @@ export async function getUpcomingEvents(
   return (data ?? []) as CalendarEvent[];
 }
 
-// Builds a terse plain-text summary for injecting into agent system prompts
+// Builds a terse plain-text summary for agent system prompts.
+// Only surfaces confirmed costs — doesn't guess on ambiguous events.
 export function formatCalendarContextForAgent(events: CalendarEvent[]): string {
   if (events.length === 0) return "";
 
   const lines = events.map((e) => {
     const dateStr = formatDate(e.start_time.split("T")[0]);
-    const costStr = e.spending_estimate > 0 ? ` (est. $${e.spending_estimate.toFixed(0)})` : "";
+    const isIncome = e.event_type === "income" || e.is_income_event;
+    const isConfirmedExpense = e.event_type === "expense" && e.user_confirmed;
+    const costStr = isConfirmedExpense && e.spending_estimate > 0
+      ? ` (confirmed ~$${e.spending_estimate.toFixed(0)})`
+      : isIncome ? " (earning)" : "";
     const notesStr = e.analysis_notes ? ` — ${e.analysis_notes}` : "";
     return `- ${e.title ?? "Untitled event"} · ${dateStr}${costStr}${notesStr}`;
   });
 
-  return `UPCOMING CALENDAR EVENTS (next ${Math.ceil((new Date(events[events.length - 1].start_time).getTime() - Date.now()) / 86_400_000)} days):\n${lines.join("\n")}\n\nWhen relevant, reference these events naturally. Don't list them unprompted — weave them in when they connect to what the user is asking about.`;
+  return `UPCOMING CALENDAR EVENTS (next ${Math.ceil((new Date(events[events.length - 1].start_time).getTime() - Date.now()) / 86_400_000)} days):\n${lines.join("\n")}\n\nWhen referencing these events, ask before assuming financial impact. You know the user does BallerTV (usually work) and HEB shifts (work). For other events, ask rather than guess.`;
 }
