@@ -4,6 +4,7 @@ import { usePathname } from "next/navigation";
 import { Sidebar } from "./Sidebar";
 import { BottomNav } from "./BottomNav";
 import { Luka } from "./Luka";
+import { AgentChatPortal } from "./agents/AgentChatPortal";
 import { NotificationBell } from "./NotificationBell";
 import { SessionGuard } from "./security/SessionGuard";
 import { SyncOnFocus } from "./SyncOnFocus";
@@ -37,6 +38,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <NotificationBell align="right" />
       </div>
       <Luka />
+      <AgentChatPortal />
       <SessionGuard />
       <SyncOnFocus />
     </>

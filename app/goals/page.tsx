@@ -2,6 +2,7 @@ import { Metadata } from "next";
 export const metadata: Metadata = { title: "Goals" };
 import { createClient } from "@/lib/supabase/server";
 import { GoalsView } from "@/components/goals/GoalsView";
+import { BackButton } from "@/components/BackButton";
 
 export default async function GoalsPage() {
   const supabase = createClient();
@@ -16,5 +17,10 @@ export default async function GoalsPage() {
     .eq("user_id", user.id)
     .order("priority", { ascending: true });
 
-  return <GoalsView goals={data ?? []} />;
+  return (
+    <>
+      <div className="px-4 pt-4 md:px-8 md:pt-8"><BackButton /></div>
+      <GoalsView goals={data ?? []} />
+    </>
+  );
 }

@@ -247,7 +247,11 @@ export function ComingUpWidget() {
             <p className="text-sm text-[var(--text-3)]">Clear skies for the next two weeks.</p>
           </div>
         ) : (
-          <div className="flex gap-3 overflow-x-auto pb-1" style={{ scrollbarWidth: "none" }}>
+          <div
+            className="flex gap-3 overflow-x-auto pb-1 w-full"
+            style={{ scrollbarWidth: "none", touchAction: "pan-x" }}
+            onPointerDown={(e) => e.stopPropagation()}
+          >
             {items.map((item) => {
               const { bg, text, icon } = getCardStyle(item);
               const isEarning = item.eventType === "income" || (item.type === "income" && !item.eventType);

@@ -3,6 +3,7 @@ export const metadata: Metadata = { title: "Settings" };
 import { createClient } from "@/lib/supabase/server";
 import { advanceStaleIncomeDates } from "@/lib/income";
 import { SettingsView } from "@/components/settings/SettingsView";
+import { BackButton } from "@/components/BackButton";
 
 export default async function SettingsPage() {
   const supabase = createClient();
@@ -41,6 +42,7 @@ export default async function SettingsPage() {
 
   return (
     <>
+      <div className="px-4 pt-4 md:px-8 md:pt-8"><BackButton /></div>
       <SettingsView
         settings={settingsResult.data ?? null}
         incomeSources={incomeResult.data ?? []}

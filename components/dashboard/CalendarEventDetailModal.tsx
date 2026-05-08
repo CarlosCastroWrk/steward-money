@@ -222,10 +222,18 @@ export function CalendarEventDetailModal({ event, onClose, onUpdated }: Props) {
               </button>
               <button
                 type="button"
-                onClick={() => openLuka(`I have "${event.title}" coming up. I'm not sure how to categorize it or prepare financially. Can you help me think through it?`)}
+                onClick={() => {
+                  window.dispatchEvent(new CustomEvent("agentchat:open", {
+                    detail: {
+                      agent: "kairos",
+                      prefill: `I have "${event.title}" coming up on ${formatEventDate(event.date)}. I'm not sure how to categorize it or prepare financially. Can you help me think through it?`,
+                    },
+                  }));
+                  onClose();
+                }}
                 className="w-full flex items-center gap-3 rounded-xl border border-[var(--border)] bg-[var(--bg-elevated)] px-4 py-3 text-sm font-medium text-[var(--text-2)] transition hover:border-[var(--border-strong)]"
               >
-                <span className="text-base leading-none">🔮</span>
+                <span className="text-base leading-none">🌿</span>
                 Ask Kairos
               </button>
             </div>

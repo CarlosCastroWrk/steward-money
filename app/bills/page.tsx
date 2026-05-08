@@ -3,6 +3,7 @@ export const metadata: Metadata = { title: "Expenses" };
 
 import { createClient } from "@/lib/supabase/server";
 import { ExpensesView } from "@/components/bills/ExpensesView";
+import { BackButton } from "@/components/BackButton";
 
 function toMonthly(amount: number, freq: string): number {
   switch (freq) {
@@ -55,12 +56,15 @@ export default async function ExpensesPage() {
   const monthlyIncome = (incomeRes.data ?? []).reduce((s, src) => s + toMonthly(Number(src.amount), src.frequency), 0);
 
   return (
-    <ExpensesView
+    <>
+      <div className="px-4 pt-4 md:px-8 md:pt-8"><BackButton /></div>
+      <ExpensesView
       bills={bills}
       accounts={accountsRes.data ?? []}
       monthSummary={{ totalDue, paidTotal, stillOwed, nextBill }}
       upcomingExpenses={upcomingRes.data ?? []}
       monthlyIncome={monthlyIncome}
     />
+    </>
   );
 }

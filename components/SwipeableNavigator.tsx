@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 
-const NAV_ROUTES = ["/", "/pulse", "/transactions", "/accounts"];
+const NAV_ROUTES = ["/", "/pulse", "/transactions", "/accounts", "/more"];
 
 const SWIPE_DISABLED_PREFIXES = [
   "/merchant/",
@@ -14,6 +14,8 @@ const SWIPE_DISABLED_PREFIXES = [
   "/login",
   "/signup",
   "/auth/",
+  "/more/usage",
+  "/more/integrations",
 ];
 
 const slideVariants = {

@@ -63,7 +63,11 @@ export function BottomNav() {
           {/* More */}
           <button
             type="button"
-            onClick={() => router.push("/more")}
+            onClick={() => {
+              const dir = currentNavIndex >= 0 ? 1 : 0;
+              window.dispatchEvent(new CustomEvent("nav:direction", { detail: { direction: dir } }));
+              router.push("/more");
+            }}
             className={`flex flex-1 flex-col items-center justify-center gap-0.5 rounded-xl py-2.5 text-[10px] font-medium transition-all duration-150 ${
               isMoreActive ? "text-[var(--accent)]" : "text-[var(--text-muted)] hover:text-[var(--text-secondary)]"
             }`}

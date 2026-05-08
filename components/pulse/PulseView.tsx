@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { AgentAvatar } from "@/components/AgentAvatar";
-import { AgentChatModal } from "./AgentChatModal";
 import { TabPills } from "@/components/ui/TabPills";
 import { createClient } from "@/lib/supabase/client";
 import { formatUSD } from "@/lib/format";
@@ -283,7 +282,11 @@ export function PulseView() {
   const [selectedCalEvent, setSelectedCalEvent] = useState<CalendarEvent | null>(null);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<DateFilter>("all");
-  const [chatItem, setChatItem] = useState<FeedItem | null>(null);
+  function openAgentChat(item: FeedItem) {
+    window.dispatchEvent(new CustomEvent("agentchat:open", {
+      detail: { agent: item.agent, context: item.context },
+    }));
+  }
   const [refreshing, setRefreshing] = useState(false);
 
   const loadAll = useCallback(async () => {
@@ -646,7 +649,7 @@ export function PulseView() {
           {!loading && visible.length > 0 && (
             <div className="space-y-3">
               {visible.map((item, index) => (
-                <InsightCard key={item.id} item={item} onTap={setChatItem} index={index} />
+                <InsightCard key={item.id} item={item} onTap={openAgentChat} index={index} />
               ))}
             </div>
           )}
@@ -685,15 +688,6 @@ export function PulseView() {
         />
       )}
 
-      {/* Agent chat overlay */}
-      {chatItem && (
-        <AgentChatModal
-          agent={chatItem.agent}
-          initialMessage={chatItem.headline}
-          context={chatItem.context}
-          onClose={() => setChatItem(null)}
-        />
-      )}
     </>
   );
 }

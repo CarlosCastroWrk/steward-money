@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { CreditCard, TrendingUp, Users, Target, FileText, RefreshCw, Settings, Plug, LogOut, ChevronRight } from "lucide-react";
+import { CreditCard, TrendingUp, Users, Target, FileText, RefreshCw, Settings, Plug, BarChart2, LogOut, ChevronRight } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { ThemeToggle } from "@/components/ThemeToggle";
 
@@ -25,8 +25,9 @@ const SECTIONS = [
   {
     title: "Account",
     items: [
-      { label: "Settings",     href: "/settings",     icon: <Settings size={18} strokeWidth={1.6} /> },
-      { label: "Integrations", href: "/settings",      icon: <Plug size={18} strokeWidth={1.6} /> },
+      { label: "Settings",     href: "/settings",            icon: <Settings  size={18} strokeWidth={1.6} /> },
+      { label: "Integrations", href: "/more/integrations",   icon: <Plug      size={18} strokeWidth={1.6} /> },
+      { label: "API Usage",    href: "/more/usage",          icon: <BarChart2 size={18} strokeWidth={1.6} /> },
     ],
   },
 ];
@@ -53,7 +54,7 @@ export default function MorePage() {
             <div className="rounded-2xl border border-[var(--border)] bg-[var(--bg-card)] overflow-hidden">
               {section.items.map((item, i) => (
                 <button
-                  key={item.href}
+                  key={item.href + item.label}
                   type="button"
                   onClick={() => router.push(item.href)}
                   className={`flex w-full items-center gap-3 px-4 py-4 text-left transition-colors hover:bg-[var(--bg-elevated)] active:bg-[var(--bg-elevated)] ${

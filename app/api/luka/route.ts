@@ -7,6 +7,7 @@ import { summarizeAgentMemoriesForLuka } from "@/lib/agent-memory";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { getIncompleteSetup } from "@/lib/progressive-setup";
 import { getUpcomingEvents, formatCalendarContextForAgent } from "@/lib/calendar-context";
+import { logAgentUsage } from "@/lib/agents/log-usage";
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
@@ -662,6 +663,7 @@ If the user mentions a significant life change (new job, moving, relationship ch
 
     if (response.stop_reason === "end_turn" || response.stop_reason === "max_tokens") {
       const text = response.content.find((c) => c.type === "text");
+      logAgentUsage(supabase, user.id, "luka", "claude-sonnet-4-6", response.usage.input_tokens, response.usage.output_tokens).catch(() => {});
       return NextResponse.json({ reply: text?.text ?? "…", refreshNeeded, actions });
     }
 

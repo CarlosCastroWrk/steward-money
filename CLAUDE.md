@@ -86,6 +86,9 @@ Migrations in `supabase/migrations/`. Key tables:
 - `pulse_insights` — written by Silas. Dismissed per-row in DB (not localStorage).
 - `weekly_reports` — one per user per `week_start` date. Upserted each Sunday.
 - `life_events` — append-only log written by Kairos. Cleared via `acknowledged = true`.
+- `calendar_connections` — one row per user when Google Calendar is linked. Stores `access_token`, `refresh_token`, `expires_at`.
+- `calendar_events_cache` — cached Google Calendar events. Key columns: `event_type` ("income" | "expense" | "social" | "personal" | "needs_clarification"), `confidence` ("high" | "medium" | "low"), `user_confirmed` (boolean), `user_categorized_as` (user's own label), `spending_estimate` (only meaningful when `event_type=expense` AND `user_confirmed=true`). Never show `spending_estimate` as a cost unless both conditions hold.
+- `calendar_patterns` — learned per-user patterns. When a user confirms 3+ events with the same keyword as the same type, a pattern row is created so future events with that keyword are auto-categorized without AI.
 - `nova_messages`, `manna_daily`, `commitments`, `commitment_checkins`, `vision_moments`, `echo_memories`, `agent_memories` — written by newer agents.
 
 RLS is enabled on all tables — every policy uses `auth.uid() = user_id`.
@@ -151,9 +154,34 @@ NEXT_PUBLIC_APP_URL             # Full app URL for email links (e.g. https://ste
 
 # Google Calendar (optional)
 NEXT_PUBLIC_GOOGLE_CLIENT_ID    # From console.cloud.google.com OAuth credentials
-GOOGLE_CLIENT_SECRET            # Same source — set redirect URI in Google Cloud Console:
-                                #   steward-money-w8m8.vercel.app/api/calendar/callback
+GOOGLE_CLIENT_SECRET            # Same source. Uses GSI implicit token flow — register
+                                # JavaScript Origins in Google Cloud Console (no redirect URI needed).
+                                # Hit /api/calendar/diagnostic for exact setup instructions.
 ```
+
+### Google Calendar Integration
+
+Uses the **GSI implicit token flow** (not OAuth redirect). Only JavaScript Origins need to be registered in Google Cloud Console — no redirect URI.
+
+Calendar routes under `/api/calendar/`:
+- `connect` — POST: saves access token; GET: checks connection status
+- `sync` — POST: fetches events from Google, classifies with claude-haiku-4-5-20251001, upserts to cache. Checks `calendar_patterns` first — matched events skip AI. GET: returns cached upcoming events.
+- `confirm` — POST: `{ event_id, event_type, category, cost_estimate? }` — marks an event as user-confirmed and checks if a new pattern should be learned (threshold: 3 confirmed events with same keyword).
+- `status` — GET: returns connection status + upcoming event count.
+- `diagnostic` — GET: returns setup instructions and required JavaScript Origins.
+- `auto-sync` — cron-only (requires `x-vercel-cron: 1`), runs daily.
+
+`lib/calendar-context.ts` — `getUpcomingEvents()` + `formatCalendarContextForAgent()`. The format function only surfaces confirmed costs in agent system prompts — never guesses.
+
+**Kairos GET** (`/api/agents/kairos`) returns `clarification_cards` — a list of structured questions for ambiguous events in the next 14 days. Three card types: `clarify` (working or attending?), `confirm_expense` (out of pocket?), `recurring_pattern` (track all as work?). PulseView renders these as `KairosClarificationCard` with inline choice buttons that POST to `/api/calendar/confirm`.
+
+**ComingUpWidget display rules for calendar events:**
+- `event_type=income`: green tint, "earning" badge or `+$X` if amount known
+- `event_type=expense` + `user_confirmed=true`: red/amber tint, show cost
+- `event_type=expense` + not confirmed: neutral, no cost
+- `event_type=social`: blue tint, no cost
+- `event_type=personal`: neutral, no cost
+- `event_type=needs_clarification`: amber tint, `?` badge, no cost
 
 ### Plaid Integration
 
