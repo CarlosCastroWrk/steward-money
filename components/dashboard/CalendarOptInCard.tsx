@@ -1,10 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 
 const DISMISS_KEY = "calendar_optin_dismissed_until";
 
 export function CalendarOptInCard() {
+  const router = useRouter();
   const [visible, setVisible] = useState(false);
   const [connected, setConnected] = useState(false);
   const [connecting, setConnecting] = useState(false);
@@ -69,7 +71,7 @@ export function CalendarOptInCard() {
         setConnected(true);
         setShowConfirm(true);
         setConnecting(false);
-        // Hide confirmation after 24h (store in localStorage)
+        router.refresh();
         setTimeout(() => setShowConfirm(false), 4000);
       },
     });

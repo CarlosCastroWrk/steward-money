@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
 interface ComingItem {
@@ -49,6 +50,7 @@ declare global {
 }
 
 export function ComingUpWidget() {
+  const router = useRouter();
   const [items, setItems] = useState<ComingItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [calendarConnected, setCalendarConnected] = useState<boolean | null>(null);
@@ -134,7 +136,9 @@ export function ComingUpWidget() {
         });
         await fetch("/api/calendar/sync", { method: "POST" });
         setCalJustConnected(true);
+        setCalendarConnected(true);
         setCalConnecting(false);
+        router.refresh();
       },
     });
     client.requestAccessToken();
