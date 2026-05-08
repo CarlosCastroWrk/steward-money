@@ -30,7 +30,7 @@
     },
     {
       "path": "/api/calendar/auto-sync",
-      "schedule": "0 * * * *"
+      "schedule": "0 7 * * *"
     }
   ]
 }
