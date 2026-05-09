@@ -40,17 +40,17 @@ export async function POST(req: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const { data: items } = await supabase.from("plaid_items").select("id, access_token").eq("user_id", user.id);
+  const { data: items } = await supabase
+    .from("plaid_items")
+    .select("id, access_token, plaid_cursor")
+    .eq("user_id", user.id);
   if (!items?.length) return NextResponse.json({ accounts_updated: 0, transactions_synced: 0 });
 
   const now = new Date().toISOString();
   const body = await req.text().catch(() => "");
   let parsedBody: Record<string, unknown> = {};
   try { parsedBody = body ? JSON.parse(body) : {}; } catch { /* ignore */ }
-  const deep = parsedBody.deep === true;
-
-  const endDate = new Date().toISOString().split("T")[0];
-  const startDate = new Date(Date.now() - (deep ? 90 : 30) * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
+  const resetCursors = parsedBody.reset_cursors === true;
 
   const { data: savedAccounts } = await supabase.from("accounts").select("id, plaid_account_id").eq("user_id", user.id).not("plaid_account_id", "is", null);
   const accountIdMap = Object.fromEntries((savedAccounts ?? []).map((a) => [a.plaid_account_id, a.id]));
@@ -87,73 +87,123 @@ export async function POST(req: NextRequest) {
         }
       }
 
-      const txRes = await plaidClient.transactionsGet({ access_token: item.access_token, start_date: startDate, end_date: endDate });
-      const rawCategory = (tx: typeof txRes.data.transactions[0]) => tx.personal_finance_category?.primary ?? tx.category?.[0] ?? null;
+      // cursor-based incremental sync — only fetches transactions new since last sync
+      let cursor: string | undefined = resetCursors ? undefined : (item.plaid_cursor ?? undefined);
+      console.log(`[sync] item ${item.id} — starting cursor: ${cursor ?? "(none, full refresh)"}`);
 
-      const txRows = txRes.data.transactions.map((tx) => {
-        const cat = rawCategory(tx);
-        return {
-          user_id: user.id,
-          account_id: accountIdMap[tx.account_id] ?? null,
-          date: tx.date,
-          merchant: cleanName(tx.merchant_name ?? tx.name),
-          amount: -(tx.amount),
-          category: mapCategory(cat),
-          is_need: inferIsNeed(cat),
-          is_manual: false,
-          is_pending: tx.pending ?? false,
-          plaid_transaction_id: tx.transaction_id,
-        };
-      });
+      let addedCount = 0;
+      let modifiedCount = 0;
+      let removedCount = 0;
+      let hasMore = true;
 
-      if (txRows.length > 0) {
-        // Upsert posted transactions; for pending ones use ignoreDuplicates so
-        // a newly-settled tx doesn't get blocked by a stale pending row.
-        const posted  = txRows.filter((r) => !r.is_pending);
-        const pending = txRows.filter((r) => r.is_pending);
+      while (hasMore) {
+        const txRes = await plaidClient.transactionsSync({
+          access_token: item.access_token,
+          cursor,
+          count: 500,
+        });
 
-        if (posted.length > 0) {
-          await supabase.from("transactions").upsert(posted, { onConflict: "plaid_transaction_id", ignoreDuplicates: false });
-        }
-        if (pending.length > 0) {
-          await supabase.from("transactions").upsert(pending, { onConflict: "plaid_transaction_id", ignoreDuplicates: true });
-        }
+        const { added, modified, removed, next_cursor, has_more } = txRes.data;
+        hasMore = has_more;
 
-        // When a pending tx settles, Plaid issues a new transaction_id.
-        // Remove any pending rows that match a now-posted tx by amount + date.
-        if (posted.length > 0) {
-          const { data: stalePending } = await supabase
-            .from("transactions")
-            .select("id, amount, date")
-            .eq("user_id", user.id)
-            .eq("is_pending", true)
-            .eq("is_manual", false);
+        console.log(`[sync] item ${item.id} — batch: added=${added.length} modified=${modified.length} removed=${removed.length} has_more=${has_more}`);
 
-          if (stalePending?.length) {
-            const toDelete: string[] = [];
-            for (const p of posted) {
-              const match = stalePending.find((s) =>
-                !toDelete.includes(s.id) &&
-                Math.abs(Number(s.amount) - p.amount) < 0.02 &&
-                s.date === p.date
-              );
-              if (match) toDelete.push(match.id);
-            }
-            if (toDelete.length > 0) {
-              await supabase.from("transactions").delete().in("id", toDelete);
+        const toUpsert = [...added, ...modified].map((tx) => {
+          const cat = tx.personal_finance_category?.primary ?? (tx.category?.[0] ?? null);
+          return {
+            user_id: user.id,
+            account_id: accountIdMap[tx.account_id] ?? null,
+            date: tx.date,
+            merchant: cleanName(tx.merchant_name ?? tx.name),
+            amount: -(tx.amount),
+            category: mapCategory(cat),
+            is_need: inferIsNeed(cat),
+            is_manual: false,
+            is_pending: tx.pending ?? false,
+            plaid_transaction_id: tx.transaction_id,
+          };
+        });
+
+        if (toUpsert.length > 0) {
+          const posted  = toUpsert.filter((r) => !r.is_pending);
+          const pending = toUpsert.filter((r) => r.is_pending);
+
+          if (posted.length > 0) {
+            const { error: upsertErr } = await supabase
+              .from("transactions")
+              .upsert(posted, { onConflict: "plaid_transaction_id", ignoreDuplicates: false });
+            if (upsertErr) console.error(`[sync] upsert posted failed: ${upsertErr.message}`);
+          }
+          if (pending.length > 0) {
+            const { error: upsertErr } = await supabase
+              .from("transactions")
+              .upsert(pending, { onConflict: "plaid_transaction_id", ignoreDuplicates: true });
+            if (upsertErr) console.error(`[sync] upsert pending failed: ${upsertErr.message}`);
+          }
+
+          // Remove stale pending rows when posted transactions settle with a new plaid_transaction_id.
+          // Plaid issues a new transaction_id on settlement — match by amount + date to find orphaned pending rows.
+          if (posted.length > 0) {
+            const { data: stalePending } = await supabase
+              .from("transactions")
+              .select("id, amount, date")
+              .eq("user_id", user.id)
+              .eq("is_pending", true)
+              .eq("is_manual", false);
+
+            if (stalePending?.length) {
+              const toDelete: string[] = [];
+              for (const p of posted) {
+                const match = stalePending.find((s) =>
+                  !toDelete.includes(s.id) &&
+                  Math.abs(Number(s.amount) - p.amount) < 0.02 &&
+                  s.date === p.date
+                );
+                if (match) toDelete.push(match.id);
+              }
+              if (toDelete.length > 0) {
+                await supabase.from("transactions").delete().in("id", toDelete);
+                console.log(`[sync] removed ${toDelete.length} stale pending rows`);
+              }
             }
           }
+
+          addedCount += added.length;
+          modifiedCount += modified.length;
+          allNewTx.push(...posted.filter((t) => added.some((a) => a.transaction_id === t.plaid_transaction_id)).map((t) => ({ merchant: t.merchant, amount: t.amount, date: t.date })));
         }
 
-        transactionsSynced += txRows.length;
-        allNewTx.push(...posted.map((t) => ({ merchant: t.merchant, amount: t.amount, date: t.date })));
+        // Delete transactions Plaid says were removed
+        if (removed.length > 0) {
+          const removedIds = removed.map((r) => r.transaction_id);
+          const { error: delErr } = await supabase
+            .from("transactions")
+            .delete()
+            .in("plaid_transaction_id", removedIds)
+            .eq("user_id", user.id);
+          if (delErr) console.error(`[sync] delete removed failed: ${delErr.message}`);
+          removedCount += removed.length;
+        }
+
+        cursor = next_cursor;
       }
+
+      // Persist the final cursor so next sync only fetches truly new data
+      const { error: cursorErr } = await supabase
+        .from("plaid_items")
+        .update({ plaid_cursor: cursor })
+        .eq("id", item.id)
+        .eq("user_id", user.id);
+      if (cursorErr) console.error(`[sync] cursor save failed: ${cursorErr.message}`);
+
+      console.log(`[sync] item ${item.id} done — added=${addedCount} modified=${modifiedCount} removed=${removedCount} next_cursor=${cursor?.slice(0, 20)}…`);
+      transactionsSynced += addedCount + modifiedCount;
+
     } catch (err: unknown) {
       const plaidErr = err as { response?: { data?: { error_code?: string; error_message?: string } } };
       const code = plaidErr?.response?.data?.error_code ?? "UNKNOWN";
       const msg  = plaidErr?.response?.data?.error_message ?? String(err);
       console.error(`[sync] item ${item.id} failed: ${code} — ${msg}`);
-      // Look up institution name for the error report
       const { data: itemRow } = await supabase.from("plaid_items").select("institution_name").eq("id", item.id).maybeSingle();
       itemErrors.push({ institution: itemRow?.institution_name ?? item.id, code, message: msg });
     }
@@ -168,7 +218,6 @@ export async function POST(req: NextRequest) {
   const largeDeposits = allNewTx.filter((tx) => tx.amount > 200);
   for (const deposit of largeDeposits) {
     const fmt = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(deposit.amount);
-    // Deduplicate within 24h by alert_type key
     const alertKey = `income_detected_${deposit.date}`;
     const { data: existing } = await supabase
       .from("alerts")
@@ -193,7 +242,6 @@ export async function POST(req: NextRequest) {
   return NextResponse.json({
     accounts_updated: accountsUpdated,
     transactions_synced: transactionsSynced,
-    large_deposits: largeDeposits.length,
     ...(itemErrors.length > 0 && { item_errors: itemErrors }),
   });
 }
