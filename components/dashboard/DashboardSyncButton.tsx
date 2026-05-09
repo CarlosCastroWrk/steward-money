@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useToast } from "@/components/Toast";
 
 interface Props {
   lastSyncedLabel: string | null;
@@ -10,8 +11,8 @@ interface Props {
 
 export function DashboardSyncButton({ lastSyncedLabel, syncIsStale }: Props) {
   const router = useRouter();
+  const toast = useToast();
   const [syncing, setSyncing] = useState(false);
-  const [justSynced, setJustSynced] = useState(false);
 
   async function handleSync(e: React.MouseEvent) {
     e.preventDefault();
@@ -19,8 +20,8 @@ export function DashboardSyncButton({ lastSyncedLabel, syncIsStale }: Props) {
     setSyncing(true);
     try {
       await fetch("/api/plaid/sync", { method: "POST" });
-      setJustSynced(true);
       router.refresh();
+      toast("Synced — balances may take a few minutes to reflect at your bank's end.");
     } finally {
       setSyncing(false);
     }
@@ -28,8 +29,6 @@ export function DashboardSyncButton({ lastSyncedLabel, syncIsStale }: Props) {
 
   const label = syncing
     ? "Syncing…"
-    : justSynced
-    ? "Synced · Sync"
     : lastSyncedLabel
     ? `${lastSyncedLabel} · Sync`
     : "Sync now";

@@ -62,12 +62,14 @@ export async function POST(req: NextRequest) {
 
   for (const item of items) {
     try {
-      const accountsRes = await plaidClient.accountsGet({ access_token: item.access_token });
+      // accountsBalanceGet forces a live fetch from the bank (not Plaid cache).
+      // accountsGet returns cached data — do not use for balance accuracy.
+      const accountsRes = await plaidClient.accountsBalanceGet({ access_token: item.access_token });
       for (const a of accountsRes.data.accounts) {
         const isDepository = a.type === "depository";
         const isCredit     = a.type === "credit";
         const isLoan       = a.type === "loan";
-        await supabase.from("accounts").update({
+        const payload = {
           name: cleanName(a.name),
           plaid_type: a.type as string,
           plaid_subtype: (a.subtype ?? null) as string | null,
@@ -75,8 +77,14 @@ export async function POST(req: NextRequest) {
           available_balance: isDepository ? (a.balances.available ?? a.balances.current ?? 0) : null,
           credit_limit: (isCredit || isLoan) ? (a.balances.limit ?? null) : null,
           last_synced: now,
-        }).eq("plaid_account_id", a.account_id).eq("user_id", user.id);
-        accountsUpdated++;
+        };
+        console.log(`[sync] updating account ${a.account_id} (${a.name}): current=${a.balances.current} available=${a.balances.available}`);
+        const { error: updateErr } = await supabase.from("accounts").update(payload).eq("plaid_account_id", a.account_id).eq("user_id", user.id);
+        if (updateErr) {
+          console.error(`[sync] account update failed for ${a.account_id}: ${updateErr.message}`);
+        } else {
+          accountsUpdated++;
+        }
       }
 
       const txRes = await plaidClient.transactionsGet({ access_token: item.access_token, start_date: startDate, end_date: endDate });
