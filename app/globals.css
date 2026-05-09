@@ -255,6 +255,19 @@ body {
   50% { opacity: 0; }
 }
 
+@keyframes badgePop {
+  0% { transform: scale(0); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
 /* ── Gradient glow card border ─────────────────────────────── */
 .card-glow-border {
   position: relative;

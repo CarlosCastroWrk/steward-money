@@ -6,6 +6,7 @@ import { TabPills } from "@/components/ui/TabPills";
 import { createClient } from "@/lib/supabase/client";
 import { formatUSD } from "@/lib/format";
 import { CalendarEventDetailModal } from "@/components/dashboard/CalendarEventDetailModal";
+import { CouncilDock } from "@/components/pulse/CouncilDock";
 
 type AgentName = "argus" | "iron" | "manna" | "nova" | "eden" | "solomon" | "silas" | "echo" | "kairos";
 type DateFilter = "today" | "week" | "all";
@@ -554,10 +555,10 @@ export function PulseView() {
 
   return (
     <>
-      <div className="space-y-6 px-4 pb-10 pt-5 md:px-8 md:pt-8">
+      <div className="space-y-6 pb-10 pt-5 md:pt-8">
 
         {/* Header */}
-        <div>
+        <div className="px-4 md:px-8">
           <h1 className="text-2xl font-semibold text-[var(--text-1)] pr-10 md:pr-0">Pulse</h1>
           <p className="mt-0.5 text-sm text-[var(--text-2)]">What your agents are noticing</p>
           <div className="mt-2 flex items-center justify-between">
@@ -575,8 +576,11 @@ export function PulseView() {
           </div>
         </div>
 
+        {/* ── Council dock ─────────────────────────────────────────────────── */}
+        <CouncilDock />
+
         {/* ── Calendar section ──────────────────────────────────────────────── */}
-        <section>
+        <section className="px-4 md:px-8">
           <p className="mb-3 text-[10px] font-semibold uppercase tracking-widest text-[var(--text-3)]">Calendar · Next 14 days</p>
 
           {loading && (
@@ -624,7 +628,7 @@ export function PulseView() {
         </section>
 
         {/* ── Agent insights section ────────────────────────────────────────── */}
-        <section>
+        <section className="px-4 md:px-8">
           <div className="mb-3 flex items-center justify-between">
             <p className="text-[10px] font-semibold uppercase tracking-widest text-[var(--text-3)]">Agent insights</p>
             <TabPills
