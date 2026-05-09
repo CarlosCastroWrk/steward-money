@@ -131,34 +131,33 @@ export default async function DashboardPage() {
       {!hasAccounts ? (
         <ConnectBankCard />
       ) : (
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#3d1f7d] via-[#4a1d96] to-[#2a1f6e] p-6 shadow-2xl shadow-purple-900/40">
-        <div className="absolute -right-8 -top-8 h-36 w-36 rounded-full bg-white/5 blur-2xl" />
-        <div className="absolute -bottom-8 -left-4 h-28 w-52 rounded-full bg-purple-400/10 blur-2xl" />
-        <div className="relative">
-          <p className="text-[10px] font-medium uppercase tracking-widest text-white/60">Safe to Spend</p>
-          <p className={`mt-1.5 text-5xl font-bold leading-none tracking-tight ${result.safeToSpendRaw < 0 ? "text-red-400" : "text-white"}`}>
+      <div className="overflow-hidden rounded-2xl shadow-xl" style={{ backgroundColor: "#0b1d3a" }}>
+        <div style={{ height: 3, backgroundColor: "#2563eb", flexShrink: 0 }} />
+        <div className="p-6">
+          <p className="text-[10px] font-medium uppercase tracking-widest text-white/50">Safe to Spend</p>
+          <p className={`mt-2 text-6xl leading-none tracking-tight font-[family-name:var(--font-display)] ${result.safeToSpendRaw < 0 ? "text-red-400" : "text-white"}`}>
             {formatUSD(result.safeToSpend)}
           </p>
-          <p className="mt-1.5 text-xs text-white/40">After bills, buffer &amp; deductions</p>
           <DashboardSyncButton serverLastSynced={lastSynced} />
-          <div className="mt-4 flex gap-6 border-t border-white/10 pt-3.5">
+          <div className="mt-4 flex gap-6 border-t pt-3.5" style={{ borderColor: "rgba(255,255,255,0.08)" }}>
             <div>
-              <p className="text-[10px] uppercase tracking-wide text-white/50">Protected</p>
+              <p className="text-[10px] uppercase tracking-wide text-white/40">Protected</p>
               {result.emergencyBuffer > 0 ? (
-                <p className="text-sm font-semibold text-white/80">{formatUSD(result.emergencyBuffer)}</p>
+                <p className="text-sm font-semibold text-white/70">{formatUSD(result.emergencyBuffer)}</p>
               ) : (
-                <a href="/settings" className="text-xs text-white/40 hover:text-white/60 transition-colors">Not set →</a>
+                <a href="/settings" className="text-xs text-white/30 hover:text-white/50 transition-colors">Not set →</a>
               )}
             </div>
             <div>
-              <p className="text-[10px] uppercase tracking-wide text-white/50">Committed</p>
+              <p className="text-[10px] uppercase tracking-wide text-white/40">Committed</p>
               <p className="text-sm font-semibold text-amber-300">{formatUSD(result.billsDueSoon)}</p>
             </div>
             <div>
-              <p className="text-[10px] uppercase tracking-wide text-white/50">Liquid</p>
-              <p className="text-sm font-semibold text-white/80">{formatUSD(result.liquidTotal)}</p>
+              <p className="text-[10px] uppercase tracking-wide text-white/40">Liquid</p>
+              <p className="text-sm font-semibold text-white/70">{formatUSD(result.liquidTotal)}</p>
             </div>
           </div>
+          <p className="mt-3.5 text-[11px] italic text-white/20">Faithfulness with what's been entrusted.</p>
         </div>
       </div>
       )}
