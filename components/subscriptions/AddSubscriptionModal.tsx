@@ -123,7 +123,7 @@ export function AddSubscriptionModal({ open, onClose, accounts, subscription }: 
         </h2>
         <form className="mt-6 space-y-4" onSubmit={handleSubmit}>
           <div>
-            <label htmlFor="sub-name" className="text-xs text-zinc-400">
+            <label htmlFor="sub-name" className="text-xs text-[var(--text-3)]">
               Name <span className="text-red-400">*</span>
             </label>
             <input
@@ -137,7 +137,7 @@ export function AddSubscriptionModal({ open, onClose, accounts, subscription }: 
             />
           </div>
           <div>
-            <label htmlFor="sub-amount" className="text-xs text-zinc-400">
+            <label htmlFor="sub-amount" className="text-xs text-[var(--text-3)]">
               Monthly amount <span className="text-red-400">*</span>
             </label>
             <input
@@ -153,7 +153,7 @@ export function AddSubscriptionModal({ open, onClose, accounts, subscription }: 
             />
           </div>
           <div>
-            <label htmlFor="sub-cat" className="text-xs text-zinc-400">
+            <label htmlFor="sub-cat" className="text-xs text-[var(--text-3)]">
               Category
             </label>
             <select
@@ -168,7 +168,7 @@ export function AddSubscriptionModal({ open, onClose, accounts, subscription }: 
             </select>
           </div>
           <div>
-            <label htmlFor="sub-day" className="text-xs text-zinc-400">
+            <label htmlFor="sub-day" className="text-xs text-[var(--text-3)]">
               Billing day of month
             </label>
             <input
@@ -183,7 +183,7 @@ export function AddSubscriptionModal({ open, onClose, accounts, subscription }: 
             />
           </div>
           <div>
-            <label className="text-xs text-zinc-400">Status</label>
+            <label className="text-xs text-[var(--text-3)]">Status</label>
             <div className="mt-1 flex gap-2">
               {(["keep", "evaluating", "cancel"] as const).map((s) => (
                 <button
@@ -197,7 +197,7 @@ export function AddSubscriptionModal({ open, onClose, accounts, subscription }: 
                         : s === "cancel"
                         ? "border-red-700 bg-red-900/40 text-red-300"
                         : "border-amber-700 bg-amber-900/40 text-amber-300"
-                      : "border-zinc-700 text-zinc-500 hover:text-zinc-300"
+                      : "border-[var(--border)] text-[var(--text-3)] hover:text-[var(--text-2)]"
                   }`}
                 >
                   {s.charAt(0).toUpperCase() + s.slice(1)}
@@ -206,7 +206,7 @@ export function AddSubscriptionModal({ open, onClose, accounts, subscription }: 
             </div>
           </div>
           <div>
-            <label htmlFor="sub-value" className="text-xs text-zinc-400">
+            <label htmlFor="sub-value" className="text-xs text-[var(--text-3)]">
               Value score (1–10, where 10 = essential)
             </label>
             <input
@@ -220,7 +220,7 @@ export function AddSubscriptionModal({ open, onClose, accounts, subscription }: 
             />
           </div>
           <div>
-            <label htmlFor="sub-account" className="text-xs text-zinc-400">
+            <label htmlFor="sub-account" className="text-xs text-[var(--text-3)]">
               Account
             </label>
             <select
@@ -243,7 +243,7 @@ export function AddSubscriptionModal({ open, onClose, accounts, subscription }: 
               type="button"
               onClick={onClose}
               disabled={submitting}
-              className="rounded-lg border border-zinc-700 px-4 py-2 text-sm font-medium text-zinc-300 disabled:opacity-50"
+              className="rounded-lg border border-[var(--border)] px-4 py-2 text-sm font-medium text-[var(--text-2)] disabled:opacity-50"
             >
               Cancel
             </button>

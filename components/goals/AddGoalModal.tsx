@@ -136,7 +136,7 @@ export function AddGoalModal({ open, onClose, goal }: Props) {
         </h2>
         <form className="mt-6 space-y-4" onSubmit={handleSubmit}>
           <div>
-            <label htmlFor="goal-name" className="text-xs text-zinc-400">
+            <label htmlFor="goal-name" className="text-xs text-[var(--text-3)]">
               Name <span className="text-red-400">*</span>
             </label>
             <input
@@ -150,7 +150,7 @@ export function AddGoalModal({ open, onClose, goal }: Props) {
             />
           </div>
           <div>
-            <label htmlFor="goal-type" className="text-xs text-zinc-400">
+            <label htmlFor="goal-type" className="text-xs text-[var(--text-3)]">
               Type
             </label>
             <select
@@ -167,7 +167,7 @@ export function AddGoalModal({ open, onClose, goal }: Props) {
             </select>
           </div>
           <div>
-            <label htmlFor="goal-target" className="text-xs text-zinc-400">
+            <label htmlFor="goal-target" className="text-xs text-[var(--text-3)]">
               Target amount <span className="text-red-400">*</span>
             </label>
             <input
@@ -183,7 +183,7 @@ export function AddGoalModal({ open, onClose, goal }: Props) {
             />
           </div>
           <div>
-            <label htmlFor="goal-current" className="text-xs text-zinc-400">
+            <label htmlFor="goal-current" className="text-xs text-[var(--text-3)]">
               Current amount
             </label>
             <input
@@ -197,7 +197,7 @@ export function AddGoalModal({ open, onClose, goal }: Props) {
             />
           </div>
           <div>
-            <label htmlFor="goal-deadline" className="text-xs text-zinc-400">
+            <label htmlFor="goal-deadline" className="text-xs text-[var(--text-3)]">
               Deadline
             </label>
             <input
@@ -210,8 +210,8 @@ export function AddGoalModal({ open, onClose, goal }: Props) {
           </div>
           {calEvents.length > 0 && (
             <div>
-              <label htmlFor="goal-event" className="text-xs text-zinc-400">
-                Linked to event <span className="text-zinc-600">(optional — sets deadline)</span>
+              <label htmlFor="goal-event" className="text-xs text-[var(--text-3)]">
+                Linked to event <span className="text-[var(--text-3)]">(optional — sets deadline)</span>
               </label>
               <select
                 id="goal-event"
@@ -245,7 +245,7 @@ export function AddGoalModal({ open, onClose, goal }: Props) {
             </div>
           )}
           <div>
-            <label htmlFor="goal-priority" className="text-xs text-zinc-400">
+            <label htmlFor="goal-priority" className="text-xs text-[var(--text-3)]">
               Priority (1 = highest, 10 = lowest)
             </label>
             <input
@@ -266,7 +266,7 @@ export function AddGoalModal({ open, onClose, goal }: Props) {
               type="button"
               onClick={onClose}
               disabled={submitting}
-              className="rounded-lg border border-zinc-700 px-4 py-2 text-sm font-medium text-zinc-300 disabled:opacity-50"
+              className="rounded-lg border border-[var(--border)] px-4 py-2 text-sm font-medium text-[var(--text-2)] disabled:opacity-50"
             >
               Cancel
             </button>

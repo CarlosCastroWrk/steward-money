@@ -71,12 +71,12 @@ export function SubscriptionsView({ subscriptions, accounts }: Props) {
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
             <h1 className="text-2xl font-medium text-[var(--text-1)]">Subscriptions</h1>
-            <p className="mt-1 text-sm text-zinc-400">Review, keep, or cut recurring services</p>
+            <p className="mt-1 text-sm text-[var(--text-2)]">Review, keep, or cut recurring services</p>
           </div>
           <button
             type="button"
             onClick={() => { setEditing(null); setModalOpen(true); }}
-            className="rounded-lg bg-white px-4 py-2 text-sm font-medium text-black"
+            className="rounded-xl bg-[var(--accent)] px-4 py-2 text-sm font-medium text-white"
           >
             Add subscription
           </button>
@@ -84,27 +84,27 @@ export function SubscriptionsView({ subscriptions, accounts }: Props) {
 
         <div className="mt-6 grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-4">
           <div className="rounded-xl border border-[var(--border)] bg-[var(--bg-card)] p-4">
-            <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">Monthly total</p>
-            <p className="mt-2 text-xl font-semibold text-white">{formatUSD(monthlyTotal)}</p>
+            <p className="text-xs font-medium uppercase tracking-wide text-[var(--text-3)]">Monthly total</p>
+            <p className="mt-2 text-xl font-semibold text-[var(--text-1)]">{formatUSD(monthlyTotal)}</p>
           </div>
           <div className="rounded-xl border border-[var(--border)] bg-[var(--bg-card)] p-4">
-            <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">Annual total</p>
-            <p className="mt-2 text-xl font-semibold text-zinc-300">{formatUSD(monthlyTotal * 12)}</p>
+            <p className="text-xs font-medium uppercase tracking-wide text-[var(--text-3)]">Annual total</p>
+            <p className="mt-2 text-xl font-semibold text-[var(--text-2)]">{formatUSD(monthlyTotal * 12)}</p>
           </div>
           <div className="rounded-xl border border-[var(--border)] bg-[var(--bg-card)] p-4">
-            <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">Keeping</p>
+            <p className="text-xs font-medium uppercase tracking-wide text-[var(--text-3)]">Keeping</p>
             <p className="mt-2 text-xl font-semibold text-emerald-400">{formatUSD(keepTotal)}</p>
           </div>
           <div className="rounded-xl border border-[var(--border)] bg-[var(--bg-card)] p-4">
-            <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">To cancel</p>
+            <p className="text-xs font-medium uppercase tracking-wide text-[var(--text-3)]">To cancel</p>
             <p className="mt-2 text-xl font-semibold text-red-400">{formatUSD(cancelTotal)}</p>
           </div>
         </div>
 
         <div className="mt-8 space-y-2">
           {subscriptions.length === 0 ? (
-            <div className="rounded-xl border border-dashed border-zinc-700 p-10 text-center">
-              <p className="text-zinc-500">No subscriptions yet. Add your first one.</p>
+            <div className="rounded-xl border border-dashed border-[var(--border)] p-10 text-center">
+              <p className="text-[var(--text-3)]">No subscriptions yet. Add your first one.</p>
             </div>
           ) : (
             sorted.map((sub) => (
@@ -115,17 +115,17 @@ export function SubscriptionsView({ subscriptions, accounts }: Props) {
                 <div className="flex items-center gap-3">
                   <div>
                     <div className="flex items-center gap-2">
-                      <p className="font-medium text-zinc-100">{sub.name}</p>
+                      <p className="font-medium text-[var(--text-1)]">{sub.name}</p>
                       <span className={`rounded-full px-2 py-0.5 text-xs ${statusBadge[sub.status]}`}>
                         {sub.status}
                       </span>
                       {sub.value_score !== null && (
-                        <span className="text-xs text-zinc-500">
+                        <span className="text-xs text-[var(--text-3)]">
                           value: {sub.value_score}/10
                         </span>
                       )}
                     </div>
-                    <div className="mt-0.5 flex items-center gap-1.5 text-xs text-zinc-500">
+                    <div className="mt-0.5 flex items-center gap-1.5 text-xs text-[var(--text-3)]">
                       {sub.category && <span>{sub.category}</span>}
                       {sub.billing_day && (
                         <>
@@ -137,7 +137,7 @@ export function SubscriptionsView({ subscriptions, accounts }: Props) {
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
-                  <p className="mr-1 text-sm font-semibold text-zinc-100">
+                  <p className="mr-1 text-sm font-semibold text-[var(--text-1)]">
                     {formatUSD(Number(sub.amount))}/mo
                   </p>
                   {/* Quick status cycle */}
@@ -152,14 +152,14 @@ export function SubscriptionsView({ subscriptions, accounts }: Props) {
                           : "keep";
                       patchStatus(sub.id, next, router);
                     }}
-                    className="rounded-lg border border-zinc-700 px-3 py-1.5 text-xs font-medium text-zinc-400 hover:text-white"
+                    className="rounded-lg border border-[var(--border)] px-3 py-1.5 text-xs font-medium text-[var(--text-2)] hover:text-[var(--text-1)]"
                   >
                     Change status
                   </button>
                   <button
                     type="button"
                     onClick={() => { setEditing(sub); setModalOpen(true); }}
-                    className="rounded-lg border border-zinc-700 px-3 py-1.5 text-xs font-medium text-zinc-400 hover:text-white"
+                    className="rounded-lg border border-[var(--border)] px-3 py-1.5 text-xs font-medium text-[var(--text-2)] hover:text-[var(--text-1)]"
                   >
                     Edit
                   </button>
@@ -167,7 +167,7 @@ export function SubscriptionsView({ subscriptions, accounts }: Props) {
                     type="button"
                     onClick={() => deleteSub(sub.id)}
                     disabled={deletingId === sub.id}
-                    className="rounded-lg border border-zinc-800 px-3 py-1.5 text-xs font-medium text-zinc-600 hover:border-red-900 hover:text-red-400 disabled:opacity-40"
+                    className="rounded-lg border border-[var(--border)] px-3 py-1.5 text-xs font-medium text-[var(--text-3)] hover:border-red-900/60 hover:text-red-400 disabled:opacity-40"
                   >
                     {deletingId === sub.id ? "..." : "Delete"}
                   </button>
