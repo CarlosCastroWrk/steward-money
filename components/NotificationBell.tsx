@@ -94,14 +94,14 @@ export function NotificationBell({ align = "right" }: { align?: "left" | "right"
   }
 
   function dotColor(severity: string) {
-    if (severity === "danger") return "bg-red-500";
+    if (severity === "danger") return "bg-[var(--color-danger)]";
     if (severity === "warning") return "bg-amber-500";
-    return "bg-blue-400";
+    return "bg-[var(--accent)]";
   }
 
   function textColor(severity: string) {
-    if (severity === "danger") return "text-red-300";
-    if (severity === "warning") return "text-amber-300";
+    if (severity === "danger") return "text-[var(--color-danger)]";
+    if (severity === "warning") return "text-amber-400";
     return "text-[var(--text-2)]";
   }
 
@@ -139,7 +139,7 @@ export function NotificationBell({ align = "right" }: { align?: "left" | "right"
             <p className="text-sm font-medium text-[var(--text-1)]">
               Notifications
               {hasUnread && (
-                <span className="ml-2 rounded-full bg-red-500/20 px-1.5 py-0.5 text-[10px] font-semibold text-red-400">
+                <span className="ml-2 rounded-full bg-[var(--color-danger)]/15 px-1.5 py-0.5 text-[10px] font-semibold text-[var(--color-danger)]">
                   {unread.length}
                 </span>
               )}
@@ -147,7 +147,7 @@ export function NotificationBell({ align = "right" }: { align?: "left" | "right"
             {hasUnread && (
               <button
                 onClick={markAllRead}
-                className="text-xs text-[var(--text-3)] transition-colors hover:text-emerald-400"
+                className="text-xs text-[var(--text-3)] transition-colors hover:text-[var(--color-income)]"
               >
                 Mark all read
               </button>
@@ -158,7 +158,7 @@ export function NotificationBell({ align = "right" }: { align?: "left" | "right"
           <div className="max-h-[340px] overflow-y-auto">
             {alerts.length === 0 ? (
               <div className="flex flex-col items-center gap-1.5 px-4 py-10 text-center">
-                <p className="text-sm font-medium text-emerald-400">You&apos;re all caught up ✓</p>
+                <p className="text-sm font-medium text-[var(--color-income)]">You&apos;re all caught up ✓</p>
                 <p className="text-xs text-[var(--text-3)]">No notifications right now</p>
               </div>
             ) : (
@@ -182,7 +182,7 @@ export function NotificationBell({ align = "right" }: { align?: "left" | "right"
                         <p className="mt-0.5 text-[10px] text-[var(--text-3)]">{timeAgo(alert.created_at)}</p>
                       </div>
                       {!alert.is_read && (
-                        <span className="mt-1.5 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-emerald-500" />
+                        <span className="mt-1.5 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-[var(--accent)]" />
                       )}
                     </div>
                   </button>
