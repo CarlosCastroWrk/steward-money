@@ -34,15 +34,31 @@ export function NovaMessage() {
   return (
     <div className="space-y-2">
       {messages.map((msg) => (
-        <div key={msg.id} className="rounded-xl border border-violet-900/30 bg-violet-950/10 p-4">
+        <div
+          key={msg.id}
+          className="rounded-xl border p-4"
+          style={{
+            borderColor: "color-mix(in srgb, var(--nova) 25%, transparent)",
+            backgroundColor: "color-mix(in srgb, var(--nova) 6%, transparent)",
+          }}
+        >
           <div className="flex items-start justify-between gap-3">
             <div className="flex items-center gap-2 shrink-0">
-              <div className="h-5 w-5 rounded-full bg-violet-500/20 flex items-center justify-center">
-                <span className="text-[9px] font-bold text-violet-400">N</span>
+              <div
+                className="h-5 w-5 rounded-full flex items-center justify-center"
+                style={{ backgroundColor: "color-mix(in srgb, var(--nova) 20%, transparent)" }}
+              >
+                <span className="text-[9px] font-bold" style={{ color: "var(--nova)" }}>N</span>
               </div>
-              <p className="text-[10px] font-semibold uppercase tracking-widest text-violet-400">Nova</p>
+              <p className="text-[10px] font-semibold uppercase tracking-widest" style={{ color: "var(--nova)" }}>Nova</p>
             </div>
-            <button type="button" onClick={() => dismiss(msg.id)} className="text-[10px] text-[var(--text-3)] hover:text-[var(--text-2)] shrink-0">×</button>
+            <button
+              type="button"
+              onClick={() => dismiss(msg.id)}
+              className="text-[10px] text-[var(--text-3)] hover:text-[var(--text-2)] shrink-0 transition-colors"
+            >
+              ×
+            </button>
           </div>
           <p className="mt-2 text-sm text-[var(--text-2)] leading-relaxed">{msg.message}</p>
         </div>

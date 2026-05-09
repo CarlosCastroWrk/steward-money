@@ -32,15 +32,15 @@ interface Props {
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const CATEGORY_META: Record<string, { label: string; Icon: React.ElementType; color: string }> = {
-  housing:       { label: "Housing",       Icon: Home,           color: "bg-blue-500" },
+  housing:       { label: "Housing",       Icon: Home,           color: "bg-blue-600" },
   transport:     { label: "Transport",     Icon: Car,            color: "bg-amber-500" },
-  phone:         { label: "Phone",         Icon: Smartphone,     color: "bg-blue-500" },
-  utilities:     { label: "Utilities",     Icon: Zap,            color: "bg-yellow-400" },
-  health:        { label: "Health",        Icon: Heart,          color: "bg-red-500" },
-  education:     { label: "Education",     Icon: GraduationCap,  color: "bg-green-500" },
+  phone:         { label: "Phone",         Icon: Smartphone,     color: "bg-sky-500" },
+  utilities:     { label: "Utilities",     Icon: Zap,            color: "bg-yellow-500" },
+  health:        { label: "Health",        Icon: Heart,          color: "bg-rose-500" },
+  education:     { label: "Education",     Icon: GraduationCap,  color: "bg-emerald-600" },
   debt:          { label: "Debt",          Icon: CreditCard,     color: "bg-orange-500" },
   entertainment: { label: "Entertainment", Icon: Tv,             color: "bg-pink-500" },
-  other:         { label: "Other",         Icon: Box,            color: "bg-zinc-500" },
+  other:         { label: "Other",         Icon: Box,            color: "bg-[var(--bg-elevated)]" },
 };
 
 const PLAID_CATEGORY_MAP: Record<string, string> = {

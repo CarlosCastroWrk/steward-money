@@ -197,9 +197,9 @@ export default async function DashboardPage() {
             <a href="/transactions" className="text-xs text-blue-400 transition-colors hover:text-blue-300">See all</a>
           </div>
           {recentTx.length === 0 ? (
-            <div className="rounded-2xl border border-[var(--border)] bg-[var(--bg-card)] p-5 text-center">
-              <p className="text-sm text-[var(--text-3)]">No activity yet — sync your bank or add a transaction manually.</p>
-              <a href="/transactions" className="mt-2 inline-block text-xs text-blue-400 hover:text-blue-300">Go to Activity →</a>
+            <div className="rounded-2xl border border-dashed border-[var(--border)] p-6 text-center">
+              <p className="text-sm text-[var(--text-3)]">No recent transactions.</p>
+              <a href="/transactions" className="mt-2 inline-block text-xs text-blue-400 hover:text-blue-300">Sync or add one →</a>
             </div>
           ) : (
             <div className="overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--bg-card)] divide-y divide-[var(--border)]">
@@ -231,12 +231,16 @@ export default async function DashboardPage() {
         {/* Expenses this week */}
         <section>
           <div className="mb-3 flex items-center justify-between">
-            <h2 className="text-[10px] font-semibold uppercase tracking-widest text-[var(--text-3)]">Expenses This Week</h2>
+            <div>
+              <h2 className="text-[10px] font-semibold uppercase tracking-widest text-[var(--text-3)]">Coming Due</h2>
+              <p className="text-[10px] text-[var(--text-3)] mt-0.5">Bills + expenses in 7 days</p>
+            </div>
             <a href="/bills" className="text-xs text-blue-400 transition-colors hover:text-blue-300">See all</a>
           </div>
           {upcomingBills.length === 0 && (upcomingExpensesWeekResult.data ?? []).length === 0 ? (
-            <div className="rounded-2xl border border-[var(--border)] bg-[var(--bg-card)] p-5 text-center">
-              <p className="text-sm text-[var(--text-3)]">Nothing due soon. You&apos;re ahead of it.</p>
+            <div className="rounded-2xl border border-dashed border-[var(--border)] p-6 text-center">
+              <p className="text-sm text-[var(--text-3)]">Nothing due this week.</p>
+              <p className="mt-1 text-xs text-[var(--text-3)] opacity-60">You&apos;re ahead of it.</p>
             </div>
           ) : (
             <div className="overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--bg-card)] divide-y divide-[var(--border)]">
@@ -244,15 +248,18 @@ export default async function DashboardPage() {
                 const isOverdue = bill.next_due_date < today;
                 const isDueSoon = !isOverdue && bill.next_due_date <= in3Days;
                 return (
-                  <div key={bill.id} className="flex items-center justify-between px-4 py-3.5">
-                    <div className="min-w-0">
-                      <p className={`text-sm font-medium ${isOverdue ? "text-red-400" : "text-[var(--text-1)]"}`}>{bill.name}</p>
-                      <p className={`text-xs mt-0.5 ${isOverdue ? "text-red-500" : isDueSoon ? "text-amber-400" : "text-[var(--text-3)]"}`}>
-                        {formatDate(bill.next_due_date)}
-                        {bill.is_autopay && <span className="ml-2 text-[var(--text-3)]">Autopay</span>}
-                      </p>
+                  <div key={bill.id} className="flex items-center justify-between px-4 py-3.5 gap-3">
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <span className={`h-1.5 w-1.5 flex-shrink-0 rounded-full ${isOverdue ? "bg-red-500" : isDueSoon ? "bg-amber-400" : "bg-[var(--text-3)]"}`} />
+                      <div className="min-w-0">
+                        <p className={`text-sm font-medium ${isOverdue ? "text-red-400" : "text-[var(--text-1)]"} truncate`}>{bill.name}</p>
+                        <p className={`text-xs mt-0.5 ${isOverdue ? "text-red-500" : isDueSoon ? "text-amber-400" : "text-[var(--text-3)]"}`}>
+                          {formatDate(bill.next_due_date)}
+                          {bill.is_autopay && <span className="ml-2 opacity-60">· auto</span>}
+                        </p>
+                      </div>
                     </div>
-                    <span className={`text-sm font-semibold ${isOverdue ? "text-red-400" : "text-[var(--text-1)]"}`}>
+                    <span className={`text-sm font-semibold flex-shrink-0 ${isOverdue ? "text-red-400" : "text-[var(--text-2)]"}`}>
                       {formatUSDCents(Number(bill.amount))}
                     </span>
                   </div>
@@ -262,14 +269,17 @@ export default async function DashboardPage() {
                 const diff = Math.ceil((new Date(exp.expense_date + "T00:00:00").getTime() - Date.now()) / 86400000);
                 const isClose = diff <= 3;
                 return (
-                  <div key={exp.id} className="flex items-center justify-between px-4 py-3.5">
-                    <div className="min-w-0">
-                      <p className="text-sm font-medium text-[var(--text-1)]">{exp.name}</p>
-                      <p className={`text-xs mt-0.5 ${isClose ? "text-amber-400" : "text-[var(--text-3)]"}`}>
-                        {formatDate(exp.expense_date)} · one-time
-                      </p>
+                  <div key={exp.id} className="flex items-center justify-between px-4 py-3.5 gap-3">
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <span className={`h-1.5 w-1.5 flex-shrink-0 rounded-full ${isClose ? "bg-amber-400" : "bg-[var(--text-3)]"}`} />
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium text-[var(--text-1)] truncate">{exp.name}</p>
+                        <p className={`text-xs mt-0.5 ${isClose ? "text-amber-400" : "text-[var(--text-3)]"}`}>
+                          {formatDate(exp.expense_date)} · one-time
+                        </p>
+                      </div>
                     </div>
-                    <span className="text-sm font-semibold text-[var(--text-1)]">{formatUSDCents(Number(exp.amount))}</span>
+                    <span className="text-sm font-semibold flex-shrink-0 text-[var(--text-2)]">{formatUSDCents(Number(exp.amount))}</span>
                   </div>
                 );
               })}
@@ -283,13 +293,16 @@ export default async function DashboardPage() {
         {/* Goals */}
         <section>
           <div className="mb-3 flex items-center justify-between">
-            <h2 className="text-[10px] font-semibold uppercase tracking-widest text-[var(--text-3)]">Goals</h2>
+            <div>
+              <h2 className="text-[10px] font-semibold uppercase tracking-widest text-[var(--text-3)]">Goals</h2>
+              <p className="text-[10px] text-[var(--text-3)] mt-0.5">Active targets</p>
+            </div>
             <a href="/goals" className="text-xs text-blue-400 transition-colors hover:text-blue-300">See all</a>
           </div>
           {goals.length === 0 ? (
-            <div className="rounded-2xl border border-[var(--border)] bg-[var(--bg-card)] p-5 text-center">
-              <p className="text-sm text-[var(--text-3)]">No goals yet. Where do you want to go?</p>
-              <a href="/goals" className="mt-2 inline-block text-xs text-blue-400 hover:text-blue-300">Add a goal →</a>
+            <div className="rounded-2xl border border-dashed border-[var(--border)] p-6 text-center">
+              <p className="text-sm text-[var(--text-3)]">No goals set yet.</p>
+              <a href="/goals" className="mt-2 inline-block text-xs text-blue-400 hover:text-blue-300">Set your first goal →</a>
             </div>
           ) : (
             <a href="/goals" className="block overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--bg-card)] divide-y divide-[var(--border)] transition-all active:scale-[0.99] hover:border-[var(--border-strong)]">
@@ -327,8 +340,8 @@ export default async function DashboardPage() {
         </section>
 
         {settingsResult.data?.last_plan_review && (
-          <p className="text-center text-[10px] text-[var(--text-3)]">
-            Plan last reviewed: {new Date(settingsResult.data.last_plan_review).toLocaleDateString("en-US", { month: "short", day: "numeric" })} by Kairos
+          <p className="text-center text-[10px] tracking-wide text-[var(--text-3)] opacity-60">
+            Plan reviewed {new Date(settingsResult.data.last_plan_review).toLocaleDateString("en-US", { month: "short", day: "numeric" })} · Kairos
           </p>
         )}
       </DashboardTabs>

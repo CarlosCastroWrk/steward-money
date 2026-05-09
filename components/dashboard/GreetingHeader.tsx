@@ -14,11 +14,16 @@ function getLocalDate() {
 
 export function GreetingHeader({ displayName }: { displayName: string }) {
   return (
-    <header>
-      <h1 className="text-2xl font-semibold text-[var(--text-1)]">
-        {getGreeting()}, {displayName}.
-      </h1>
-      <p className="mt-0.5 text-sm text-[var(--text-3)]">{getLocalDate()}</p>
+    <header className="flex items-end justify-between">
+      <div>
+        <p className="text-[11px] font-medium uppercase tracking-widest text-[var(--text-3)]">
+          {getLocalDate()}
+        </p>
+        <h1 className="mt-0.5 text-2xl font-medium text-[var(--text-1)]">
+          {getGreeting()},{" "}
+          <span className="font-[family-name:var(--font-display)] italic">{displayName}</span>.
+        </h1>
+      </div>
     </header>
   );
 }

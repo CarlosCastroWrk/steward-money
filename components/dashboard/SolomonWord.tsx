@@ -21,7 +21,7 @@ function ScoreRing({ score }: { score: number }) {
   return (
     <div className="relative flex h-12 w-12 items-center justify-center">
       <svg className="absolute -rotate-90" width="48" height="48">
-        <circle cx="24" cy="24" r={r} fill="none" stroke="#27272a" strokeWidth="3" />
+        <circle cx="24" cy="24" r={r} fill="none" stroke="var(--bg-elevated)" strokeWidth="3" />
         <circle
           cx="24" cy="24" r={r} fill="none"
           stroke={color} strokeWidth="3"

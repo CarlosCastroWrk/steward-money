@@ -55,7 +55,9 @@ export function BottomNav() {
                   router.push(item.href);
                 }}
                 className={`flex flex-1 flex-col items-center justify-center gap-0.5 rounded-xl py-2.5 text-[10px] font-medium transition-all duration-150 ${
-                  active ? "text-[var(--accent)]" : "text-[var(--text-muted)] hover:text-[var(--text-secondary)]"
+                  active
+                    ? "text-[var(--accent)] bg-[var(--accent)]/8"
+                    : "text-[var(--text-muted)] hover:text-[var(--text-secondary)]"
                 }`}
               >
                 {item.icon}
@@ -74,7 +76,9 @@ export function BottomNav() {
               router.push("/more");
             }}
             className={`flex flex-1 flex-col items-center justify-center gap-0.5 rounded-xl py-2.5 text-[10px] font-medium transition-all duration-150 ${
-              isMoreActive ? "text-[var(--accent)]" : "text-[var(--text-muted)] hover:text-[var(--text-secondary)]"
+              isMoreActive
+                ? "text-[var(--accent)] bg-[var(--accent)]/8"
+                : "text-[var(--text-muted)] hover:text-[var(--text-secondary)]"
             }`}
           >
             <LayoutGrid size={22} strokeWidth={1.6} />

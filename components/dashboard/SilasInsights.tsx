@@ -13,18 +13,6 @@ type Insight = {
 export function SilasInsights({ insights: initial }: { insights: Insight[] }) {
   const [insights, setInsights] = useState(initial);
 
-  if (insights.length === 0) {
-    return (
-      <div className="rounded-xl border border-[var(--border)] bg-[var(--bg-card)] p-4">
-        <div className="flex items-center gap-3 mb-2">
-          <AgentAvatar agent="silas" />
-          <p className="text-[10px] font-semibold uppercase tracking-widest text-teal-600">Silas Sees</p>
-        </div>
-        <p className="text-xs text-[var(--text-3)]">Silas needs a few more transactions to see your patterns.</p>
-      </div>
-    );
-  }
-
   async function dismiss(id: string) {
     const supabase = createClient();
     await supabase.from("pulse_insights").update({ is_dismissed: true }).eq("id", id);
@@ -33,24 +21,36 @@ export function SilasInsights({ insights: initial }: { insights: Insight[] }) {
 
   return (
     <div className="rounded-xl border border-[var(--border)] bg-[var(--bg-card)] p-4">
-      <div className="flex items-center gap-3 mb-3">
+      <div className="mb-3 flex items-center gap-3">
         <AgentAvatar agent="silas" />
-        <p className="text-[10px] font-semibold uppercase tracking-widest text-teal-600">Silas Sees</p>
+        <p className="text-[10px] font-semibold uppercase tracking-widest" style={{ color: "var(--silas)" }}>
+          Silas Sees
+        </p>
       </div>
-      <div className="flex flex-col gap-2">
-        {insights.map((insight) => (
-          <div key={insight.id} className="flex items-start gap-2 rounded-lg bg-[var(--bg-elevated)] border border-[var(--border)] px-3 py-2.5">
-            <p className="flex-1 text-xs text-[var(--text-2)] leading-relaxed">{insight.insight_text}</p>
-            <button
-              onClick={() => dismiss(insight.id)}
-              className="flex-shrink-0 text-[var(--text-3)] hover:text-[var(--text-2)] transition-colors text-base leading-none mt-0.5"
-              aria-label="Dismiss"
+
+      {insights.length === 0 ? (
+        <p className="text-xs text-[var(--text-3)]">
+          Silas needs a few more transactions to surface patterns.
+        </p>
+      ) : (
+        <div className="flex flex-col gap-2">
+          {insights.map((insight) => (
+            <div
+              key={insight.id}
+              className="flex items-start gap-2 rounded-lg border border-[var(--border)] bg-[var(--bg-elevated)] px-3 py-2.5"
             >
-              ×
-            </button>
-          </div>
-        ))}
-      </div>
+              <p className="flex-1 text-xs text-[var(--text-2)] leading-relaxed">{insight.insight_text}</p>
+              <button
+                onClick={() => dismiss(insight.id)}
+                className="flex-shrink-0 text-[var(--text-3)] hover:text-[var(--text-2)] transition-colors text-base leading-none mt-0.5"
+                aria-label="Dismiss"
+              >
+                ×
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
