@@ -22,7 +22,7 @@ export function TabPills({ tabs, active, onChange, className = "" }: Props) {
           onClick={() => onChange(tab.id)}
           className={`flex-shrink-0 rounded-full px-4 py-1.5 text-xs font-medium transition-all active:scale-95 ${
             tab.id === active
-              ? "bg-[var(--accent)] text-white shadow-sm"
+              ? "bg-blue-600 text-white shadow-sm"
               : "bg-[var(--bg-elevated)] text-[var(--text-2)] hover:text-[var(--text-1)]"
           }`}
         >
