@@ -221,6 +221,7 @@ export function AgentChat({ agent, prefilledMessage, context, initialMessage, in
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const composerRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const headerRef = useRef<HTMLDivElement>(null);
   const isSerif = config.fontTreatment === "serif";
 
@@ -234,29 +235,28 @@ export function AgentChat({ agent, prefilledMessage, context, initialMessage, in
     }
   }, [messages, loading]);
 
-  // iOS keyboard — use visualViewport to push composer above keyboard
+  // iOS keyboard — shrink container to visual viewport so composer stays above keyboard
   useEffect(() => {
     const vv = window.visualViewport;
     if (!vv) return;
     function onVVResize() {
-      const keyboardH = Math.max(0, window.innerHeight - vv!.height - vv!.offsetTop);
-      if (composerRef.current) {
-        composerRef.current.style.paddingBottom = keyboardH > 0
-          ? `${keyboardH}px`
-          : `max(env(safe-area-inset-bottom), 16px)`;
+      // Overlay mode: set this component's own height to the visible viewport
+      if (!embedded && containerRef.current) {
+        containerRef.current.style.height = `${vv!.height}px`;
       }
-      // Scroll to bottom
+      // Embedded mode: parent page handles the outer container; just scroll to bottom
       if (scrollRef.current) {
         scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
       }
     }
+    onVVResize();
     vv.addEventListener("resize", onVVResize);
     vv.addEventListener("scroll", onVVResize);
     return () => {
       vv.removeEventListener("resize", onVVResize);
       vv.removeEventListener("scroll", onVVResize);
     };
-  }, []);
+  }, [embedded]);
 
   // Close overflow on outside click
   useEffect(() => {
@@ -341,8 +341,8 @@ export function AgentChat({ agent, prefilledMessage, context, initialMessage, in
 
   return (
     <div
+      ref={containerRef}
       className={embedded ? "flex flex-col flex-1 min-h-0 bg-[var(--bg-base)]" : "fixed inset-0 z-[60] flex flex-col bg-[var(--bg-base)]"}
-      style={embedded ? {} : { height: "100dvh" }}
     >
       {/* ─── Header (overlay mode only) ──────────────────────────────────── */}
       {!embedded && (

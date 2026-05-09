@@ -5,7 +5,8 @@ import { CalendarView } from "@/components/calendar/CalendarView";
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "Calendar" };
 
-export default async function CalendarPage() {
+export default async function CalendarPage({ searchParams }: { searchParams?: { date?: string } }) {
+  const focusDate = searchParams?.date ?? null;
   const supabase = createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return null;
@@ -54,6 +55,7 @@ export default async function CalendarPage() {
       incomeSources={incomeSources ?? []}
       transactions={transactions ?? []}
       goals={goals ?? []}
+      focusDate={focusDate}
     />
   );
 }

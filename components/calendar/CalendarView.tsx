@@ -38,6 +38,7 @@ interface Props {
   incomeSources: IncomeRaw[];
   transactions: TxRaw[];
   goals: GoalRaw[];
+  focusDate?: string | null;
 }
 
 // ── Helpers ─────────────────────────────────────────────────────────────────
@@ -475,12 +476,13 @@ function Legend() {
 
 // ── Main Component ───────────────────────────────────────────────────────────
 
-export function CalendarView({ calendarConnected, calEvents, bills, incomeSources, transactions, goals }: Props) {
+export function CalendarView({ calendarConnected, calEvents, bills, incomeSources, transactions, goals, focusDate }: Props) {
   const now = new Date();
-  const [year, setYear]   = useState(now.getFullYear());
-  const [month, setMonth] = useState(now.getMonth());
+  const focusParsed = focusDate ? new Date(focusDate + "T12:00:00") : null;
+  const [year, setYear]   = useState(focusParsed ? focusParsed.getFullYear() : now.getFullYear());
+  const [month, setMonth] = useState(focusParsed ? focusParsed.getMonth() : now.getMonth());
   const [view, setView]   = useState<View>("month");
-  const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const [selectedDate, setSelectedDate] = useState<string | null>(focusDate ?? null);
 
   const allItems = useMemo(
     () => buildItems(calEvents, bills, incomeSources, transactions, goals),

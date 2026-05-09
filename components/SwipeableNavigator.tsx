@@ -16,6 +16,7 @@ const SWIPE_DISABLED_PREFIXES = [
   "/auth/",
   "/more/usage",
   "/more/integrations",
+  "/pulse/", // agent detail pages use fixed overlay — disable swipe to avoid transform conflict
 ];
 
 const slideVariants = {

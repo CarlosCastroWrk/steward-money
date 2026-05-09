@@ -333,7 +333,13 @@ export function ComingUpWidget() {
                   );
                 }
 
-                return <div key={item.id}>{card}</div>;
+                // Non-calendar items → navigate to calendar at that date
+                const dateStr = item.date.split("T")[0];
+                return (
+                  <a key={item.id} href={`/more/calendar?date=${dateStr}`} className="text-left">
+                    {card}
+                  </a>
+                );
               })}
             </div>
           </div>
