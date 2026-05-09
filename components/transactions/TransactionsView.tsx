@@ -274,7 +274,7 @@ export function TransactionsView({ transactions: initialTransactions, accounts, 
       {/* Toast */}
       {toast && (
         <div className="fixed left-1/2 top-4 z-[60] -translate-x-1/2 animate-fade-up">
-          <div className="flex items-center gap-2.5 rounded-2xl border border-emerald-700/40 bg-emerald-950/90 px-4 py-2.5 text-sm font-medium text-emerald-300 shadow-xl backdrop-blur-md">
+          <div className="flex items-center gap-2.5 rounded-2xl border border-[var(--color-income)]/30 bg-[var(--bg-card)] px-4 py-2.5 text-sm font-medium text-[var(--color-income)] shadow-xl backdrop-blur-md">
             <svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4 flex-shrink-0">
               <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clipRule="evenodd" />
             </svg>
@@ -294,9 +294,9 @@ export function TransactionsView({ transactions: initialTransactions, accounts, 
 
         {/* Plaid status banner */}
         {plaidConnected ? (
-          <div className="mb-5 flex items-center gap-2.5 rounded-xl border border-green-900/40 bg-green-950/20 px-4 py-3">
-            <span className="h-2 w-2 rounded-full bg-green-400 flex-shrink-0" />
-            <p className="text-sm text-green-400 flex-1">Transactions sync automatically from {institutionName}</p>
+          <div className="mb-5 flex items-center gap-2.5 rounded-xl border border-[var(--color-income)]/20 bg-[var(--color-income)]/5 px-4 py-3">
+            <span className="h-2 w-2 rounded-full bg-[var(--color-income)] flex-shrink-0" />
+            <p className="text-sm text-[var(--color-income)] flex-1">Transactions sync automatically from {institutionName}</p>
             <p className="text-xs text-[var(--text-3)]">{lastSynced ? timeSince(lastSynced) : "Not yet synced"}</p>
           </div>
         ) : (

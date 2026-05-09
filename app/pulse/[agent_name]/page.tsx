@@ -122,8 +122,37 @@ export default function AgentDetailPage() {
 
   const initialMessages = history ?? [];
 
+  // Loading skeleton — shown while history fetches
+  if (history === null) {
+    return (
+      <div className="fixed inset-0 z-[60] flex flex-col bg-[var(--bg-base)]">
+        <div style={{ backgroundColor: config.color, height: 3, flexShrink: 0 }} />
+        <div
+          className="flex-shrink-0 flex items-center justify-between bg-[var(--bg-card)] border-b border-[var(--border)] px-3"
+          style={{ paddingTop: "max(env(safe-area-inset-top), 12px)", paddingBottom: "12px" }}
+        >
+          <div className="h-9 w-9 shimmer rounded-xl" />
+          <div className="flex flex-col items-center gap-1.5">
+            <div className="h-3.5 w-20 shimmer rounded" />
+            <div className="h-2.5 w-28 shimmer rounded" />
+          </div>
+          <div className="h-9 w-9 shimmer rounded-xl" />
+        </div>
+        <div className="flex-shrink-0 border-b border-[var(--border)] bg-[var(--bg-card)] px-4 py-4 space-y-3">
+          <div className="h-2 w-32 shimmer rounded" />
+          <div className="space-y-1.5">
+            <div className="h-3 w-full shimmer rounded" />
+            <div className="h-3 w-4/5 shimmer rounded" />
+            <div className="h-2.5 w-16 shimmer rounded mt-1" />
+          </div>
+        </div>
+        <div className="flex-1" />
+      </div>
+    );
+  }
+
   return (
-    <div className="flex flex-col bg-[var(--bg-base)]" style={{ height: "100dvh" }}>
+    <div className="fixed inset-0 z-[60] flex flex-col bg-[var(--bg-base)]">
 
       {/* ── Color accent strip ──────────────────────────────────────────── */}
       <div style={{ backgroundColor: config.color, height: 3, flexShrink: 0 }} />

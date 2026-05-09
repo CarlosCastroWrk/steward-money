@@ -38,7 +38,7 @@ export function StepWrapper({
             type="button"
             onClick={onBack}
             disabled={isFirstStep || isSaving}
-            className="rounded-xl border border-zinc-700 px-5 py-2.5 text-sm text-zinc-400 transition hover:border-zinc-600 hover:text-zinc-200 disabled:cursor-not-allowed disabled:opacity-40"
+            className="rounded-xl border border-[var(--border)] px-5 py-2.5 text-sm text-[var(--text-3)] transition hover:border-[var(--border-strong)] hover:text-[var(--text-1)] disabled:cursor-not-allowed disabled:opacity-40"
           >
             Back
           </button>
@@ -48,7 +48,7 @@ export function StepWrapper({
                 type="button"
                 onClick={onSkip}
                 disabled={isSaving}
-                className="rounded-xl px-4 py-2.5 text-sm text-zinc-500 transition hover:text-zinc-300 disabled:opacity-40"
+                className="rounded-xl px-4 py-2.5 text-sm text-[var(--text-3)] transition hover:text-[var(--text-2)] disabled:opacity-40"
               >
                 Skip
               </button>

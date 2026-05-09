@@ -65,7 +65,7 @@ export function Step7Income({ formData, onChange, onNext, onBack, isSaving, erro
     >
       {/* Name */}
       <div>
-        <label className="mb-1 block text-sm text-zinc-400">Name</label>
+        <label className="mb-1 block text-sm text-[var(--text-3)]">Name</label>
         <input
           className={INPUT}
           value={draft.name}
@@ -75,16 +75,16 @@ export function Step7Income({ formData, onChange, onNext, onBack, isSaving, erro
       </div>
 
       {/* Variable toggle */}
-      <div className="flex items-center justify-between rounded-lg border border-zinc-800 px-3 py-2">
+      <div className="flex items-center justify-between rounded-lg border border-[var(--border)] px-3 py-2">
         <div>
-          <p className="text-sm text-zinc-200">Variable income</p>
-          <p className="text-xs text-zinc-500">Estimate from hourly rate × weekly hours</p>
+          <p className="text-sm text-[var(--text-1)]">Variable income</p>
+          <p className="text-xs text-[var(--text-3)]">Estimate from hourly rate × weekly hours</p>
         </div>
         <button
           type="button"
           onClick={() => patch({ is_variable: !draft.is_variable })}
           className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
-            draft.is_variable ? "bg-blue-600" : "bg-zinc-700"
+            draft.is_variable ? "bg-[var(--accent)]" : "bg-[var(--bg-elevated)]"
           }`}
         >
           <span
@@ -99,7 +99,7 @@ export function Step7Income({ formData, onChange, onNext, onBack, isSaving, erro
       {draft.is_variable ? (
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="mb-1 block text-sm text-zinc-400">Hourly rate ($)</label>
+            <label className="mb-1 block text-sm text-[var(--text-3)]">Hourly rate ($)</label>
             <input
               type="number" inputMode="decimal"
               min="0"
@@ -111,7 +111,7 @@ export function Step7Income({ formData, onChange, onNext, onBack, isSaving, erro
             />
           </div>
           <div>
-            <label className="mb-1 block text-sm text-zinc-400">Est. weekly hours</label>
+            <label className="mb-1 block text-sm text-[var(--text-3)]">Est. weekly hours</label>
             <input
               type="number" inputMode="decimal"
               min="0"
@@ -123,7 +123,7 @@ export function Step7Income({ formData, onChange, onNext, onBack, isSaving, erro
             />
           </div>
           {est > 0 && (
-            <div className="col-span-2 rounded-lg border border-blue-900/50 bg-blue-950/20 px-3 py-2 text-sm text-blue-300">
+            <div className="col-span-2 rounded-lg border border-[var(--accent)]/20 bg-[var(--accent)]/5 px-3 py-2 text-sm text-[var(--accent)]">
               Estimated weekly income:{" "}
               <span className="font-semibold">{formatUSD(est)}</span>
             </div>
@@ -131,9 +131,9 @@ export function Step7Income({ formData, onChange, onNext, onBack, isSaving, erro
         </div>
       ) : (
         <div>
-          <label className="mb-1 block text-sm text-zinc-400">Amount per paycheck ($)</label>
+          <label className="mb-1 block text-sm text-[var(--text-3)]">Amount per paycheck ($)</label>
           <div className="relative">
-            <span className="absolute left-3 top-2 text-zinc-400">$</span>
+            <span className="absolute left-3 top-2 text-[var(--text-3)]">$</span>
             <input
               type="number" inputMode="decimal"
               min="0"
@@ -150,7 +150,7 @@ export function Step7Income({ formData, onChange, onNext, onBack, isSaving, erro
       {/* Frequency + date */}
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className="mb-1 block text-sm text-zinc-400">Frequency</label>
+          <label className="mb-1 block text-sm text-[var(--text-3)]">Frequency</label>
           <select
             className={INPUT}
             value={draft.frequency}
@@ -162,7 +162,7 @@ export function Step7Income({ formData, onChange, onNext, onBack, isSaving, erro
           </select>
         </div>
         <div>
-          <label className="mb-1 block text-sm text-zinc-400">Next expected date</label>
+          <label className="mb-1 block text-sm text-[var(--text-3)]">Next expected date</label>
           <input
             type="date"
             className={INPUT}
@@ -174,7 +174,7 @@ export function Step7Income({ formData, onChange, onNext, onBack, isSaving, erro
 
       {/* Recurring */}
       <div className="flex items-center justify-between">
-        <label className="text-sm text-zinc-400">Recurring</label>
+        <label className="text-sm text-[var(--text-3)]">Recurring</label>
         <input
           type="checkbox"
           checked={draft.is_recurring}
@@ -186,14 +186,14 @@ export function Step7Income({ formData, onChange, onNext, onBack, isSaving, erro
         type="button"
         onClick={addIncomeSource}
         disabled={!canAdd}
-        className="rounded-lg border border-zinc-700 px-3 py-2 text-sm text-zinc-300 disabled:opacity-40"
+        className="rounded-lg border border-[var(--border)] px-3 py-2 text-sm text-[var(--text-2)] disabled:opacity-40"
       >
         Add income source
       </button>
 
       <ul className="space-y-2">
         {formData.incomeSources.map((source) => (
-          <li key={source.id} className="flex items-center justify-between rounded-lg border border-zinc-800 p-3">
+          <li key={source.id} className="flex items-center justify-between rounded-lg border border-[var(--border)] p-3">
             <p className="text-sm">
               {source.name} — {formatUSD(source.amount)} ({source.frequency})
               {source.is_variable && (
@@ -205,7 +205,7 @@ export function Step7Income({ formData, onChange, onNext, onBack, isSaving, erro
               onClick={() =>
                 onChange({ incomeSources: formData.incomeSources.filter((item) => item.id !== source.id) })
               }
-              className="text-zinc-400 hover:text-white"
+              className="text-[var(--text-3)] hover:text-[var(--text-1)]"
             >
               ×
             </button>

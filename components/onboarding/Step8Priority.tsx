@@ -25,8 +25,8 @@ export function Step8Priority({ formData, onChange, onNext, onBack, onSkip, isSa
     >
       <div className="space-y-2">
         {formData.priorities.map((item, index) => (
-          <div key={item} className="flex items-center justify-between rounded-lg border border-zinc-800 p-3">
-            <p className="text-sm text-zinc-200">
+          <div key={item} className="flex items-center justify-between rounded-lg border border-[var(--border)] p-3">
+            <p className="text-sm text-[var(--text-1)]">
               {index + 1}. {item}
             </p>
             <div className="flex gap-2">
@@ -34,7 +34,7 @@ export function Step8Priority({ formData, onChange, onNext, onBack, onSkip, isSa
                 type="button"
                 disabled={index === 0}
                 onClick={() => move(index, -1)}
-                className="rounded border border-zinc-700 px-2 py-1 text-zinc-300 disabled:opacity-40"
+                className="rounded border border-[var(--border)] px-2 py-1 text-[var(--text-2)] disabled:opacity-40"
               >
                 ↑
               </button>
@@ -42,7 +42,7 @@ export function Step8Priority({ formData, onChange, onNext, onBack, onSkip, isSa
                 type="button"
                 disabled={index === formData.priorities.length - 1}
                 onClick={() => move(index, 1)}
-                className="rounded border border-zinc-700 px-2 py-1 text-zinc-300 disabled:opacity-40"
+                className="rounded border border-[var(--border)] px-2 py-1 text-[var(--text-2)] disabled:opacity-40"
               >
                 ↓
               </button>

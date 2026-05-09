@@ -52,7 +52,7 @@ export function Step5Trading({ formData, onChange, onNext, onBack, onSkip, isSav
           />
         </div>
       ) : null}
-      <div className="rounded-lg border border-amber-700 bg-amber-950 p-4 text-sm text-amber-200">
+      <div className="rounded-lg border border-amber-500/30 bg-amber-500/8 p-4 text-sm text-amber-500">
         Trading money should never come from bill money, grocery money, or any funds needed before
         your next paycheck. The app will warn you if a trading contribution would reduce your
         safe-to-spend below your emergency buffer.
