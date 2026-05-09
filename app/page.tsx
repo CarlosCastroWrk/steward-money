@@ -92,7 +92,7 @@ export default async function DashboardPage() {
   // Pass raw timestamp to DashboardSyncButton — formatting happens client-side so it stays live
 
   return (
-    <div className="overflow-x-hidden space-y-5 px-4 pb-10 pt-5 md:space-y-6 md:px-8 md:pt-8">
+    <div className="overflow-x-hidden space-y-8 px-4 pb-10 pt-5 md:space-y-8 md:px-8 md:pt-8">
 
       {/* 1. Greeting + date */}
       <GreetingHeader displayName={displayName} />
@@ -121,7 +121,7 @@ export default async function DashboardPage() {
               {alert.message}
             </div>
           ))}
-          <a href="/pulse" className="self-end text-xs text-purple-400 hover:text-purple-300">
+          <a href="/pulse" className="self-end text-xs text-blue-400 hover:text-blue-300">
             View all in Pulse →
           </a>
         </div>
@@ -166,21 +166,21 @@ export default async function DashboardPage() {
       <CalendarCard initiallyConnected={calendarConnected} />
       {process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID && <CalendarOptInCard initiallyConnected={calendarConnected} />}
 
-      {/* 4. Stats row — tappable tiles */}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+      {/* 4. Stats strip — flat horizontal dividers, no card chrome */}
+      <div className="overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--bg-card)] divide-x divide-[var(--border)] flex">
         {[
-          { label: "Monthly Expenses", value: formatUSD(monthlyBillsTotal), color: "text-red-400", href: "/bills" },
+          { label: "Bills", value: formatUSD(monthlyBillsTotal), color: "text-red-400", href: "/bills" },
           { label: "Subscriptions", value: formatUSD(monthlySubsTotal), color: "text-amber-400", href: "/bills" },
-          { label: "Active Goals", value: String(goals.length), color: "text-[var(--text-1)]", href: "/goals" },
-          { label: "Spent This Month", value: formatUSD(totalSpentMonth), color: "text-[var(--text-3)]", href: "/transactions" },
+          { label: "Goals", value: String(goals.length), color: "text-[var(--text-1)]", href: "/goals" },
+          { label: "Spent", value: formatUSD(totalSpentMonth), color: "text-[var(--text-2)]", href: "/transactions" },
         ].map((stat) => (
           <a
             key={stat.label}
             href={stat.href}
-            className="rounded-2xl border border-[var(--border)] bg-[var(--bg-card)] p-4 block transition-all active:scale-[0.97] hover:border-[var(--border-strong)]"
+            className="flex-1 px-3 py-4 block transition-colors hover:bg-[var(--bg-elevated)] active:bg-[var(--bg-elevated)]"
           >
-            <p className="text-[10px] font-medium uppercase tracking-wide text-[var(--text-3)]">{stat.label}</p>
-            <p className={`mt-1 text-xl font-semibold ${stat.color}`}>{stat.value}</p>
+            <p className="text-[9px] font-medium uppercase tracking-wide text-[var(--text-3)]">{stat.label}</p>
+            <p className={`mt-1 text-base font-semibold ${stat.color}`}>{stat.value}</p>
           </a>
         ))}
       </div>
@@ -194,12 +194,12 @@ export default async function DashboardPage() {
               <h2 className="text-[10px] font-semibold uppercase tracking-widest text-[var(--text-3)]">Recent Activity</h2>
               <p className="text-[10px] text-[var(--text-3)] mt-0.5">Last 7 days</p>
             </div>
-            <a href="/transactions" className="text-xs text-purple-400 transition-colors hover:text-purple-300">See all</a>
+            <a href="/transactions" className="text-xs text-blue-400 transition-colors hover:text-blue-300">See all</a>
           </div>
           {recentTx.length === 0 ? (
             <div className="rounded-2xl border border-[var(--border)] bg-[var(--bg-card)] p-5 text-center">
               <p className="text-sm text-[var(--text-3)]">No activity yet — sync your bank or add a transaction manually.</p>
-              <a href="/transactions" className="mt-2 inline-block text-xs text-purple-400 hover:text-purple-300">Go to Activity →</a>
+              <a href="/transactions" className="mt-2 inline-block text-xs text-blue-400 hover:text-blue-300">Go to Activity →</a>
             </div>
           ) : (
             <div className="overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--bg-card)] divide-y divide-[var(--border)]">
@@ -234,7 +234,7 @@ export default async function DashboardPage() {
         <section>
           <div className="mb-3 flex items-center justify-between">
             <h2 className="text-[10px] font-semibold uppercase tracking-widest text-[var(--text-3)]">Expenses This Week</h2>
-            <a href="/bills" className="text-xs text-purple-400 transition-colors hover:text-purple-300">See all</a>
+            <a href="/bills" className="text-xs text-blue-400 transition-colors hover:text-blue-300">See all</a>
           </div>
           {upcomingBills.length === 0 && (upcomingExpensesWeekResult.data ?? []).length === 0 ? (
             <div className="rounded-2xl border border-[var(--border)] bg-[var(--bg-card)] p-5 text-center">
@@ -286,12 +286,12 @@ export default async function DashboardPage() {
         <section>
           <div className="mb-3 flex items-center justify-between">
             <h2 className="text-[10px] font-semibold uppercase tracking-widest text-[var(--text-3)]">Goals</h2>
-            <a href="/goals" className="text-xs text-purple-400 transition-colors hover:text-purple-300">See all</a>
+            <a href="/goals" className="text-xs text-blue-400 transition-colors hover:text-blue-300">See all</a>
           </div>
           {goals.length === 0 ? (
             <div className="rounded-2xl border border-[var(--border)] bg-[var(--bg-card)] p-5 text-center">
               <p className="text-sm text-[var(--text-3)]">No goals yet. Where do you want to go?</p>
-              <a href="/goals" className="mt-2 inline-block text-xs text-purple-400 hover:text-purple-300">Add a goal →</a>
+              <a href="/goals" className="mt-2 inline-block text-xs text-blue-400 hover:text-blue-300">Add a goal →</a>
             </div>
           ) : (
             <a href="/goals" className="block overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--bg-card)] divide-y divide-[var(--border)] transition-all active:scale-[0.99] hover:border-[var(--border-strong)]">
@@ -317,7 +317,7 @@ export default async function DashboardPage() {
                     </p>
                     <div className="mt-2.5 h-1.5 w-full rounded-full bg-[var(--bg-elevated)]">
                       <div
-                        className={`h-1.5 rounded-full transition-all ${pct >= 80 ? "bg-green-500" : pct >= 50 ? "bg-purple-500" : "bg-amber-500"}`}
+                        className={`h-1.5 rounded-full transition-all ${pct >= 80 ? "bg-green-500" : pct >= 50 ? "bg-blue-500" : "bg-amber-500"}`}
                         style={{ width: `${pct}%` }}
                       />
                     </div>
