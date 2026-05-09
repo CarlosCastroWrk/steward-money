@@ -99,9 +99,11 @@ export function ComingUpWidget() {
       const today = new Date().toISOString().split("T")[0];
       const in14 = new Date(Date.now() + 14 * 86_400_000).toISOString().split("T")[0];
 
-      const [billsRes, incomeRes, goalsRes, calRes, eventsRes] = await Promise.all([
+      const ago90 = new Date(Date.now() - 90 * 86_400_000).toISOString().split("T")[0];
+
+      const [billsRes, incomeRes, goalsRes, calRes, eventsRes, recentIncomeRes] = await Promise.all([
         supabase.from("bills").select("id, name, amount, next_due_date").eq("user_id", user.id).gte("next_due_date", today).lte("next_due_date", in14).order("next_due_date", { ascending: true }).limit(5),
-        supabase.from("income_sources").select("id, name, amount, next_expected_date").eq("user_id", user.id).eq("is_active", true).gte("next_expected_date", today).lte("next_expected_date", in14).order("next_expected_date", { ascending: true }).limit(3),
+        supabase.from("income_sources").select("id, name, amount, next_expected_date").eq("user_id", user.id).eq("is_active", true).gte("next_expected_date", today).lte("next_expected_date", in14).order("next_expected_date", { ascending: true }).limit(10),
         supabase.from("goals").select("id, name, target_amount, current_amount, deadline").eq("user_id", user.id).gte("deadline", today).lte("deadline", in14).limit(3),
         supabase.from("calendar_connections").select("user_id").eq("user_id", user.id).maybeSingle(),
         supabase.from("calendar_events_cache")
@@ -111,6 +113,7 @@ export function ComingUpWidget() {
           .lte("start_time", new Date(Date.now() + 14 * 86_400_000).toISOString())
           .order("start_time", { ascending: true })
           .limit(5),
+        supabase.from("transactions").select("merchant, amount").eq("user_id", user.id).gt("amount", 50).gte("date", ago90).limit(100),
       ]);
 
       setCalendarConnected(!!calRes.data);
@@ -127,13 +130,44 @@ export function ComingUpWidget() {
         }
       }
 
+      // Build paycheck amount history per income source (normalized name matching)
+      function normName(s: string) { return s.toLowerCase().replace(/[^a-z0-9]/g, ""); }
+      function isHighVariance(amounts: number[]): boolean {
+        if (amounts.length < 3) return false;
+        const mean = amounts.reduce((s, v) => s + v, 0) / amounts.length;
+        if (mean === 0) return false;
+        const stddev = Math.sqrt(amounts.reduce((s, v) => s + (v - mean) ** 2, 0) / amounts.length);
+        return stddev / mean > 0.15;
+      }
+      const recentTx = recentIncomeRes.data ?? [];
+      const incomeHistory: Record<string, number[]> = {};
+      for (const src of incomeRes.data ?? []) {
+        const key = normName(src.name);
+        incomeHistory[key] = recentTx
+          .filter((t) => normName(t.merchant).includes(key))
+          .map((t) => Number(t.amount));
+      }
+
       const combined: ComingItem[] = [];
 
       for (const b of billsRes.data ?? []) {
         combined.push({ id: `bill-${b.id}`, type: "bill", title: b.name, date: b.next_due_date, amount: Number(b.amount) });
       }
+
+      // Deduplicate income sources by name — only show the earliest occurrence per name
+      const seenIncomeNames = new Set<string>();
       for (const i of incomeRes.data ?? []) {
-        combined.push({ id: `income-${i.id}`, type: "income", title: i.name, date: i.next_expected_date, amount: Number(i.amount) });
+        if (seenIncomeNames.has(i.name)) continue;
+        seenIncomeNames.add(i.name);
+        const key = normName(i.name);
+        const variable = isHighVariance(incomeHistory[key] ?? []);
+        combined.push({
+          id: `income-${i.id}`,
+          type: "income",
+          title: i.name,
+          date: i.next_expected_date,
+          amount: variable ? undefined : Number(i.amount),
+        });
       }
       for (const g of goalsRes.data ?? []) {
         if (!g.deadline) continue;
@@ -213,11 +247,21 @@ export function ComingUpWidget() {
     );
   }
 
-  if (loading) return null;
+  if (loading) {
+    return (
+      <section className="min-w-0 max-w-full">
+        <div className="mb-3 flex items-center justify-between">
+          <h2 className="text-[10px] font-semibold uppercase tracking-widest text-[var(--text-3)]">Coming up · next 14 days</h2>
+          <a href="/transactions" className="text-xs text-purple-400 hover:text-purple-300 transition-colors">See all →</a>
+        </div>
+        <div className="h-[88px] rounded-xl bg-[var(--bg-elevated)] animate-pulse" />
+      </section>
+    );
+  }
 
   return (
     <>
-      <section>
+      <section className="min-w-0 max-w-full">
         <div className="mb-3 flex items-center justify-between">
           <h2 className="text-[10px] font-semibold uppercase tracking-widest text-[var(--text-3)]">Coming up · next 14 days</h2>
           <a href="/transactions" className="text-xs text-purple-400 hover:text-purple-300 transition-colors">See all →</a>
@@ -249,7 +293,7 @@ export function ComingUpWidget() {
         ) : (
           <div className="w-full overflow-hidden">
           <div
-            className="scroll-hidden flex gap-3 overflow-x-auto pb-1 w-full"
+            className="scroll-hidden flex gap-3 overflow-x-auto pb-1 w-full min-w-0"
             style={{ touchAction: "pan-x", WebkitOverflowScrolling: "touch" } as React.CSSProperties}
             onPointerDown={(e) => e.stopPropagation()}
           >
