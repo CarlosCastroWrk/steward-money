@@ -64,11 +64,11 @@ export function LukaMorningBriefing({ data }: { data: BriefingData }) {
       <div className="flex items-start gap-3">
         <AgentAvatar agent="luka" size="md" />
         <div className="flex-1 min-w-0">
-          <p className="text-sm text-zinc-200 leading-relaxed">{briefing}</p>
+          <p className="text-sm text-[var(--text-1)] leading-relaxed">{briefing}</p>
         </div>
         <button
           onClick={dismiss}
-          className="flex-shrink-0 text-zinc-600 hover:text-zinc-400 transition-colors text-lg leading-none mt-0.5"
+          className="flex-shrink-0 text-[var(--text-3)] hover:text-[var(--text-2)] transition-colors text-lg leading-none mt-0.5"
           aria-label="Dismiss"
         >
           ×

@@ -84,13 +84,13 @@ const STATUS_BADGE: Record<string, string> = {
   paid:      "bg-green-900/50 text-green-400",
   overdue:   "bg-red-900/60 text-red-300",
   "due-soon": "bg-amber-900/60 text-amber-300",
-  unpaid:    "bg-zinc-800 text-zinc-400",
+  unpaid:    "bg-[var(--bg-elevated)] text-[var(--text-3)]",
 };
 const STATUS_ROW: Record<string, string> = {
-  paid:      "border-zinc-800 bg-zinc-900/50 opacity-70",
-  overdue:   "border-red-800 bg-red-950/30",
-  "due-soon": "border-amber-800 bg-amber-950/20",
-  unpaid:    "border-zinc-800 bg-zinc-900",
+  paid:      "border-[var(--border)] bg-[var(--bg-card)] opacity-60",
+  overdue:   "border-red-800/60 bg-red-950/20",
+  "due-soon": "border-amber-800/60 bg-amber-950/10",
+  unpaid:    "border-[var(--border)] bg-[var(--bg-card)]",
 };
 const STATUS_LABEL: Record<string, string> = {
   paid:      "PAID",
@@ -159,8 +159,8 @@ export function BillsView({ bills, accounts, suggestions, monthSummary }: Props)
       <div className="mx-auto w-full max-w-4xl">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-semibold text-white">Bills</h1>
-            <p className="mt-1 text-sm text-zinc-500">Recurring payments — this month&apos;s status</p>
+            <h1 className="text-2xl font-semibold text-[var(--text-1)]">Bills</h1>
+            <p className="mt-1 text-sm text-[var(--text-3)]">Recurring payments — this month&apos;s status</p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <AskLukaButton
@@ -177,9 +177,9 @@ export function BillsView({ bills, accounts, suggestions, monthSummary }: Props)
         {/* Monthly summary */}
         <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
           {[
-            { label: "Total this month", value: formatUSD(monthSummary.totalDue), color: "text-white" },
+            { label: "Total this month", value: formatUSD(monthSummary.totalDue), color: "text-[var(--text-1)]" },
             { label: "Paid so far", value: formatUSD(monthSummary.paidTotal), color: "text-green-400" },
-            { label: "Still owed", value: formatUSD(monthSummary.stillOwed), color: monthSummary.stillOwed > 0 ? "text-red-400" : "text-zinc-500" },
+            { label: "Still owed", value: formatUSD(monthSummary.stillOwed), color: monthSummary.stillOwed > 0 ? "text-red-400" : "text-[var(--text-3)]" },
             {
               label: "Next due",
               value: monthSummary.nextBill
@@ -188,8 +188,8 @@ export function BillsView({ bills, accounts, suggestions, monthSummary }: Props)
               color: "text-amber-400",
             },
           ].map((stat) => (
-            <div key={stat.label} className="rounded-xl border border-zinc-800 bg-zinc-900 p-4">
-              <p className="text-[10px] font-medium uppercase tracking-wide text-zinc-500">{stat.label}</p>
+            <div key={stat.label} className="rounded-xl border border-[var(--border)] bg-[var(--bg-card)] p-4">
+              <p className="text-[10px] font-medium uppercase tracking-wide text-[var(--text-3)]">{stat.label}</p>
               <p className={`mt-1.5 text-lg font-semibold truncate ${stat.color}`}>{stat.value}</p>
             </div>
           ))}
@@ -201,19 +201,19 @@ export function BillsView({ bills, accounts, suggestions, monthSummary }: Props)
             <p className="mb-3 text-[10px] font-semibold uppercase tracking-widest text-amber-500">Detected recurring charges</p>
             <div className="space-y-2">
               {suggestions.filter((s) => !dismissedSuggestions.has(s.merchant)).map((s) => (
-                <div key={s.merchant} className="flex items-center justify-between gap-3 rounded-lg border border-zinc-800 bg-zinc-900 px-4 py-3">
+                <div key={s.merchant} className="flex items-center justify-between gap-3 rounded-lg border border-[var(--border)] bg-[var(--bg-card)] px-4 py-3">
                   <div className="min-w-0">
-                    <p className="text-sm font-medium text-white truncate">{s.merchant}</p>
-                    <p className="text-xs text-zinc-500">{s.frequency} · {s.occurrences} transactions detected</p>
+                    <p className="text-sm font-medium text-[var(--text-1)] truncate">{s.merchant}</p>
+                    <p className="text-xs text-[var(--text-3)]">{s.frequency} · {s.occurrences} transactions detected</p>
                   </div>
                   <div className="flex items-center gap-2 flex-shrink-0">
-                    <span className="text-sm font-semibold text-white">{formatUSD(s.amount)}</span>
+                    <span className="text-sm font-semibold text-[var(--text-1)]">{formatUSD(s.amount)}</span>
                     <button type="button" onClick={() => addSuggestion(s)} disabled={addingId === s.merchant}
                       className="rounded-lg border border-green-800/60 px-3 py-1 text-xs font-medium text-green-400 hover:bg-green-950/40 disabled:opacity-40 transition-colors">
                       {addingId === s.merchant ? "Adding…" : "Add"}
                     </button>
                     <button type="button" onClick={() => setDismissedSuggestions((p) => new Set([...p, s.merchant]))}
-                      className="rounded-lg border border-zinc-700 px-3 py-1 text-xs text-zinc-500 hover:text-zinc-300 transition-colors">
+                      className="rounded-lg border border-[var(--border)] px-3 py-1 text-xs text-[var(--text-3)] hover:text-[var(--text-2)] transition-colors">
                       Dismiss
                     </button>
                   </div>
@@ -226,9 +226,9 @@ export function BillsView({ bills, accounts, suggestions, monthSummary }: Props)
         {/* Bills list */}
         <div className="mt-6 space-y-2">
           {sorted.length === 0 ? (
-            <div className="rounded-xl border border-dashed border-zinc-800 p-10 text-center">
-              <p className="text-sm font-medium text-zinc-400">Nothing due soon. You&apos;re ahead of it.</p>
-              <p className="mt-1 text-xs text-zinc-600">Add your recurring payments to start tracking.</p>
+            <div className="rounded-xl border border-dashed border-[var(--border)] p-10 text-center">
+              <p className="text-sm font-medium text-[var(--text-2)]">Nothing due soon. You&apos;re ahead of it.</p>
+              <p className="mt-1 text-xs text-[var(--text-3)]">Add your recurring payments to start tracking.</p>
             </div>
           ) : (
             sorted.map((bill) => {
@@ -238,18 +238,18 @@ export function BillsView({ bills, accounts, suggestions, monthSummary }: Props)
                   <div className="flex items-center justify-between gap-3">
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-center gap-2">
-                        <p className="font-medium text-white">{bill.name}</p>
+                        <p className="font-medium text-[var(--text-1)]">{bill.name}</p>
                         <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${STATUS_BADGE[status]}`}>
                           {STATUS_LABEL[status]}
                         </span>
                         {bill.is_autopay && (
-                          <span className="rounded-full bg-zinc-700 px-2 py-0.5 text-[10px] text-zinc-400">autopay</span>
+                          <span className="rounded-full bg-[var(--bg-elevated)] px-2 py-0.5 text-[10px] text-[var(--text-2)]">autopay</span>
                         )}
                         {bill.auto_detected_paid && (
                           <span className="rounded-full bg-teal-900/50 px-2 py-0.5 text-[10px] text-teal-400">auto-detected</span>
                         )}
                       </div>
-                      <p className="mt-1 text-xs text-zinc-500">
+                      <p className="mt-1 text-xs text-[var(--text-3)]">
                         {status === "paid"
                           ? `Next due: ${relativeDate(bill.next_due_date)}`
                           : relativeDate(bill.next_due_date)
@@ -259,7 +259,7 @@ export function BillsView({ bills, accounts, suggestions, monthSummary }: Props)
                     </div>
 
                     <div className="flex items-center gap-2 flex-shrink-0">
-                      <p className="text-lg font-semibold text-white">{formatUSD(Number(bill.amount))}</p>
+                      <p className="text-lg font-semibold text-[var(--text-1)]">{formatUSD(Number(bill.amount))}</p>
                       {status !== "paid" && !bill.is_autopay && bill.next_due_date && (
                         <button type="button" onClick={() => markPaid(bill)} disabled={paidId === bill.id}
                           className="min-h-[36px] rounded-lg border border-green-800/60 px-3 py-1.5 text-xs font-medium text-green-400 hover:bg-green-950/40 disabled:opacity-40 transition-colors">
@@ -267,7 +267,7 @@ export function BillsView({ bills, accounts, suggestions, monthSummary }: Props)
                         </button>
                       )}
                       <button type="button" onClick={() => { setEditing(bill); setModalOpen(true); }}
-                        className="min-h-[36px] rounded-lg border border-zinc-700 px-3 py-1.5 text-xs text-zinc-400 hover:text-white transition-colors">
+                        className="min-h-[36px] rounded-lg border border-[var(--border)] px-3 py-1.5 text-xs text-[var(--text-2)] hover:text-[var(--text-1)] transition-colors">
                         Edit
                       </button>
                       {confirmDeleteId === bill.id ? (
@@ -277,13 +277,13 @@ export function BillsView({ bills, accounts, suggestions, monthSummary }: Props)
                             {deletingId === bill.id ? "…" : "Confirm"}
                           </button>
                           <button type="button" onClick={() => setConfirmDeleteId(null)}
-                            className="min-h-[36px] rounded-lg border border-zinc-700 px-2 py-1.5 text-xs text-zinc-500 transition-colors">
+                            className="min-h-[36px] rounded-lg border border-[var(--border)] px-2 py-1.5 text-xs text-[var(--text-3)] transition-colors">
                             ✕
                           </button>
                         </div>
                       ) : (
                         <button type="button" onClick={() => setConfirmDeleteId(bill.id)}
-                          className="min-h-[36px] rounded-lg border border-zinc-700 px-3 py-1.5 text-xs text-zinc-500 hover:border-red-900 hover:text-red-400 transition-colors">
+                          className="min-h-[36px] rounded-lg border border-[var(--border)] px-3 py-1.5 text-xs text-[var(--text-3)] hover:border-red-900 hover:text-red-400 transition-colors">
                           Delete
                         </button>
                       )}

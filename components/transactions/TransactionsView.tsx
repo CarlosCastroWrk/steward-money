@@ -297,12 +297,12 @@ export function TransactionsView({ transactions: initialTransactions, accounts, 
           <div className="mb-5 flex items-center gap-2.5 rounded-xl border border-green-900/40 bg-green-950/20 px-4 py-3">
             <span className="h-2 w-2 rounded-full bg-green-400 flex-shrink-0" />
             <p className="text-sm text-green-400 flex-1">Transactions sync automatically from {institutionName}</p>
-            <p className="text-xs text-zinc-500">{lastSynced ? timeSince(lastSynced) : "Not yet synced"}</p>
+            <p className="text-xs text-[var(--text-3)]">{lastSynced ? timeSince(lastSynced) : "Not yet synced"}</p>
           </div>
         ) : (
-          <div className="mb-5 flex items-center justify-between gap-3 rounded-xl border border-zinc-700 bg-zinc-900 px-4 py-3">
-            <p className="text-sm text-zinc-400">Connect your bank to sync transactions automatically</p>
-            <a href="/accounts" className="rounded-lg bg-white text-black text-xs font-medium px-3 py-1.5 hover:bg-zinc-100 transition-colors flex-shrink-0">
+          <div className="mb-5 flex items-center justify-between gap-3 rounded-xl border border-[var(--border)] bg-[var(--bg-card)] px-4 py-3">
+            <p className="text-sm text-[var(--text-2)]">Connect your bank to sync transactions automatically</p>
+            <a href="/accounts" className="rounded-lg bg-[var(--accent)] text-white text-xs font-medium px-3 py-1.5 hover:bg-[var(--accent-deep)] transition-colors flex-shrink-0">
               Connect
             </a>
           </div>

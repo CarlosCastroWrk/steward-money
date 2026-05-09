@@ -49,16 +49,16 @@ export function SolomonWord({ report }: { report: WeeklyReport | null }) {
         <div className="flex-1 min-w-0">
           <p className="text-[10px] font-semibold uppercase tracking-widest text-amber-600">Solomon&apos;s Word</p>
           {!expanded && (
-            <p className="mt-0.5 text-xs text-zinc-400 truncate">{report.solomon_word}</p>
+            <p className="mt-0.5 text-xs text-[var(--text-2)] truncate">{report.solomon_word}</p>
           )}
         </div>
         {report.stewardship_score != null && <ScoreRing score={report.stewardship_score} />}
-        <span className="text-zinc-600 text-xs ml-1">{expanded ? "▲" : "▼"}</span>
+        <span className="text-[var(--text-3)] text-xs ml-1">{expanded ? "▲" : "▼"}</span>
       </button>
       {expanded && (
         <div className="border-t border-amber-900/30 px-4 pb-4">
-          <p className="text-sm text-zinc-300 leading-relaxed pt-3">{report.solomon_word}</p>
-          <div className="mt-3 flex flex-wrap gap-3 text-xs text-zinc-500">
+          <p className="text-sm text-[var(--text-2)] leading-relaxed pt-3">{report.solomon_word}</p>
+          <div className="mt-3 flex flex-wrap gap-3 text-xs text-[var(--text-3)]">
             {report.lived_within_provision != null && (
               <span className={report.lived_within_provision ? "text-green-500" : "text-red-400"}>
                 {report.lived_within_provision ? "✓ Lived within provision" : "✕ Exceeded provision"}

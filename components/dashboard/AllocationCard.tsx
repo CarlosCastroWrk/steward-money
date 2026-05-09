@@ -22,42 +22,42 @@ export function AllocationCard({ income }: { income: number }) {
   const total = data.lines.reduce((s, l) => s + l.amount, 0) + data.flex;
 
   return (
-    <div className="rounded-xl border border-blue-900/50 bg-zinc-900 overflow-hidden">
-      <div className="flex items-center gap-3 p-4 border-b border-zinc-800">
+    <div className="overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--bg-card)]">
+      <div className="flex items-center gap-3 border-b border-[var(--border)] p-4">
         <AgentAvatar agent="luka" size="md" />
         <div className="flex-1 min-w-0">
-          <p className="text-[10px] font-semibold uppercase tracking-widest text-blue-400">Paycheck Allocation</p>
-          <p className="text-sm font-medium text-white mt-0.5">Here&apos;s where your {formatUSD(income)} goes:</p>
+          <p className="text-[10px] font-semibold uppercase tracking-widest text-[var(--accent)]">Paycheck Allocation</p>
+          <p className="mt-0.5 text-sm font-medium text-[var(--text-1)]">Here&apos;s where your {formatUSD(income)} goes:</p>
         </div>
-        <button onClick={() => setDismissed(true)} className="text-zinc-600 hover:text-zinc-400 text-lg leading-none">×</button>
+        <button onClick={() => setDismissed(true)} className="text-[var(--text-3)] hover:text-[var(--text-2)] text-lg leading-none">×</button>
       </div>
 
-      <div className="p-4 space-y-3">
+      <div className="space-y-3 p-4">
         {data.lines.map((line) => {
           const pct = total > 0 ? (line.amount / total) * 100 : 0;
           return (
             <div key={line.label}>
-              <div className="flex items-center justify-between text-sm mb-1">
-                <span className="text-zinc-300 flex items-center gap-1.5">
+              <div className="mb-1 flex items-center justify-between text-sm">
+                <span className="flex items-center gap-1.5 text-[var(--text-2)]">
                   <span>{line.emoji}</span>
                   {line.label}
                 </span>
-                <span className="font-semibold text-white">{formatUSD(line.amount)}</span>
+                <span className="font-semibold text-[var(--text-1)]">{formatUSD(line.amount)}</span>
               </div>
-              <div className="h-1.5 w-full rounded-full bg-zinc-800">
+              <div className="h-1.5 w-full rounded-full bg-[var(--bg-elevated)]">
                 <div className={`h-1.5 rounded-full ${line.color} transition-all`} style={{ width: `${pct}%` }} />
               </div>
             </div>
           );
         })}
 
-        <div className="pt-2 border-t border-zinc-800">
+        <div className="border-t border-[var(--border)] pt-2">
           <div className="flex items-center justify-between">
-            <span className="text-sm text-zinc-300 flex items-center gap-1.5">
+            <span className="flex items-center gap-1.5 text-sm text-[var(--text-2)]">
               <span>✨</span>
               Safe to spend (flex)
             </span>
-            <span className="text-sm font-bold text-green-400">{formatUSD(data.flex)}</span>
+            <span className="text-sm font-bold text-emerald-500">{formatUSD(data.flex)}</span>
           </div>
         </div>
       </div>
@@ -65,13 +65,13 @@ export function AllocationCard({ income }: { income: number }) {
       <div className="flex gap-2 p-4 pt-0">
         <button
           onClick={() => setDismissed(true)}
-          className="flex-1 rounded-lg bg-white text-black text-sm font-medium py-2.5 hover:bg-zinc-100 transition-colors"
+          className="flex-1 rounded-lg bg-[var(--accent)] py-2.5 text-sm font-medium text-white transition-colors hover:bg-[var(--accent-deep)]"
         >
           Looks good
         </button>
         <button
           onClick={() => setDismissed(true)}
-          className="flex-1 rounded-lg border border-zinc-700 text-zinc-300 text-sm font-medium py-2.5 hover:bg-zinc-800 transition-colors"
+          className="flex-1 rounded-lg border border-[var(--border)] py-2.5 text-sm font-medium text-[var(--text-2)] transition-colors hover:bg-[var(--bg-elevated)]"
         >
           Adjust
         </button>
