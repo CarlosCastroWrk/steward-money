@@ -183,6 +183,71 @@ const TOOLS: Anthropic.Tool[] = [
     },
   },
   {
+    name: "delete_bill",
+    description: "Delete a recurring expense. ALWAYS call with confirmed: false first — this shows the user what will be deleted and asks them to confirm. Only call with confirmed: true after the user explicitly says yes.",
+    input_schema: {
+      type: "object",
+      properties: {
+        bill_name: { type: "string", description: "Bill name to delete (partial match OK)" },
+        confirmed: { type: "boolean", description: "false = preview only (always start here); true = actually delete" },
+      },
+      required: ["bill_name", "confirmed"],
+    },
+  },
+  {
+    name: "delete_income_source",
+    description: "Delete an income source. ALWAYS call with confirmed: false first — this shows the user what will be deleted and asks them to confirm. Only call with confirmed: true after the user explicitly says yes.",
+    input_schema: {
+      type: "object",
+      properties: {
+        income_name: { type: "string", description: "Income source name to delete (partial match OK)" },
+        confirmed: { type: "boolean", description: "false = preview only (always start here); true = actually delete" },
+      },
+      required: ["income_name", "confirmed"],
+    },
+  },
+  {
+    name: "delete_goal",
+    description: "Delete a savings goal. ALWAYS call with confirmed: false first — this shows the user what will be deleted and asks them to confirm. Only call with confirmed: true after the user explicitly says yes.",
+    input_schema: {
+      type: "object",
+      properties: {
+        goal_name: { type: "string", description: "Goal name to delete (partial match OK)" },
+        confirmed: { type: "boolean", description: "false = preview only (always start here); true = actually delete" },
+      },
+      required: ["goal_name", "confirmed"],
+    },
+  },
+  {
+    name: "update_income_source",
+    description: "Update an existing income source. Use this when the user corrects or changes an income source that already exists.",
+    input_schema: {
+      type: "object",
+      properties: {
+        income_name: { type: "string", description: "Existing income source name (partial match OK)" },
+        amount: { type: "number" },
+        frequency: { type: "string", enum: ["monthly", "biweekly", "weekly", "twice monthly", "quarterly", "yearly"] },
+        next_expected_date: { type: "string", description: "YYYY-MM-DD" },
+      },
+      required: ["income_name"],
+    },
+  },
+  {
+    name: "update_goal",
+    description: "Update an existing savings goal — change the name, target amount, current amount, or deadline.",
+    input_schema: {
+      type: "object",
+      properties: {
+        goal_name: { type: "string", description: "Existing goal name (partial match OK)" },
+        name: { type: "string", description: "New name (optional)" },
+        target_amount: { type: "number" },
+        current_amount: { type: "number" },
+        deadline: { type: "string", description: "YYYY-MM-DD or null to remove" },
+      },
+      required: ["goal_name"],
+    },
+  },
+  {
     name: "bulk_setup",
     description: "Apply multiple setup actions at once. Use during onboarding when the user shares several pieces of info in one message.",
     input_schema: {
@@ -567,6 +632,91 @@ async function executeTool(
         return { result: { success: true, settings_updated: Object.keys(updates), rules_saved: rules?.length ?? 0 }, refreshNeeded: Object.keys(updates).length > 0 };
       }
 
+      case "delete_bill": {
+        const { data: bills } = await supabase.from("bills").select("id, name, amount, frequency").eq("user_id", userId);
+        const query = String(input.bill_name ?? "").toLowerCase();
+        const bill = (bills ?? []).find((b) => b.name.toLowerCase().includes(query));
+        if (!bill) return { result: { error: `No bill found matching "${input.bill_name}"` }, refreshNeeded: false };
+        if (!input.confirmed) {
+          return {
+            result: {
+              needs_confirmation: true,
+              message: `Found "${bill.name}" — $${Number(bill.amount).toLocaleString()}/${bill.frequency}. This will be permanently deleted. Call delete_bill again with confirmed: true only if the user says yes.`,
+            },
+            refreshNeeded: false,
+          };
+        }
+        await supabase.from("bills").delete().eq("id", bill.id).eq("user_id", userId);
+        return { result: { success: true, message: `"${bill.name}" deleted.` }, refreshNeeded: true };
+      }
+
+      case "delete_income_source": {
+        const { data: sources } = await supabase.from("income_sources").select("id, name, amount, frequency").eq("user_id", userId).eq("is_active", true);
+        const query = String(input.income_name ?? "").toLowerCase();
+        const src = (sources ?? []).find((s) => s.name.toLowerCase().includes(query));
+        if (!src) return { result: { error: `No income source found matching "${input.income_name}"` }, refreshNeeded: false };
+        if (!input.confirmed) {
+          return {
+            result: {
+              needs_confirmation: true,
+              message: `Found "${src.name}" — $${Number(src.amount).toLocaleString()}/${src.frequency}. This will be permanently deleted. Call delete_income_source again with confirmed: true only if the user says yes.`,
+            },
+            refreshNeeded: false,
+          };
+        }
+        await supabase.from("income_sources").delete().eq("id", src.id).eq("user_id", userId);
+        return { result: { success: true, message: `"${src.name}" deleted.` }, refreshNeeded: true };
+      }
+
+      case "delete_goal": {
+        const { data: goals } = await supabase.from("goals").select("id, name, target_amount, current_amount").eq("user_id", userId);
+        const query = String(input.goal_name ?? "").toLowerCase();
+        const goal = (goals ?? []).find((g) => g.name.toLowerCase().includes(query));
+        if (!goal) return { result: { error: `No goal found matching "${input.goal_name}"` }, refreshNeeded: false };
+        if (!input.confirmed) {
+          return {
+            result: {
+              needs_confirmation: true,
+              message: `Found "${goal.name}" — $${Number(goal.current_amount).toLocaleString()} saved of $${Number(goal.target_amount).toLocaleString()} target. This will be permanently deleted. Call delete_goal again with confirmed: true only if the user says yes.`,
+            },
+            refreshNeeded: false,
+          };
+        }
+        await supabase.from("goals").delete().eq("id", goal.id).eq("user_id", userId);
+        return { result: { success: true, message: `"${goal.name}" deleted.` }, refreshNeeded: true };
+      }
+
+      case "update_income_source": {
+        const { data: sources } = await supabase.from("income_sources").select("id, name, amount, frequency, next_expected_date").eq("user_id", userId).eq("is_active", true);
+        const query = String(input.income_name ?? "").toLowerCase();
+        const src = (sources ?? []).find((s) => s.name.toLowerCase().includes(query));
+        if (!src) return { result: { error: `No income source found matching "${input.income_name}"` }, refreshNeeded: false };
+        const updates: Record<string, unknown> = {};
+        if (input.amount !== undefined) updates.amount = input.amount;
+        if (input.frequency !== undefined) updates.frequency = input.frequency;
+        if (input.next_expected_date !== undefined) updates.next_expected_date = input.next_expected_date;
+        if (Object.keys(updates).length === 0) return { result: { error: "No fields to update were provided" }, refreshNeeded: false };
+        await supabase.from("income_sources").update(updates).eq("id", src.id).eq("user_id", userId);
+        const parts = Object.entries(updates).map(([k, v]) => `${k}: ${v}`).join(", ");
+        return { result: { success: true, message: `"${src.name}" updated — ${parts}` }, refreshNeeded: true };
+      }
+
+      case "update_goal": {
+        const { data: goals } = await supabase.from("goals").select("id, name, target_amount, current_amount, deadline").eq("user_id", userId);
+        const query = String(input.goal_name ?? "").toLowerCase();
+        const goal = (goals ?? []).find((g) => g.name.toLowerCase().includes(query));
+        if (!goal) return { result: { error: `No goal found matching "${input.goal_name}"` }, refreshNeeded: false };
+        const updates: Record<string, unknown> = {};
+        if (input.name !== undefined) updates.name = input.name;
+        if (input.target_amount !== undefined) updates.target_amount = input.target_amount;
+        if (input.current_amount !== undefined) updates.current_amount = input.current_amount;
+        if (input.deadline !== undefined) updates.deadline = input.deadline ?? null;
+        if (Object.keys(updates).length === 0) return { result: { error: "No fields to update were provided" }, refreshNeeded: false };
+        await supabase.from("goals").update(updates).eq("id", goal.id).eq("user_id", userId);
+        const parts = Object.entries(updates).map(([k, v]) => `${k}: ${v}`).join(", ");
+        return { result: { success: true, message: `"${goal.name}" updated — ${parts}` }, refreshNeeded: true };
+      }
+
       default:
         return { result: { error: `Unknown tool: ${name}` }, refreshNeeded: false };
     }
@@ -710,6 +860,12 @@ When asked to take action, use your tools. When asked a question, answer with re
 
 **Never duplicate bills, income sources, or goals.** When add_bill, add_income_source, or add_goal returns duplicate_found: true, stop. Do not call add_bill again. Instead, tell the user what already exists and ask: "Is this an update to [existing item], or a completely different one?" If they want to update, call update_bill. If they confirm it's genuinely different, call add_bill again with a more specific name they provide.
 
+**Deleting and editing:** You can delete bills, income sources, and goals — and update income sources and goals in addition to bills. These are powerful actions.
+
+For deletes: ALWAYS call the delete tool with confirmed: false first. The tool will return what it found. Present that to the user: "I found [name] for $X — delete it permanently?" Then only call again with confirmed: true after the user explicitly says yes. Never skip this step, even if the user seems certain.
+
+For updates (update_bill, update_income_source, update_goal): match by name and only update the specific fields the user mentioned. Confirm what changed after the tool returns success.
+
 If the user mentions a significant life change (new job, moving, relationship change, major purchase), use the trigger_kairos tool and acknowledge the change warmly.${kairosOpener}${calendarEvents.length > 0 ? `\n\n${formatCalendarContextForAgent(calendarEvents)}` : ""}`;
 
   const messages: Anthropic.MessageParam[] = clientMessages.map((m) => ({
@@ -720,9 +876,14 @@ If the user mentions a significant life change (new job, moving, relationship ch
   const TOOL_LABELS: Record<string, string> = {
     add_bill:               "Added recurring expense",
     update_bill:            "Updated recurring expense",
+    delete_bill:            "Deleted recurring expense",
     add_goal:               "Created savings goal",
+    update_goal:            "Updated savings goal",
+    delete_goal:            "Deleted savings goal",
     add_transaction:        "Logged transaction",
     add_income_source:      "Added income source",
+    update_income_source:   "Updated income source",
+    delete_income_source:   "Deleted income source",
     mark_bill_paid:         "Marked expense paid",
     mark_income_received:   "Marked income received",
     update_settings:        "Updated settings",
