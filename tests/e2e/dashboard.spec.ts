@@ -6,8 +6,10 @@ test.describe("Dashboard", () => {
     await ensureLoggedIn(page);
   });
 
-  test("Safe to Spend card is visible", async ({ page }) => {
-    await expect(page.locator("text=Safe to Spend")).toBeVisible();
+  test("Dashboard hero section renders (Safe to Spend or Connect Bank)", async ({ page }) => {
+    // Safe to Spend renders when accounts are synced; ConnectBankCard when not yet connected
+    const hero = page.getByText(/safe.to.spend|connect.*bank|link.*bank|connect.*account/i).first();
+    await expect(hero).toBeVisible({ timeout: 12_000 });
   });
 
   test("stat grid renders (Monthly Expenses or key metric)", async ({ page }) => {
@@ -24,10 +26,12 @@ test.describe("Dashboard", () => {
     expect(overflow).toBeFalsy();
   });
 
-  test("bottom navigation is visible", async ({ page }) => {
-    // Bottom nav tabs: Home, Expenses, Pulse, Card
-    const nav = page.locator("nav");
+  test("bottom navigation is fixed at bottom of screen", async ({ page }) => {
+    // Target the nav element directly — it's fixed bottom-0, visible on mobile (md:hidden hides on desktop)
+    const nav = page.locator("nav.fixed");
     await expect(nav).toBeVisible();
+    // Confirm it has at least one link inside
+    await expect(nav.locator("a, button").first()).toBeVisible();
   });
 
   test("sync button triggers /api/plaid/sync network call", async ({ page }) => {

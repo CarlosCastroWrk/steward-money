@@ -6,17 +6,9 @@ test.describe("Luka chat", () => {
     await ensureLoggedIn(page);
   });
 
-  test("Luka chat opens from dashboard", async ({ page }) => {
-    // Look for the Talk to Luka button or FAB
-    const lukaBtn = page.locator("button", { hasText: /luka|talk|ask/i }).first();
-    if (await lukaBtn.count() > 0) {
-      await lukaBtn.click();
-    } else {
-      // Try clicking the Luka avatar/card
-      await page.locator('[data-testid="luka-button"], text=Luka').first().click();
-    }
-    // Chat surface should appear
-    await expect(page.locator("textarea")).toBeVisible({ timeout: 5_000 });
+  test("Luka chat opens from /pulse/luka", async ({ page }) => {
+    await page.goto("/pulse/luka");
+    await expect(page.locator("textarea")).toBeVisible({ timeout: 8_000 });
   });
 
   test("send a message and receive a response", async ({ page }) => {

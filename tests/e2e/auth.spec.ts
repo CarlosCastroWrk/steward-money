@@ -2,10 +2,10 @@ import { test, expect } from "@playwright/test";
 import { login, TEST_EMAIL, TEST_PASSWORD } from "./helpers/auth";
 
 test.describe("Auth flow", () => {
-  test("login with valid credentials succeeds and shows dashboard", async ({ page }) => {
+  test("login with valid credentials succeeds and redirects away from login", async ({ page }) => {
     await login(page);
-    // Dashboard should show Safe to Spend
-    await expect(page.locator("text=Safe to Spend")).toBeVisible({ timeout: 15_000 });
+    // Should have left /login (lands on / or /onboarding depending on account state)
+    await expect(page).not.toHaveURL(/\/login/);
   });
 
   test("invalid credentials shows error", async ({ page }) => {
@@ -26,18 +26,8 @@ test.describe("Auth flow", () => {
 
   test("logout returns to login page", async ({ page }) => {
     await login(page);
-    // Navigate to Settings to find logout
-    await page.goto("/settings");
-    const logoutBtn = page.locator("button", { hasText: /sign out|log out/i });
-    if (await logoutBtn.count() > 0) {
-      await logoutBtn.click();
-      await expect(page).toHaveURL(/\/login/);
-    } else {
-      // Logout via More page
-      await page.goto("/more");
-      const moreLogout = page.locator("button, a", { hasText: /sign out|log out/i });
-      await moreLogout.click();
-      await expect(page).toHaveURL(/\/login/);
-    }
+    await page.goto("/more");
+    await page.locator("button", { hasText: /sign out/i }).click();
+    await expect(page).toHaveURL(/\/login/, { timeout: 10_000 });
   });
 });
