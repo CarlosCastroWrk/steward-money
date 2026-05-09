@@ -125,7 +125,7 @@ export default function LoginPage() {
               autoComplete={mode === "signin" ? "current-password" : "new-password"} />
 
             {errorMessage && (
-              <p className="rounded-xl border border-red-900 bg-red-950/60 px-4 py-3 text-sm text-red-300">
+              <p className="rounded-xl border border-[var(--color-danger)]/20 bg-[var(--color-danger)]/8 px-4 py-3 text-sm text-[var(--color-danger)]">
                 {errorMessage}
               </p>
             )}

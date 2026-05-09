@@ -13,9 +13,9 @@ function formatUSD(v: number) {
 }
 
 const statusBadge: Record<string, string> = {
-  keep: "bg-emerald-900/50 text-emerald-400",
-  cancel: "bg-red-900/50 text-red-400",
-  evaluating: "bg-amber-900/50 text-amber-400",
+  keep: "bg-emerald-500/12 text-emerald-500",
+  cancel: "bg-[var(--color-danger)]/12 text-[var(--color-danger)]",
+  evaluating: "bg-amber-500/12 text-amber-500",
 };
 
 async function patchStatus(
