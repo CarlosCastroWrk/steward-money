@@ -11,7 +11,21 @@ npm run lint      # ESLint via next lint
 npx tsc --noEmit  # Type-check without emitting (run this before committing)
 ```
 
-No test suite exists. TypeScript check is the primary correctness gate.
+## Testing
+
+Playwright E2E tests run against the live production app. Test files are in `tests/e2e/`.
+
+```bash
+npm run test:e2e          # Headless (fast)
+npm run test:e2e:headed   # Watch the browser navigate in real time
+npm run verify:deploy     # Run mobile tests against production — use after every significant ship
+```
+
+**After significant ships:** run `npm run verify:deploy` and include the pass/fail result in your report. If tests fail, investigate before pushing additional changes.
+
+Requires `.env.test.local` with `TEST_USER_EMAIL` and `TEST_USER_PASSWORD` (dedicated test account — see `tests/README.md`).
+
+TypeScript check (`npx tsc --noEmit`) is still the primary correctness gate for code. E2E tests verify feature behavior.
 
 ## Architecture
 
