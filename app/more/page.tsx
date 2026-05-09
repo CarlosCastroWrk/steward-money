@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { CreditCard, TrendingUp, Users, Target, FileText, RefreshCw, Settings, Plug, BarChart2, LogOut, ChevronRight } from "lucide-react";
+import { CreditCard, TrendingUp, Users, Target, FileText, RefreshCw, Settings, Plug, BarChart2, LogOut, ChevronRight, BookOpen } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { ThemeToggle } from "@/components/ThemeToggle";
 
@@ -27,6 +27,7 @@ const SECTIONS = [
     items: [
       { label: "Settings",     href: "/settings",            icon: <Settings  size={18} strokeWidth={1.6} /> },
       { label: "Integrations", href: "/more/integrations",   icon: <Plug      size={18} strokeWidth={1.6} /> },
+      { label: "Memory",       href: "/more/memory",         icon: <BookOpen  size={18} strokeWidth={1.6} /> },
       { label: "API Usage",    href: "/more/usage",          icon: <BarChart2 size={18} strokeWidth={1.6} /> },
     ],
   },

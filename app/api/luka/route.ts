@@ -9,6 +9,17 @@ import { checkRateLimit } from "@/lib/rate-limit";
 import { getIncompleteSetup } from "@/lib/progressive-setup";
 import { getUpcomingEvents, formatCalendarContextForAgent } from "@/lib/calendar-context";
 import { logAgentUsage } from "@/lib/agents/log-usage";
+import {
+  getRelevantMemories,
+  searchMemories,
+  saveMemory,
+  updateMemory,
+  deleteMemory,
+  formatMemoriesForPrompt,
+  MEMORY_TOOLS,
+  MEMORY_SYSTEM_PROMPT_ADDITION,
+} from "@/lib/memory";
+import { AGENT_MEMORY_CATEGORIES } from "@/lib/agents/registry";
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
@@ -288,6 +299,7 @@ const TOOLS: Anthropic.Tool[] = [
       required: [],
     },
   },
+  ...MEMORY_TOOLS,
 ];
 
 function advanceBillDate(dateStr: string, freq: string): string {
@@ -748,6 +760,38 @@ async function executeTool(
         return { result: { success: true, message: `"${goal.name}" updated — ${parts}` }, refreshNeeded: true };
       }
 
+      case "save_memory": {
+        const mem = await saveMemory(
+          supabase,
+          userId,
+          "luka",
+          (input.categories as string[]) as import("@/lib/memory").MemoryCategory[],
+          String(input.content)
+        );
+        return { result: mem ? { success: true, memory_id: mem.id } : { error: "Failed to save memory" }, refreshNeeded: false };
+      }
+
+      case "update_memory": {
+        const ok = await updateMemory(supabase, userId, String(input.memory_id), String(input.new_content));
+        return { result: ok ? { success: true } : { error: "Failed to update memory" }, refreshNeeded: false };
+      }
+
+      case "delete_memory": {
+        const ok = await deleteMemory(supabase, userId, String(input.memory_id));
+        return { result: ok ? { success: true } : { error: "Failed to delete memory" }, refreshNeeded: false };
+      }
+
+      case "search_memories": {
+        const found = await searchMemories(
+          supabase, userId, String(input.query),
+          AGENT_MEMORY_CATEGORIES.luka
+        );
+        return {
+          result: found.map((m) => ({ id: m.id, content: m.content, categories: m.categories, updated_at: m.updated_at })),
+          refreshNeeded: false,
+        };
+      }
+
       default:
         return { result: { error: `Unknown tool: ${name}` }, refreshNeeded: false };
     }
@@ -775,7 +819,7 @@ export async function POST(req: NextRequest) {
   };
   const { messages: clientMessages, setup_mode: setupMode = false } = body;
 
-  const [settingsResult, safeResult, alertsResult, insightsResult, solomonResult, kairosResult, agentMemoryContext, accountsResult, calendarEvents] = await Promise.all([
+  const [settingsResult, safeResult, alertsResult, insightsResult, solomonResult, kairosResult, agentMemoryContext, accountsResult, calendarEvents, userMemories] = await Promise.all([
     supabase.from("user_settings").select("*").eq("user_id", user.id).maybeSingle(),
     calculateSafeToSpend(supabase, user.id),
     supabase.from("alerts").select("message, severity").eq("user_id", user.id).eq("is_read", false).limit(4),
@@ -785,6 +829,7 @@ export async function POST(req: NextRequest) {
     summarizeAgentMemoriesForLuka(supabase, user.id),
     supabase.from("accounts").select("name, institution, type, purpose").eq("user_id", user.id).eq("is_active", true).order("created_at", { ascending: false }),
     getUpcomingEvents(supabase, user.id, 30),
+    getRelevantMemories(supabase, user.id, AGENT_MEMORY_CATEGORIES.luka),
   ]);
 
   const settings = settingsResult.data;
@@ -822,6 +867,8 @@ export async function POST(req: NextRequest) {
     kairosOpener = `\n\nIMPORTANT: Kairos has flagged a life change pending review. Lead your FIRST response with: "Hey ${displayName} — looks like something shifted. Want me to review your financial plan and suggest updates?" Then wait for their response before continuing normally.`;
   }
 
+  const memoryBlock = formatMemoriesForPrompt(userMemories);
+
   const system = setupMode
     ? `You are Luka, the personal finance co-pilot for Steward Money. You are in SETUP MODE helping ${displayName} configure their financial profile.
 
@@ -847,11 +894,15 @@ Current state:
 - Giving: ${settings?.giving_enabled ? `${settings.giving_value}%` : "not set"}
 - Savings: ${settings?.savings_value ?? "not set"}
 
-Use update_settings and save_personal_rule to save what you learn. Use bulk_setup when the user gives multiple pieces of info at once.`
+Use update_settings and save_personal_rule to save what you learn. Use bulk_setup when the user gives multiple pieces of info at once.
+${memoryBlock ? `\n${memoryBlock}` : ""}
+${MEMORY_SYSTEM_PROMPT_ADDITION}`
     : `You are Luka, the personal finance co-pilot for Steward Money. You are speaking with ${displayName}, a ${lifeStage} whose main financial goal is ${mainGoal}.
 
 Today is ${today}.
-${agentMemoryContext ? `\n${agentMemoryContext}\n` : ""}
+${agentMemoryContext ? `\n${agentMemoryContext}\n` : ""}${memoryBlock ? `\n${memoryBlock}\n` : ""}
+${MEMORY_SYSTEM_PROMPT_ADDITION}
+
 Current snapshot:
 - Safe to spend: ${fmt(safeResult.safeToSpend)}
 - Liquid cash: ${fmt(safeResult.liquidTotal)}
@@ -925,6 +976,9 @@ If the user mentions a significant life change (new job, moving, relationship ch
     update_account_purpose: "Tagged account purpose",
     save_personal_rule:     "Saved personal rule",
     bulk_setup:             "Setup applied",
+    save_memory:            "Remembered",
+    update_memory:          "Updated memory",
+    delete_memory:          "Forgot",
   };
 
   type ActionRecord = { tool: string; label: string; detail: string };

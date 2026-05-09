@@ -1,3 +1,5 @@
+import type { MemoryCategory } from "@/lib/memory";
+
 export type AgentName =
   | "luka"
   | "argus"
@@ -9,6 +11,20 @@ export type AgentName =
   | "silas"
   | "echo"
   | "kairos";
+
+// Which memory categories each agent can read and write
+export const AGENT_MEMORY_CATEGORIES: Record<AgentName, MemoryCategory[]> = {
+  luka:    ["identity", "financial", "faith", "relationships", "patterns", "preferences"],
+  echo:    ["identity", "financial", "faith", "relationships", "patterns", "preferences"],
+  solomon: ["faith", "financial", "identity"],
+  kairos:  ["identity", "patterns", "preferences"],
+  argus:   ["patterns", "financial"],
+  iron:    ["patterns", "financial", "identity"],
+  manna:   ["faith", "preferences"],
+  eden:    ["faith", "relationships", "identity"],
+  nova:    ["patterns", "financial"],
+  silas:   ["patterns", "financial"],
+};
 
 export interface AgentConfig {
   name: string;
