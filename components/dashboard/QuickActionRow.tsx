@@ -56,7 +56,7 @@ const ACTIONS = [
   { lines: ["Add", "Bill"], href: "/bills", Icon: ReceiptIcon, ring: "text-violet-400" },
   { lines: ["Add", "Goal"], href: "/goals", Icon: FlagIcon, ring: "text-blue-400" },
   { lines: ["Before I", "Spend"], href: "/decide", Icon: ShieldIcon, ring: "text-rose-400" },
-  { lines: ["The", "Council"], href: "/council", Icon: CouncilIcon, ring: "text-purple-400" },
+  { lines: ["The", "Council"], href: "/council", Icon: CouncilIcon, ring: "text-blue-400" },
 ];
 
 export function QuickActionRow() {

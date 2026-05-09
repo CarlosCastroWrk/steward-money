@@ -34,7 +34,7 @@ interface Props {
 const CATEGORY_META: Record<string, { label: string; Icon: React.ElementType; color: string }> = {
   housing:       { label: "Housing",       Icon: Home,           color: "bg-blue-500" },
   transport:     { label: "Transport",     Icon: Car,            color: "bg-amber-500" },
-  phone:         { label: "Phone",         Icon: Smartphone,     color: "bg-purple-500" },
+  phone:         { label: "Phone",         Icon: Smartphone,     color: "bg-blue-500" },
   utilities:     { label: "Utilities",     Icon: Zap,            color: "bg-yellow-400" },
   health:        { label: "Health",        Icon: Heart,          color: "bg-red-500" },
   education:     { label: "Education",     Icon: GraduationCap,  color: "bg-green-500" },

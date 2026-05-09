@@ -173,7 +173,7 @@ export function CashFlowView() {
                     <span className="text-[var(--text-3)]">{fmt(total)}</span>
                   </div>
                   <div className="h-1 w-full rounded-full bg-[var(--bg-elevated)]">
-                    <div className="h-1 rounded-full bg-purple-500 transition-all" style={{ width: `${pct}%` }} />
+                    <div className="h-1 rounded-full bg-blue-500 transition-all" style={{ width: `${pct}%` }} />
                   </div>
                 </button>
               );

@@ -213,7 +213,7 @@ export function CalendarEventDetailModal({ event, onClose, onUpdated }: Props) {
               <button
                 type="button"
                 onClick={() => openLuka(`I have "${event.title}" coming up on ${formatEventDate(event.date)}. Help me think about it financially.`)}
-                className="w-full flex items-center gap-3 rounded-xl border border-purple-800/50 bg-purple-900/10 px-4 py-3 text-sm font-medium text-purple-400 transition hover:bg-purple-900/20"
+                className="w-full flex items-center gap-3 rounded-xl border border-blue-800/50 bg-blue-900/10 px-4 py-3 text-sm font-medium text-blue-400 transition hover:bg-blue-900/20"
               >
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4 flex-shrink-0">
                   <circle cx="12" cy="12" r="10" /><path d="M12 8v4l3 3" />

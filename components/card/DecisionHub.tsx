@@ -149,11 +149,11 @@ export function DecisionHub({ safeToSpend, weeklyNeedsTotal, recentDecisions: in
                 <button
                   onClick={askLuka}
                   disabled={lukaLoading}
-                  className="mt-3 flex items-center gap-1.5 rounded-xl border border-purple-700/30 bg-purple-900/20 px-3 py-2 text-xs font-medium text-purple-400 transition hover:bg-purple-900/30 disabled:opacity-50"
+                  className="mt-3 flex items-center gap-1.5 rounded-xl border border-blue-700/30 bg-blue-900/20 px-3 py-2 text-xs font-medium text-blue-400 transition hover:bg-blue-900/30 disabled:opacity-50"
                 >
                   {lukaLoading ? (
                     <>
-                      <span className="h-1.5 w-1.5 rounded-full bg-purple-400 animate-pulse" />
+                      <span className="h-1.5 w-1.5 rounded-full bg-blue-400 animate-pulse" />
                       Asking Luka…
                     </>
                   ) : (
@@ -165,8 +165,8 @@ export function DecisionHub({ safeToSpend, weeklyNeedsTotal, recentDecisions: in
               )}
 
               {lukaReply && (
-                <div className="mt-3 rounded-xl border border-purple-700/20 bg-purple-900/10 px-4 py-3">
-                  <p className="text-[10px] font-semibold uppercase tracking-wide text-purple-400 mb-1.5">Luka says</p>
+                <div className="mt-3 rounded-xl border border-blue-700/20 bg-blue-900/10 px-4 py-3">
+                  <p className="text-[10px] font-semibold uppercase tracking-wide text-blue-400 mb-1.5">Luka says</p>
                   <p className="text-sm text-[var(--text-2)] leading-relaxed">{lukaReply}</p>
                 </div>
               )}
@@ -179,7 +179,7 @@ export function DecisionHub({ safeToSpend, weeklyNeedsTotal, recentDecisions: in
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="What are you buying? (e.g. AirPods)"
-              className="w-full rounded-xl border border-[var(--border)] bg-[var(--bg-elevated)] px-4 py-3 text-sm text-[var(--text-1)] placeholder:text-[var(--text-3)] outline-none focus:border-purple-500"
+              className="w-full rounded-xl border border-[var(--border)] bg-[var(--bg-elevated)] px-4 py-3 text-sm text-[var(--text-1)] placeholder:text-[var(--text-3)] outline-none focus:border-blue-500"
             />
             <div className="flex gap-2">
               <div className="relative flex-1">
@@ -192,7 +192,7 @@ export function DecisionHub({ safeToSpend, weeklyNeedsTotal, recentDecisions: in
                   placeholder="0.00"
                   min="0"
                   step="0.01"
-                  className="w-full rounded-xl border border-[var(--border)] bg-[var(--bg-elevated)] py-3 pl-7 pr-4 text-sm text-[var(--text-1)] placeholder:text-[var(--text-3)] outline-none focus:border-purple-500"
+                  className="w-full rounded-xl border border-[var(--border)] bg-[var(--bg-elevated)] py-3 pl-7 pr-4 text-sm text-[var(--text-1)] placeholder:text-[var(--text-3)] outline-none focus:border-blue-500"
                 />
               </div>
               <button

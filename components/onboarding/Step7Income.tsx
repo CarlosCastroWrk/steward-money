@@ -84,7 +84,7 @@ export function Step7Income({ formData, onChange, onNext, onBack, isSaving, erro
           type="button"
           onClick={() => patch({ is_variable: !draft.is_variable })}
           className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
-            draft.is_variable ? "bg-purple-600" : "bg-zinc-700"
+            draft.is_variable ? "bg-blue-600" : "bg-zinc-700"
           }`}
         >
           <span
@@ -123,7 +123,7 @@ export function Step7Income({ formData, onChange, onNext, onBack, isSaving, erro
             />
           </div>
           {est > 0 && (
-            <div className="col-span-2 rounded-lg border border-purple-900/50 bg-purple-950/20 px-3 py-2 text-sm text-purple-300">
+            <div className="col-span-2 rounded-lg border border-blue-900/50 bg-blue-950/20 px-3 py-2 text-sm text-blue-300">
               Estimated weekly income:{" "}
               <span className="font-semibold">{formatUSD(est)}</span>
             </div>
@@ -197,7 +197,7 @@ export function Step7Income({ formData, onChange, onNext, onBack, isSaving, erro
             <p className="text-sm">
               {source.name} — {formatUSD(source.amount)} ({source.frequency})
               {source.is_variable && (
-                <span className="ml-1 text-xs text-purple-400">variable</span>
+                <span className="ml-1 text-xs text-blue-400">variable</span>
               )}
             </p>
             <button

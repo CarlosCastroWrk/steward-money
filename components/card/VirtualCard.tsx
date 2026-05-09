@@ -109,7 +109,7 @@ export function VirtualCard({
         />
 
         {/* Glow orb */}
-        <div className="absolute -top-12 -right-12 h-48 w-48 rounded-full bg-purple-500/20 blur-3xl pointer-events-none" />
+        <div className="absolute -top-12 -right-12 h-48 w-48 rounded-full bg-blue-500/20 blur-3xl pointer-events-none" />
 
         <div className="relative flex flex-col justify-between h-full p-6">
           {/* Top row */}

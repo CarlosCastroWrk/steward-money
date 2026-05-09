@@ -27,11 +27,11 @@
   --text-muted:      #8888a0;
   --text-dim:        #b0b0c0;
 
-  /* Accent — Steward Purple */
-  --accent:          #7857ff;
-  --accent-deep:     #5538e8;
-  --accent-glow:     rgba(120, 87, 255, 0.12);
-  --accent-border:   rgba(120, 87, 255, 0.25);
+  /* Accent — Steward Blue */
+  --accent:          #2563eb;
+  --accent-deep:     #1d4ed8;
+  --accent-glow:     rgba(37, 99, 235, 0.12);
+  --accent-border:   rgba(37, 99, 235, 0.25);
 
   /* Semantic */
   --color-income:    #00b894;
@@ -41,8 +41,8 @@
   --color-info:      #3d9eff;
   --color-giving:    #c49a3c;
   --color-green:     #00b894;
-  --color-accent:    #7857ff;
-  --color-accent-dim: rgba(120, 87, 255, 0.1);
+  --color-accent:    #2563eb;
+  --color-accent-dim: rgba(37, 99, 235, 0.1);
 
   /* Agent colors */
   --luka:    #7857ff;
@@ -99,10 +99,10 @@
   --text-dim:        #363648;
 
   /* Accent */
-  --accent:          #7857ff;
-  --accent-deep:     #5538e8;
-  --accent-glow:     rgba(120, 87, 255, 0.15);
-  --accent-border:   rgba(120, 87, 255, 0.3);
+  --accent:          #2563eb;
+  --accent-deep:     #1d4ed8;
+  --accent-glow:     rgba(37, 99, 235, 0.15);
+  --accent-border:   rgba(37, 99, 235, 0.3);
 
   /* Semantic */
   --color-income:    #00d4aa;
@@ -112,8 +112,8 @@
   --color-info:      #4da6ff;
   --color-giving:    #d4a857;
   --color-green:     #00d4aa;
-  --color-accent:    #7857ff;
-  --color-accent-dim: rgba(120, 87, 255, 0.15);
+  --color-accent:    #2563eb;
+  --color-accent-dim: rgba(37, 99, 235, 0.15);
 
   /* Agent colors */
   --luka:    #7857ff;

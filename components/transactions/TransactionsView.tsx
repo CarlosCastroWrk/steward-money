@@ -17,7 +17,7 @@ type Props = { transactions: Transaction[]; accounts: AccountOption[]; plaidConn
 const AVATAR_COLORS = [
   "bg-rose-500", "bg-orange-500", "bg-amber-500", "bg-lime-500",
   "bg-emerald-500", "bg-teal-500", "bg-cyan-500", "bg-blue-500",
-  "bg-indigo-500", "bg-violet-500", "bg-purple-500", "bg-pink-500",
+  "bg-indigo-500", "bg-violet-500", "bg-blue-500", "bg-pink-500",
 ];
 
 function merchantAvatar(name: string | null) {
@@ -347,7 +347,7 @@ export function TransactionsView({ transactions: initialTransactions, accounts, 
                 onClick={() => syncNow(true)}
                 disabled={syncing}
                 title="Pull 90 days of history"
-                className="rounded-xl border border-[var(--border)] px-3 py-2 text-xs text-[var(--text-3)] transition hover:border-purple-700/40 hover:text-purple-400 disabled:opacity-50"
+                className="rounded-xl border border-[var(--border)] px-3 py-2 text-xs text-[var(--text-3)] transition hover:border-blue-700/40 hover:text-blue-400 disabled:opacity-50"
               >
                 90d
               </button>
@@ -369,7 +369,7 @@ export function TransactionsView({ transactions: initialTransactions, accounts, 
             { label: "Income", value: formatUSD(totalIncome),     color: "text-emerald-400" },
             { label: "Net",    value: formatUSDSigned(netAmount), color: netAmount >= 0 ? "text-emerald-400" : "text-red-400" },
             { label: "Needs",  value: formatUSD(needsTotal),      color: "text-blue-400"    },
-            { label: "Wants",  value: formatUSD(wantsTotal),      color: "text-purple-400"  },
+            { label: "Wants",  value: formatUSD(wantsTotal),      color: "text-blue-400"  },
           ].map(({ label, value, color }) => (
             <div key={label} className="rounded-2xl border border-[var(--border)] bg-[var(--bg-card)] p-4">
               <p className="text-[10px] font-medium uppercase tracking-wide text-[var(--text-3)]">{label}</p>
@@ -440,7 +440,7 @@ export function TransactionsView({ transactions: initialTransactions, accounts, 
                       <span className="text-[var(--text-3)]">{formatUSD(total)} · {pct}%</span>
                     </div>
                     <div className="h-1.5 w-full rounded-full bg-[var(--bg-elevated)]">
-                      <div className="h-1.5 rounded-full bg-purple-500" style={{ width: `${pct}%` }} />
+                      <div className="h-1.5 rounded-full bg-blue-500" style={{ width: `${pct}%` }} />
                     </div>
                   </a>
                 );
@@ -537,7 +537,7 @@ export function TransactionsView({ transactions: initialTransactions, accounts, 
                                   </a>
                                 )}
                                 {tx.is_need === true  && <span className="rounded-full bg-blue-500/10 px-2 py-0.5 text-blue-400">need</span>}
-                                {tx.is_need === false && <span className="rounded-full bg-purple-500/10 px-2 py-0.5 text-purple-400">want</span>}
+                                {tx.is_need === false && <span className="rounded-full bg-blue-500/10 px-2 py-0.5 text-blue-400">want</span>}
                                 {tx.account_id && accountMap[tx.account_id] && <span>{accountMap[tx.account_id]}</span>}
                                 {tx.notes && <span className="italic text-[var(--text-3)]">{tx.notes}</span>}
                               </div>

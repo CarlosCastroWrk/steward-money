@@ -22,11 +22,11 @@ export function AllocationCard({ income }: { income: number }) {
   const total = data.lines.reduce((s, l) => s + l.amount, 0) + data.flex;
 
   return (
-    <div className="rounded-xl border border-purple-900/50 bg-zinc-900 overflow-hidden">
+    <div className="rounded-xl border border-blue-900/50 bg-zinc-900 overflow-hidden">
       <div className="flex items-center gap-3 p-4 border-b border-zinc-800">
         <AgentAvatar agent="luka" size="md" />
         <div className="flex-1 min-w-0">
-          <p className="text-[10px] font-semibold uppercase tracking-widest text-purple-400">Paycheck Allocation</p>
+          <p className="text-[10px] font-semibold uppercase tracking-widest text-blue-400">Paycheck Allocation</p>
           <p className="text-sm font-medium text-white mt-0.5">Here&apos;s where your {formatUSD(income)} goes:</p>
         </div>
         <button onClick={() => setDismissed(true)} className="text-zinc-600 hover:text-zinc-400 text-lg leading-none">×</button>

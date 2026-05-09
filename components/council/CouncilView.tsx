@@ -84,7 +84,7 @@ export function CouncilView() {
           onChange={(e) => setQuestion(e.target.value)}
           placeholder="Ask the council anything about your finances..."
           rows={3}
-          className="w-full resize-none rounded-xl border border-[var(--border)] bg-[var(--bg-elevated)] px-4 py-3 text-sm text-[var(--text-1)] placeholder:text-[var(--text-3)] focus:border-purple-500/60 focus:outline-none transition-colors"
+          className="w-full resize-none rounded-xl border border-[var(--border)] bg-[var(--bg-elevated)] px-4 py-3 text-sm text-[var(--text-1)] placeholder:text-[var(--text-3)] focus:border-blue-500/60 focus:outline-none transition-colors"
           onKeyDown={(e) => {
             if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) handleSubmit();
           }}
@@ -96,7 +96,7 @@ export function CouncilView() {
                 key={q}
                 type="button"
                 onClick={() => { setQuestion(q); handleSubmit(q); }}
-                className="rounded-full border border-[var(--border)] bg-[var(--bg-elevated)] px-3 py-1 text-[10px] text-[var(--text-3)] transition-colors hover:border-purple-500/40 hover:text-purple-400"
+                className="rounded-full border border-[var(--border)] bg-[var(--bg-elevated)] px-3 py-1 text-[10px] text-[var(--text-3)] transition-colors hover:border-blue-500/40 hover:text-blue-400"
               >
                 {q}
               </button>
@@ -106,7 +106,7 @@ export function CouncilView() {
             type="button"
             onClick={() => handleSubmit()}
             disabled={loading || !question.trim()}
-            className="shrink-0 rounded-xl bg-purple-600 px-5 py-2.5 text-sm font-medium text-white transition-all hover:bg-purple-500 disabled:opacity-40"
+            className="shrink-0 rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-medium text-white transition-all hover:bg-blue-500 disabled:opacity-40"
           >
             {loading ? "Convening…" : "Convene"}
           </button>
@@ -168,8 +168,8 @@ export function CouncilView() {
           </div>
 
           {/* Synthesis */}
-          <div className="rounded-xl border border-purple-500/30 bg-purple-950/20 p-5">
-            <p className="mb-2 text-[10px] font-semibold uppercase tracking-widest text-purple-400">Council Synthesis</p>
+          <div className="rounded-xl border border-blue-500/30 bg-blue-950/20 p-5">
+            <p className="mb-2 text-[10px] font-semibold uppercase tracking-widest text-blue-400">Council Synthesis</p>
             <p className="text-sm text-[var(--text-2)] leading-relaxed">{result.synthesis}</p>
           </div>
 

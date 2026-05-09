@@ -81,7 +81,7 @@ async function buildAllocation(userId: string, supabase: ReturnType<typeof creat
       : needed * 0.05;
     const contrib = Math.min(weekly, remaining * 0.15, remaining);
     if (contrib > 5) {
-      lines.push({ label: goal.name, amount: contrib, color: "bg-purple-500", emoji: "🎯" });
+      lines.push({ label: goal.name, amount: contrib, color: "bg-blue-500", emoji: "🎯" });
       remaining -= contrib;
     }
   }

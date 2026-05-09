@@ -69,7 +69,7 @@ export function PlaidDiagnosticSection() {
         <button
           onClick={runDeepSync}
           disabled={syncing}
-          className="rounded-xl border border-[var(--border)] px-4 py-2 text-sm text-[var(--text-2)] transition hover:border-purple-700/40 hover:text-purple-400 disabled:opacity-40"
+          className="rounded-xl border border-[var(--border)] px-4 py-2 text-sm text-[var(--text-2)] transition hover:border-blue-700/40 hover:text-blue-400 disabled:opacity-40"
         >
           {syncing ? "Syncing…" : "Deep Sync (90d)"}
         </button>

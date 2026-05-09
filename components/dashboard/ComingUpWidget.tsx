@@ -49,14 +49,14 @@ function getCardStyle(item: ComingItem): { bg: string; text: string; icon: strin
       case "needs_clarification":
         return { bg: "bg-amber-900/20 border-amber-800/30", text: "text-amber-400", icon: "📅" };
       default:
-        return { bg: "bg-purple-900/20 border-purple-800/30", text: "text-purple-400", icon: "📅" };
+        return { bg: "bg-blue-900/20 border-blue-800/30", text: "text-blue-400", icon: "📅" };
     }
   }
   switch (item.type) {
     case "income": return { bg: "bg-emerald-900/30 border-emerald-800/40", text: "text-emerald-400", icon: "💵" };
     case "bill":   return { bg: "bg-red-900/20 border-red-800/30",        text: "text-red-400",     icon: "📄" };
     case "goal":   return { bg: "bg-amber-900/20 border-amber-800/30",    text: "text-amber-400",   icon: "🎯" };
-    default:       return { bg: "bg-purple-900/20 border-purple-800/30",  text: "text-purple-400",  icon: "📅" };
+    default:       return { bg: "bg-blue-900/20 border-blue-800/30",  text: "text-blue-400",  icon: "📅" };
   }
 }
 
@@ -224,7 +224,7 @@ export function ComingUpWidget() {
       <section className="min-w-0 max-w-full">
         <div className="mb-3 flex items-center justify-between">
           <h2 className="text-[10px] font-semibold uppercase tracking-widest text-[var(--text-3)]">Coming up · next 7 days</h2>
-          <a href="/transactions" className="text-xs text-purple-400 hover:text-purple-300 transition-colors">See all →</a>
+          <a href="/transactions" className="text-xs text-blue-400 hover:text-blue-300 transition-colors">See all →</a>
         </div>
         <div className="h-[88px] rounded-xl bg-[var(--bg-elevated)] animate-pulse" />
       </section>
@@ -236,7 +236,7 @@ export function ComingUpWidget() {
       <section className="min-w-0 max-w-full">
         <div className="mb-3 flex items-center justify-between">
           <h2 className="text-[10px] font-semibold uppercase tracking-widest text-[var(--text-3)]">Coming up · next 7 days</h2>
-          <a href="/transactions" className="text-xs text-purple-400 hover:text-purple-300 transition-colors">See all →</a>
+          <a href="/transactions" className="text-xs text-blue-400 hover:text-blue-300 transition-colors">See all →</a>
         </div>
 
         {calJustConnected ? (

@@ -16,7 +16,7 @@ function typeBadgeClasses(type: string): string {
   if (normalized === "savings") return "bg-green-950 text-green-300";
   if (normalized === "credit card") return "bg-red-950 text-red-300";
   if (normalized === "cash" || normalized === "apple cash") return "bg-[var(--bg-elevated)] text-[var(--text-2)]";
-  if (normalized === "trading") return "bg-purple-950 text-purple-300";
+  if (normalized === "trading") return "bg-blue-950 text-blue-300";
   if (normalized === "debt / installment") return "bg-orange-950 text-orange-300";
   return "bg-[var(--bg-elevated)] text-[var(--text-2)]";
 }

@@ -116,7 +116,7 @@ export function CategoriesView() {
                 </div>
                 <div className="flex items-center gap-2">
                   <div className="flex-1 h-1 rounded-full bg-[var(--bg-elevated)]">
-                    <div className="h-1 rounded-full bg-purple-500 transition-all" style={{ width: `${pct}%` }} />
+                    <div className="h-1 rounded-full bg-blue-500 transition-all" style={{ width: `${pct}%` }} />
                   </div>
                   <span className="text-[10px] text-[var(--text-3)] flex-shrink-0 w-8 text-right">{pct}%</span>
                 </div>

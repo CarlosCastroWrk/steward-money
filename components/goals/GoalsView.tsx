@@ -68,7 +68,7 @@ const progressBarColor: Record<GoalStatus, string> = {
   "on-track": "bg-emerald-500",
   behind: "bg-amber-500",
   "at-risk": "bg-red-500",
-  "no-deadline": "bg-purple-500",
+  "no-deadline": "bg-blue-500",
 };
 
 function daysLeftLabel(days: number | null): { text: string; className: string } | null {

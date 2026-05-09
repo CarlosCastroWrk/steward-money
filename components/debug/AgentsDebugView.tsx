@@ -98,7 +98,7 @@ function AgentCard({
         <button
           onClick={trigger}
           disabled={running}
-          className="flex-shrink-0 rounded-xl border border-[var(--border)] px-3 py-1.5 text-xs text-[var(--text-3)] transition hover:border-purple-700/40 hover:text-purple-400 disabled:opacity-40"
+          className="flex-shrink-0 rounded-xl border border-[var(--border)] px-3 py-1.5 text-xs text-[var(--text-3)] transition hover:border-blue-700/40 hover:text-blue-400 disabled:opacity-40"
         >
           {running ? "Running…" : "Trigger"}
         </button>
@@ -117,7 +117,7 @@ function AgentCard({
               {Array.from({ length: 10 }).map((_, i) => (
                 <div
                   key={i}
-                  className={`h-1 w-1 rounded-full ${i < lastMemory.importance ? "bg-purple-500" : "bg-[var(--border)]"}`}
+                  className={`h-1 w-1 rounded-full ${i < lastMemory.importance ? "bg-blue-500" : "bg-[var(--border)]"}`}
                 />
               ))}
             </div>
@@ -160,7 +160,7 @@ export function AgentsDebugView({
           </div>
           <button
             onClick={() => setRunAll(true)}
-            className="flex-shrink-0 rounded-xl bg-purple-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-purple-500"
+            className="flex-shrink-0 rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-500"
           >
             Run All
           </button>
