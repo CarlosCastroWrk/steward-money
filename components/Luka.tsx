@@ -735,7 +735,7 @@ export function Luka() {
   if (!authed || isAuthPage) return null;
 
   function handleKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
-    if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(input); }
+    if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); if (!loading) sendMessage(input); }
   }
 
   function handleInput(e: React.ChangeEvent<HTMLTextAreaElement>) {

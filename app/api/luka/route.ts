@@ -33,7 +33,7 @@ const TOOLS: Anthropic.Tool[] = [
   },
   {
     name: "add_bill",
-    description: "Create a new recurring expense.",
+    description: "Create a new recurring expense. The tool automatically checks for existing bills with similar names and returns duplicate_found: true if a match exists — do not bypass this check by calling add_bill again.",
     input_schema: {
       type: "object",
       properties: {
@@ -44,6 +44,21 @@ const TOOLS: Anthropic.Tool[] = [
         is_autopay: { type: "boolean" },
       },
       required: ["name", "amount", "frequency", "next_due_date"],
+    },
+  },
+  {
+    name: "update_bill",
+    description: "Update an existing recurring expense. Use this when the user corrects or changes a bill that already exists — never duplicate it with add_bill.",
+    input_schema: {
+      type: "object",
+      properties: {
+        bill_name: { type: "string", description: "Existing bill name (partial match OK)" },
+        amount: { type: "number" },
+        frequency: { type: "string", enum: ["monthly", "weekly", "biweekly", "quarterly", "yearly"] },
+        next_due_date: { type: "string", description: "YYYY-MM-DD" },
+        is_autopay: { type: "boolean" },
+      },
+      required: ["bill_name"],
     },
   },
   {
@@ -277,8 +292,25 @@ async function executeTool(
       }
 
       case "add_bill": {
+        const billName = String(input.name ?? "").trim();
+        const { data: existingBills } = await supabase
+          .from("bills")
+          .select("id, name, amount, frequency")
+          .eq("user_id", userId)
+          .ilike("name", `%${billName}%`);
+        if (existingBills && existingBills.length > 0) {
+          const summary = existingBills.map((b) => `"${b.name}" — $${Number(b.amount).toLocaleString()}/${b.frequency}`).join("; ");
+          return {
+            result: {
+              duplicate_found: true,
+              existing: existingBills.map((b) => ({ id: b.id, name: b.name, amount: b.amount, frequency: b.frequency })),
+              message: `Similar bill already exists: ${summary}. Ask the user: are they correcting this bill (call update_bill) or is it a genuinely different expense? Do NOT call add_bill again.`,
+            },
+            refreshNeeded: false,
+          };
+        }
         const { error } = await supabase.from("bills").insert({
-          user_id: userId, name: input.name, amount: input.amount,
+          user_id: userId, name: billName, amount: input.amount,
           frequency: input.frequency, next_due_date: input.next_due_date, is_autopay: input.is_autopay ?? false,
         });
         if (error) {
@@ -286,16 +318,49 @@ async function executeTool(
           return { result: { error: `Database error: ${error.message}` }, refreshNeeded: false };
         }
         const fmtAmt = `$${Number(input.amount).toLocaleString()}`;
-        return { result: { success: true, message: `${input.name} — ${fmtAmt}/${input.frequency}, due ${input.next_due_date}` }, refreshNeeded: true };
+        return { result: { success: true, message: `${billName} — ${fmtAmt}/${input.frequency}, due ${input.next_due_date}` }, refreshNeeded: true };
+      }
+
+      case "update_bill": {
+        const { data: bills } = await supabase.from("bills").select("id, name, amount, frequency, next_due_date").eq("user_id", userId);
+        const query = String(input.bill_name ?? "").toLowerCase();
+        const bill = (bills ?? []).find((b) => b.name.toLowerCase().includes(query));
+        if (!bill) return { result: { error: `No bill found matching "${input.bill_name}"` }, refreshNeeded: false };
+        const updates: Record<string, unknown> = {};
+        if (input.amount !== undefined) updates.amount = input.amount;
+        if (input.frequency !== undefined) updates.frequency = input.frequency;
+        if (input.next_due_date !== undefined) updates.next_due_date = input.next_due_date;
+        if (input.is_autopay !== undefined) updates.is_autopay = input.is_autopay;
+        if (Object.keys(updates).length === 0) return { result: { error: "No fields to update were provided" }, refreshNeeded: false };
+        await supabase.from("bills").update(updates).eq("id", bill.id).eq("user_id", userId);
+        const parts = Object.entries(updates).map(([k, v]) => `${k}: ${v}`).join(", ");
+        return { result: { success: true, message: `"${bill.name}" updated — ${parts}` }, refreshNeeded: true };
       }
 
       case "add_goal": {
+        const goalName = String(input.name ?? "").trim();
+        const { data: existingGoals } = await supabase
+          .from("goals")
+          .select("id, name, target_amount, current_amount")
+          .eq("user_id", userId)
+          .ilike("name", `%${goalName}%`);
+        if (existingGoals && existingGoals.length > 0) {
+          const summary = existingGoals.map((g) => `"${g.name}" — $${Number(g.current_amount).toLocaleString()} of $${Number(g.target_amount).toLocaleString()}`).join("; ");
+          return {
+            result: {
+              duplicate_found: true,
+              existing: existingGoals.map((g) => ({ id: g.id, name: g.name, target_amount: g.target_amount, current_amount: g.current_amount })),
+              message: `Similar goal already exists: ${summary}. Ask the user if they want to update the existing goal or create a separate new one.`,
+            },
+            refreshNeeded: false,
+          };
+        }
         const { error } = await supabase.from("goals").insert({
-          user_id: userId, name: input.name, target_amount: input.target_amount,
+          user_id: userId, name: goalName, target_amount: input.target_amount,
           current_amount: input.current_amount ?? 0, deadline: input.deadline ?? null,
         });
         if (error) return { result: { error: error.message }, refreshNeeded: false };
-        return { result: { success: true, message: `Goal "${input.name}" created` }, refreshNeeded: true };
+        return { result: { success: true, message: `Goal "${goalName}" created` }, refreshNeeded: true };
       }
 
       case "add_transaction": {
@@ -332,9 +397,28 @@ async function executeTool(
           return { result: { error: "next_expected_date is required (YYYY-MM-DD)." }, refreshNeeded: false };
         }
 
+        const incomeName = String(input.name ?? "").trim();
+        const { data: existingSources } = await supabase
+          .from("income_sources")
+          .select("id, name, amount, frequency")
+          .eq("user_id", userId)
+          .eq("is_active", true)
+          .ilike("name", `%${incomeName}%`);
+        if (existingSources && existingSources.length > 0) {
+          const summary = existingSources.map((s) => `"${s.name}" — $${Number(s.amount).toLocaleString()}/${s.frequency}`).join("; ");
+          return {
+            result: {
+              duplicate_found: true,
+              existing: existingSources.map((s) => ({ id: s.id, name: s.name, amount: s.amount, frequency: s.frequency })),
+              message: `Similar income source already exists: ${summary}. Ask the user if they want to update the existing source or add a separate new one.`,
+            },
+            refreshNeeded: false,
+          };
+        }
+
         const { error } = await supabase.from("income_sources").insert({
           user_id: userId,
-          name: input.name,
+          name: incomeName,
           amount: resolvedAmount,
           frequency: input.frequency,
           next_expected_date: nextDate,
@@ -345,7 +429,7 @@ async function executeTool(
           return { result: { error: `Database error: ${error.message}` }, refreshNeeded: false };
         }
         const rateLabel = hourlyRate ? ` (${hourlyRate}/hr × ${weeklyHours}h/wk)` : "";
-        return { result: { success: true, message: `${input.name} added — $${resolvedAmount.toLocaleString()}/${input.frequency}${rateLabel}` }, refreshNeeded: true };
+        return { result: { success: true, message: `${incomeName} added — $${resolvedAmount.toLocaleString()}/${input.frequency}${rateLabel}` }, refreshNeeded: true };
       }
 
       case "mark_bill_paid": {
@@ -624,6 +708,8 @@ When asked to take action, use your tools. When asked a question, answer with re
 
 **Trust tool results.** If a tool call returned success, the action is done — don't say "let me add that now" or "I haven't added this yet." Reference the confirmed result. If a tool returned an error, tell the user exactly what failed and ask for clarification. Never re-attempt a tool that already succeeded.
 
+**Never duplicate bills, income sources, or goals.** When add_bill, add_income_source, or add_goal returns duplicate_found: true, stop. Do not call add_bill again. Instead, tell the user what already exists and ask: "Is this an update to [existing item], or a completely different one?" If they want to update, call update_bill. If they confirm it's genuinely different, call add_bill again with a more specific name they provide.
+
 If the user mentions a significant life change (new job, moving, relationship change, major purchase), use the trigger_kairos tool and acknowledge the change warmly.${kairosOpener}${calendarEvents.length > 0 ? `\n\n${formatCalendarContextForAgent(calendarEvents)}` : ""}`;
 
   const messages: Anthropic.MessageParam[] = clientMessages.map((m) => ({
@@ -633,6 +719,7 @@ If the user mentions a significant life change (new job, moving, relationship ch
 
   const TOOL_LABELS: Record<string, string> = {
     add_bill:               "Added recurring expense",
+    update_bill:            "Updated recurring expense",
     add_goal:               "Created savings goal",
     add_transaction:        "Logged transaction",
     add_income_source:      "Added income source",

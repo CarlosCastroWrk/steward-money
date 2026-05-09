@@ -93,7 +93,7 @@ export default async function DashboardPage() {
   })();
 
   return (
-    <div className="space-y-5 px-4 pb-10 pt-5 md:space-y-6 md:px-8 md:pt-8">
+    <div className="overflow-x-hidden space-y-5 px-4 pb-10 pt-5 md:space-y-6 md:px-8 md:pt-8">
 
       {/* 1. Greeting + date */}
       <GreetingHeader displayName={displayName} />

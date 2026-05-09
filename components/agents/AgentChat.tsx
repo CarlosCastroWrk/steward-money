@@ -241,6 +241,7 @@ export function AgentChat({ agent, prefilledMessage, context, onClose }: Props) 
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState(prefilledMessage ?? "");
   const [loading, setLoading] = useState(false);
+  const loadingRef = useRef(false);
   const [historyOpen, setHistoryOpen] = useState(false);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -259,7 +260,8 @@ export function AgentChat({ agent, prefilledMessage, context, onClose }: Props) 
 
   const send = useCallback(async (text: string) => {
     const trimmed = text.trim();
-    if (!trimmed || loading) return;
+    if (!trimmed || loadingRef.current) return;
+    loadingRef.current = true;
     const userMsg: Message = { role: "user", content: trimmed };
     const newMessages = [...messages, userMsg];
     setMessages(newMessages);
@@ -280,9 +282,10 @@ export function AgentChat({ agent, prefilledMessage, context, onClose }: Props) 
     } catch {
       setMessages((prev) => [...prev, { role: "assistant", content: "I'm having trouble connecting. Try again." }]);
     } finally {
+      loadingRef.current = false;
       setLoading(false);
     }
-  }, [agent, context, loading, messages]);
+  }, [agent, context, messages]);
 
   function handleKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
     if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(input); }
