@@ -3,6 +3,7 @@ import { calculateSafeToSpend } from "@/lib/safe-to-spend";
 import { advanceStaleIncomeDates } from "@/lib/income";
 import { createClient } from "@/lib/supabase/server";
 import { formatUSD, formatUSDCents, formatDate } from "@/lib/format";
+import Link from "next/link";
 import { GreetingHeader } from "@/components/dashboard/GreetingHeader";
 import { CalendarOptInCard } from "@/components/dashboard/CalendarOptInCard";
 import { CalendarCard } from "@/components/dashboard/CalendarCard";
@@ -131,7 +132,8 @@ export default async function DashboardPage() {
       {!hasAccounts ? (
         <ConnectBankCard />
       ) : (
-      <div className="overflow-hidden rounded-2xl shadow-xl" style={{ backgroundColor: "#0b1d3a" }}>
+      <Link href="/card" className="block">
+      <div className="overflow-hidden rounded-2xl shadow-xl transition-opacity active:opacity-90" style={{ backgroundColor: "#0b1d3a" }}>
         <div style={{ height: 3, backgroundColor: "#2563eb", flexShrink: 0 }} />
         <div className="p-6">
           <p className="text-[10px] font-medium uppercase tracking-widest text-white/50">Safe to Spend</p>
@@ -160,6 +162,7 @@ export default async function DashboardPage() {
           <p className="mt-3.5 text-[11px] italic text-white/20">Faithfulness with what&apos;s been entrusted.</p>
         </div>
       </div>
+      </Link>
       )}
 
       {/* 3.5 Calendar (connected users) + opt-in (unconnected, env set) */}

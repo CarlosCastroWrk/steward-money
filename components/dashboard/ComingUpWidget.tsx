@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { CalendarEventDetailModal } from "./CalendarEventDetailModal";
@@ -33,30 +33,51 @@ function fmt(n: number): string {
   return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(n);
 }
 
-function getCardStyle(item: ComingItem): { bg: string; text: string; icon: string } {
+function IncomeIcon() {
+  return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-3.5 w-3.5"><path d="M12 19V5M5 12l7-7 7 7"/></svg>;
+}
+function BillIcon() {
+  return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-3.5 w-3.5"><rect x="5" y="2" width="14" height="20" rx="2"/><path d="M9 7h6M9 11h4"/></svg>;
+}
+function GoalIcon() {
+  return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-3.5 w-3.5"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2" fill="currentColor"/></svg>;
+}
+function SocialIcon() {
+  return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-3.5 w-3.5"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>;
+}
+function PersonIcon() {
+  return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-3.5 w-3.5"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>;
+}
+function CalIcon() {
+  return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-3.5 w-3.5"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>;
+}
+
+type CardStyle = { bg: string; text: string; IconComp: () => React.ReactElement };
+
+function getCardStyle(item: ComingItem): CardStyle {
   if (item.type === "event" || (item.type === "income" && item.eventType)) {
     switch (item.eventType) {
       case "income":
-        return { bg: "bg-emerald-900/30 border-emerald-800/40", text: "text-emerald-400", icon: "💼" };
+        return { bg: "bg-[var(--color-income)]/8 border-[var(--color-income)]/20", text: "text-emerald-500", IconComp: IncomeIcon };
       case "expense":
         return item.userConfirmed
-          ? { bg: "bg-red-900/20 border-red-800/30", text: "text-red-400", icon: "📋" }
-          : { bg: "bg-[var(--bg-elevated)] border-[var(--border)]", text: "text-[var(--text-2)]", icon: "📅" };
+          ? { bg: "bg-[var(--color-danger)]/8 border-[var(--color-danger)]/20", text: "text-red-500", IconComp: BillIcon }
+          : { bg: "bg-[var(--bg-elevated)] border-[var(--border)]", text: "text-[var(--text-2)]", IconComp: CalIcon };
       case "social":
-        return { bg: "bg-blue-900/20 border-blue-800/30", text: "text-blue-400", icon: "🤝" };
+        return { bg: "bg-[var(--accent)]/8 border-[var(--accent)]/20", text: "text-[var(--accent)]", IconComp: SocialIcon };
       case "personal":
-        return { bg: "bg-[var(--bg-elevated)] border-[var(--border)]", text: "text-[var(--text-3)]", icon: "🧘" };
+        return { bg: "bg-[var(--bg-elevated)] border-[var(--border)]", text: "text-[var(--text-3)]", IconComp: PersonIcon };
       case "needs_clarification":
-        return { bg: "bg-amber-900/20 border-amber-800/30", text: "text-amber-400", icon: "📅" };
+        return { bg: "bg-amber-500/8 border-amber-500/20", text: "text-amber-500", IconComp: CalIcon };
       default:
-        return { bg: "bg-blue-900/20 border-blue-800/30", text: "text-blue-400", icon: "📅" };
+        return { bg: "bg-[var(--accent)]/8 border-[var(--accent)]/20", text: "text-[var(--accent)]", IconComp: CalIcon };
     }
   }
   switch (item.type) {
-    case "income": return { bg: "bg-emerald-900/30 border-emerald-800/40", text: "text-emerald-400", icon: "💵" };
-    case "bill":   return { bg: "bg-red-900/20 border-red-800/30",        text: "text-red-400",     icon: "📄" };
-    case "goal":   return { bg: "bg-amber-900/20 border-amber-800/30",    text: "text-amber-400",   icon: "🎯" };
-    default:       return { bg: "bg-blue-900/20 border-blue-800/30",  text: "text-blue-400",  icon: "📅" };
+    case "income": return { bg: "bg-[var(--color-income)]/8 border-[var(--color-income)]/20", text: "text-emerald-500", IconComp: IncomeIcon };
+    case "bill":   return { bg: "bg-[var(--color-danger)]/8 border-[var(--color-danger)]/20", text: "text-red-500",    IconComp: BillIcon };
+    case "goal":   return { bg: "bg-amber-500/8 border-amber-500/20",                         text: "text-amber-500", IconComp: GoalIcon };
+    default:       return { bg: "bg-[var(--accent)]/8 border-[var(--accent)]/20",             text: "text-[var(--accent)]", IconComp: CalIcon };
   }
 }
 
@@ -224,7 +245,7 @@ export function ComingUpWidget() {
       <section className="min-w-0 max-w-full">
         <div className="mb-3 flex items-center justify-between">
           <h2 className="text-[10px] font-semibold uppercase tracking-widest text-[var(--text-3)]">Coming up · next 7 days</h2>
-          <a href="/transactions" className="text-xs text-blue-400 hover:text-blue-300 transition-colors">See all →</a>
+          <a href="/transactions" className="text-xs text-[var(--accent)] hover:opacity-80 transition-opacity">See all →</a>
         </div>
         <div className="h-[88px] rounded-xl bg-[var(--bg-elevated)] animate-pulse" />
       </section>
@@ -236,12 +257,12 @@ export function ComingUpWidget() {
       <section className="min-w-0 max-w-full">
         <div className="mb-3 flex items-center justify-between">
           <h2 className="text-[10px] font-semibold uppercase tracking-widest text-[var(--text-3)]">Coming up · next 7 days</h2>
-          <a href="/transactions" className="text-xs text-blue-400 hover:text-blue-300 transition-colors">See all →</a>
+          <a href="/transactions" className="text-xs text-[var(--accent)] hover:opacity-80 transition-opacity">See all →</a>
         </div>
 
         {calJustConnected ? (
-          <div className="rounded-xl border border-emerald-800/40 bg-emerald-950/20 p-4 text-center">
-            <p className="text-sm text-emerald-400">Calendar connected! Events will appear here shortly.</p>
+          <div className="rounded-xl border border-[var(--color-income)]/20 bg-[var(--color-income)]/5 p-4 text-center">
+            <p className="text-sm text-[var(--color-income)]">Calendar connected! Events will appear here shortly.</p>
           </div>
         ) : items.length === 0 && calendarConnected === false && GOOGLE_CLIENT_ID_SET ? (
           <div className="rounded-xl border border-dashed border-[var(--border)] p-4 text-center">
@@ -270,7 +291,7 @@ export function ComingUpWidget() {
               onPointerDown={(e) => e.stopPropagation()}
             >
               {items.map((item) => {
-                const { bg, text, icon } = getCardStyle(item);
+                const { bg, text, IconComp } = getCardStyle(item);
                 const isEarning = item.eventType === "income" || (item.type === "income" && !item.eventType);
                 const needsClarification = item.eventType === "needs_clarification";
                 const isCalendarEvent = !!item.cacheId;
@@ -278,12 +299,12 @@ export function ComingUpWidget() {
                 const card = (
                   <div className={`flex-shrink-0 rounded-xl border ${bg} p-3 w-[148px] ${isCalendarEvent ? "cursor-pointer active:scale-[0.97] transition-transform" : ""}`}>
                     <div className="flex items-center gap-1.5 mb-2">
-                      <span className="text-sm">{icon}</span>
+                      <span className={text}><IconComp /></span>
                       <span className={`text-[10px] font-semibold uppercase tracking-wide ${text}`}>
                         {daysLabel(item.date)}
                       </span>
                       {needsClarification && (
-                        <span className="ml-auto text-[10px] text-amber-400 font-bold">?</span>
+                        <span className="ml-auto text-[10px] text-amber-500 font-bold">?</span>
                       )}
                     </div>
                     <p className="text-xs font-medium text-[var(--text-1)] leading-tight truncate">{item.title}</p>
@@ -291,7 +312,7 @@ export function ComingUpWidget() {
                       <p className={`mt-1 text-sm font-semibold ${text}`}>+{fmt(item.amount)}</p>
                     )}
                     {isEarning && (item.amount == null || item.amount === 0) && (
-                      <p className="mt-1 text-[10px] font-semibold text-emerald-400 uppercase tracking-wide">earning</p>
+                      <p className={`mt-1 text-[10px] font-semibold ${text} uppercase tracking-wide`}>earning</p>
                     )}
                     {!isEarning && !needsClarification && item.amount != null && item.amount > 0 && (
                       <p className={`mt-1 text-sm font-semibold ${text}`}>{fmt(item.amount)}</p>

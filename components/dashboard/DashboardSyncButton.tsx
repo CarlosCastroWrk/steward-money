@@ -44,6 +44,7 @@ export function DashboardSyncButton({ serverLastSynced }: Props) {
 
   async function handleTap(e: React.MouseEvent) {
     e.preventDefault();
+    e.stopPropagation();
     await syncNow();
   }
 

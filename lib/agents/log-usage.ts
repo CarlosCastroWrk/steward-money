@@ -2,8 +2,8 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 
 const PRICING: Record<string, { input: number; output: number }> = {
   "claude-sonnet-4-6":       { input: 3.00,  output: 15.00 },
-  "claude-haiku-4-5-20251001": { input: 0.25, output: 1.25  },
-  "claude-haiku-4-5":        { input: 0.25,  output: 1.25  },
+  "claude-haiku-4-5-20251001": { input: 0.80, output: 4.00  },
+  "claude-haiku-4-5":        { input: 0.80,  output: 4.00  },
 };
 
 export async function logAgentUsage(

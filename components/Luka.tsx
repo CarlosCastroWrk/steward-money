@@ -947,12 +947,14 @@ export function Luka() {
       {/* Mobile pill trigger */}
       <button
         onClick={() => setOpen((v) => !v)}
-        className={`fixed left-1/2 z-[51] -translate-x-1/2 flex items-center gap-2 rounded-full border px-4 py-2 text-xs backdrop-blur-md transition-colors md:hidden ${
-          open
-            ? "border-[var(--luka)]/50 bg-[var(--luka-bg)] text-[var(--luka)]"
-            : "border-[var(--border)] bg-[var(--bg-card)]/90 text-[var(--text-3)]"
-        }`}
-        style={{ bottom: "calc(env(safe-area-inset-bottom) + 78px)" }}
+        className="fixed left-1/2 z-[51] -translate-x-1/2 flex items-center gap-2 rounded-full px-5 py-2.5 text-xs font-semibold transition-all duration-200 md:hidden"
+        style={{
+          bottom: "calc(env(safe-area-inset-bottom) + 78px)",
+          ...(open
+            ? { border: "1px solid color-mix(in srgb, var(--luka) 50%, transparent)", background: "color-mix(in srgb, var(--luka) 12%, transparent)", color: "var(--luka)" }
+            : { background: "var(--luka)", color: "white", boxShadow: "0 4px 20px color-mix(in srgb, var(--luka) 45%, transparent)" }
+          ),
+        }}
         aria-label="Open Luka"
       >
         <SparkleIcon className="h-3.5 w-3.5" />
