@@ -2,6 +2,14 @@
 
 _Last updated: 2026-05-09_
 
+## Shipped 2026-05-09 (session 4)
+
+- **Reactive dashboard** — `app/page.tsx` marked `force-dynamic` so RSC re-runs on every request (prevents stale RSC cache after Luka mutations). `financials:changed` browser event dispatched after `data.refreshNeeded` in Luka.tsx, so ComingUpWidget reloads bills/goals without a full page refresh.
+- **ComingUpWidget narrowed to 7 days** — removed income predictions (income_sources, variance detection). Widget now shows bills + goals + calendar events for the next 7 days only.
+- **Instant Luka messages** — user message and loading indicator appear immediately on send, before `auth.getUser()` and `saveMsgToDB()` awaits. Perceived send latency eliminated.
+- **Tab prefetch** — BottomNav calls `router.prefetch()` for all 4 primary routes on mount. Subsequent tab taps load from cache with near-zero latency.
+- **CalendarCard collapse** — chevron toggle in header, collapses event list. State persisted to localStorage (`steward:calendarCollapsed`), default expanded.
+
 ## Shipped 2026-05-09 (session 3)
 
 - **Plaid webhooks** — `/api/plaid/webhook` rebuilt with full JWT signature verification (jose library, Plaid-Verification header, request_body_sha256 body hash). Handles SYNC_UPDATES_AVAILABLE/DEFAULT_UPDATE (cursor-based transactionsSync), TRANSACTIONS_REMOVED (delete by plaid_transaction_id), ITEM_LOGIN_REQUIRED (sets needs_reauth=true). Unknown codes return 200. Added `needs_reauth` + `webhook_url` columns to plaid_items. `/api/plaid/setup-webhooks` one-time route registers existing items.

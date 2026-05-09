@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { calculateSafeToSpend } from "@/lib/safe-to-spend";
+import { isCronAuthorized } from "@/lib/cron-auth";
 
 function fmt(n: number) {
   return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(n);
@@ -20,7 +21,7 @@ async function computeAlerts(
   const [billsRes, goalsRes, incomeRes, safeRes] = await Promise.all([
     supabase.from("bills").select("name, amount, next_due_date, is_autopay").eq("user_id", userId),
     supabase.from("goals").select("name, target_amount, current_amount, deadline").eq("user_id", userId),
-    supabase.from("income_sources").select("name, next_date").eq("user_id", userId).eq("is_active", true),
+    supabase.from("income_sources").select("name, next_expected_date").eq("user_id", userId).eq("is_active", true),
     calculateSafeToSpend(supabase, userId),
   ]);
 
@@ -59,7 +60,7 @@ async function computeAlerts(
 
   // Stale income dates
   for (const inc of incomeRes.data ?? []) {
-    if (inc.next_date && inc.next_date < today) {
+    if (inc.next_expected_date && inc.next_expected_date < today) {
       alerts.push({ type: "stale_income", message: `Income source "${inc.name}" has a past date — mark it received`, severity: "info" });
     }
   }
@@ -70,6 +71,7 @@ async function computeAlerts(
 // Called from dashboard (authenticated) OR from Vercel cron (uses admin client)
 export async function POST(req: NextRequest) {
   const isCron = req.headers.get("x-vercel-cron") === "1";
+  if (isCron && !isCronAuthorized(req)) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   if (isCron) {
     // Cron path: refresh alerts for all users using admin client

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { saveAgentMemory } from "@/lib/agent-memory";
+import { isCronAuthorized } from "@/lib/cron-auth";
 
 type Insight = {
   user_id: string;
@@ -24,7 +25,7 @@ async function runSilas(supabase: ReturnType<typeof createClient>, userId: strin
   const [txRes, subsRes, incomeRes, settingsRes] = await Promise.all([
     supabase.from("transactions").select("date, amount, category, merchant").eq("user_id", userId).gte("date", sixtyDaysAgo).lt("amount", 0),
     supabase.from("subscriptions").select("name, amount, status").eq("user_id", userId).eq("status", "keep"),
-    supabase.from("income_sources").select("next_expected_date, next_date").eq("user_id", userId).eq("is_active", true),
+    supabase.from("income_sources").select("next_expected_date").eq("user_id", userId).eq("is_active", true),
     supabase.from("user_settings").select("giving_enabled").eq("user_id", userId).maybeSingle(),
   ]);
 
@@ -49,7 +50,7 @@ async function runSilas(supabase: ReturnType<typeof createClient>, userId: strin
   }
 
   // Pattern 2 — Post-paycheck surge
-  const incomeDates = (incomeRes.data ?? []).map((i) => i.next_expected_date || i.next_date).filter(Boolean) as string[];
+  const incomeDates = (incomeRes.data ?? []).map((i) => i.next_expected_date).filter(Boolean) as string[];
   if (incomeDates.length > 0) {
     const latestPayday = incomeDates.sort().pop()!;
     const paydayMs = new Date(latestPayday).getTime();
@@ -132,6 +133,7 @@ async function runSilas(supabase: ReturnType<typeof createClient>, userId: strin
 
 export async function POST(req: NextRequest) {
   const isCron = req.headers.get("x-vercel-cron") === "1";
+  if (isCron && !isCronAuthorized(req)) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   if (isCron) {
     const admin = createAdminClient();

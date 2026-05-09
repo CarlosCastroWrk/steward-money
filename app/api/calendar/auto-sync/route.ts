@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import Anthropic from "@anthropic-ai/sdk";
+import { isCronAuthorized } from "@/lib/cron-auth";
 
 const anthropic = new Anthropic();
 
@@ -105,9 +106,7 @@ async function syncUserCalendar(admin: ReturnType<typeof createAdminClient>, use
 }
 
 export async function POST(req: NextRequest) {
-  if (req.headers.get("x-vercel-cron") !== "1") {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  }
+  if (!isCronAuthorized(req)) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const admin = createAdminClient();
   const { data: connections } = await admin

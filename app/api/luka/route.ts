@@ -1,3 +1,4 @@
+// TODO(post-pilot-1): extract executeTool() into lib/luka-tools/ per audit 2026-05-09. Defer until chat UI redesign or significant tool additions.
 import { NextRequest, NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
 import { createClient } from "@/lib/supabase/server";
@@ -126,16 +127,16 @@ const TOOLS: Anthropic.Tool[] = [
   },
   {
     name: "update_settings",
-    description: "Update user settings: display_name, emergency_buffer, giving_pct, savings_pct, weekly_needs_budget, trading_pct, life_stage, main_goal.",
+    description: "Update user settings: display_name, emergency_buffer, giving_value, savings_value, weekly_needs_budget, trading_value, life_stage, main_goal.",
     input_schema: {
       type: "object",
       properties: {
         display_name: { type: "string" },
         emergency_buffer: { type: "number" },
-        giving_pct: { type: "number" },
-        savings_pct: { type: "number" },
+        giving_value: { type: "number" },
+        savings_value: { type: "number" },
         weekly_needs_budget: { type: "number" },
-        trading_pct: { type: "number" },
+        trading_value: { type: "number" },
         life_stage: { type: "string" },
         main_goal: { type: "string" },
       },
@@ -270,10 +271,10 @@ const TOOLS: Anthropic.Tool[] = [
           properties: {
             display_name: { type: "string" },
             emergency_buffer: { type: "number" },
-            giving_pct: { type: "number" },
-            savings_pct: { type: "number" },
+            giving_value: { type: "number" },
+            savings_value: { type: "number" },
             weekly_needs_budget: { type: "number" },
-            trading_pct: { type: "number" },
+            trading_value: { type: "number" },
             life_stage: { type: "string" },
             main_goal: { type: "string" },
           },
@@ -314,7 +315,7 @@ async function executeTool(
           supabase.from("accounts").select("name, type, current_balance").eq("user_id", userId).eq("is_active", true),
           supabase.from("bills").select("name, amount, frequency, next_due_date, is_autopay").eq("user_id", userId).order("next_due_date", { ascending: true }),
           supabase.from("goals").select("name, target_amount, current_amount, deadline").eq("user_id", userId),
-          supabase.from("income_sources").select("name, amount, frequency, next_date, next_expected_date").eq("user_id", userId).eq("is_active", true),
+          supabase.from("income_sources").select("name, amount, frequency, next_expected_date").eq("user_id", userId).eq("is_active", true),
           supabase.from("user_settings").select("*").eq("user_id", userId).maybeSingle(),
           supabase.from("transactions").select("date, merchant, amount, category").eq("user_id", userId).order("date", { ascending: false }).limit(10),
           calculateSafeToSpend(supabase, userId),
@@ -532,7 +533,7 @@ async function executeTool(
 
       case "update_settings": {
         const fields: Record<string, unknown> = {};
-        const allowed = ["display_name", "emergency_buffer", "giving_pct", "savings_pct", "weekly_needs_budget", "trading_pct", "life_stage", "main_goal"];
+        const allowed = ["display_name", "emergency_buffer", "giving_value", "savings_value", "weekly_needs_budget", "trading_value", "life_stage", "main_goal"];
         for (const key of allowed) {
           if (input[key] !== undefined) fields[key] = input[key];
         }
@@ -633,7 +634,7 @@ async function executeTool(
         const rules = input.rules as string[] | undefined;
         const updates: Record<string, unknown> = {};
         if (settings) {
-          const allowed = ["display_name","emergency_buffer","giving_pct","savings_pct","weekly_needs_budget","trading_pct","life_stage","main_goal"];
+          const allowed = ["display_name","emergency_buffer","giving_value","savings_value","weekly_needs_budget","trading_value","life_stage","main_goal"];
           for (const k of allowed) if (settings[k] !== undefined) updates[k] = settings[k];
           if (Object.keys(updates).length > 0) await supabase.from("user_settings").update(updates).eq("user_id", userId);
         }
@@ -844,7 +845,7 @@ Current state:
 - Main goal: ${settings?.main_goal ?? "not set"}
 - Emergency buffer: ${settings?.emergency_buffer ? fmt(settings.emergency_buffer) : "not set"}
 - Giving: ${settings?.giving_enabled ? `${settings.giving_value}%` : "not set"}
-- Savings %: ${settings?.savings_pct ?? "not set"}
+- Savings: ${settings?.savings_value ?? "not set"}
 
 Use update_settings and save_personal_rule to save what you learn. Use bulk_setup when the user gives multiple pieces of info at once.`
     : `You are Luka, the personal finance co-pilot for Steward Money. You are speaking with ${displayName}, a ${lifeStage} whose main financial goal is ${mainGoal}.

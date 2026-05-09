@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 
+// Intentionally unauthenticated: returns only public config info (app URL, whether
+// NEXT_PUBLIC_GOOGLE_CLIENT_ID is set). No user data is exposed.
 export async function GET() {
   const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID ?? "";
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "";

@@ -39,6 +39,10 @@ async function verifyPlaidSignature(req: NextRequest, rawBody: string): Promise<
     const key = await getVerificationKey(header.kid);
     const { payload } = await jwtVerify(jwt, key);
 
+    // Reject webhooks older than 5 minutes to prevent replay attacks
+    const iat = (payload as { iat?: number }).iat;
+    if (iat && Date.now() / 1000 - iat > 300) return false;
+
     const bodyHash = createHash("sha256").update(rawBody).digest("hex");
     return (payload as { request_body_sha256?: string }).request_body_sha256 === bodyHash;
   } catch (err) {

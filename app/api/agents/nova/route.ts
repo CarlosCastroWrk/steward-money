@@ -4,6 +4,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import Anthropic from "@anthropic-ai/sdk";
 import { calculateSafeToSpend } from "@/lib/safe-to-spend";
 import { saveAgentMemory } from "@/lib/agent-memory";
+import { isCronAuthorized } from "@/lib/cron-auth";
 
 const anthropic = new Anthropic();
 
@@ -79,6 +80,7 @@ Be Nova: brief, sharp, forward-focused. No fluff.`;
 // POST — generate a Nova message (cron or on-demand)
 export async function POST(req: NextRequest) {
   const isCron = req.headers.get("x-vercel-cron") === "1";
+  if (isCron && !isCronAuthorized(req)) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   if (isCron) {
     const admin = createAdminClient();

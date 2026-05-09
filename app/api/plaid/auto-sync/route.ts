@@ -2,11 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { plaidClient } from "@/lib/plaid";
 import { cleanName, mapCategory, inferIsNeed } from "@/lib/plaid-utils";
+import { isCronAuthorized } from "@/lib/cron-auth";
 
 export async function POST(req: NextRequest) {
-  if (req.headers.get("x-vercel-cron") !== "1") {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  }
+  if (!isCronAuthorized(req)) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const supabase = createAdminClient();
   const now = new Date().toISOString();

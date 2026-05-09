@@ -60,5 +60,5 @@ export function formatCalendarContextForAgent(events: CalendarEvent[]): string {
     return `- ${e.title ?? "Untitled event"} · ${dateStr}${costStr}${notesStr}`;
   });
 
-  return `UPCOMING CALENDAR EVENTS (next ${Math.ceil((new Date(events[events.length - 1].start_time).getTime() - Date.now()) / 86_400_000)} days):\n${lines.join("\n")}\n\nWhen referencing these events, ask before assuming financial impact. You know the user does BallerTV (usually work) and HEB shifts (work). For other events, ask rather than guess.`;
+  return `UPCOMING CALENDAR EVENTS (next ${Math.ceil((new Date(events[events.length - 1].start_time).getTime() - Date.now()) / 86_400_000)} days):\n${lines.join("\n")}\n\nWhen referencing these events, ask before assuming financial impact. For any event that isn't explicitly confirmed as income or expense, ask rather than guess.`;
 }

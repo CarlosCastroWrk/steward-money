@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { isCronAuthorized } from "@/lib/cron-auth";
 
 // Called by Vercel cron on the 1st of every month at midnight
 // Clears paid_at for all monthly bills so the new month starts fresh
 export async function POST(req: NextRequest) {
-  const isCron = req.headers.get("x-vercel-cron") === "1";
-  if (!isCron) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  if (!isCronAuthorized(req)) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const admin = createAdminClient();
 

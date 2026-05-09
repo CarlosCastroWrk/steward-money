@@ -1,3 +1,4 @@
+// TODO(post-pilot-1): split into LukaShell, LukaMessageList, LukaInputArea, LukaConversationSidebar, luka/icons.tsx per audit 2026-05-09. Defer until chat UI redesign forces a touch.
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";

@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { scoreStewardship } from "@/lib/stewardship";
 import { saveAgentMemory } from "@/lib/agent-memory";
+import { isCronAuthorized } from "@/lib/cron-auth";
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
@@ -129,6 +130,7 @@ async function runSolomon(supabase: ReturnType<typeof createClient>, userId: str
 
 export async function POST(req: NextRequest) {
   const isCron = req.headers.get("x-vercel-cron") === "1";
+  if (isCron && !isCronAuthorized(req)) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   if (isCron) {
     const admin = createAdminClient();

@@ -37,16 +37,6 @@ export async function GET(request: NextRequest) {
     { onConflict: "user_id", ignoreDuplicates: true }
   );
 
-  // Send welcome email for new users
-  if (isNewUser) {
-    const displayName = user.user_metadata?.full_name?.split(" ")[0] ?? user.email?.split("@")[0] ?? "there";
-    fetch(`${origin}/api/email/welcome`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email: user.email, name: displayName }),
-    }).catch(() => {});
-  }
-
   // Check if onboarding is complete
   const { data: settings } = await supabase
     .from("user_settings")
