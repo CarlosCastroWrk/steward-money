@@ -211,17 +211,15 @@ export default async function DashboardPage() {
                     href={tx.merchant ? `/merchant/${encodeURIComponent(tx.merchant)}` : "/transactions"}
                     className="flex items-center justify-between px-4 py-3.5 gap-3 transition-colors hover:bg-[var(--bg-elevated)] active:bg-[var(--bg-elevated)]"
                   >
-                    <div className="flex items-center gap-3 min-w-0">
-                      <div className={`h-7 w-7 flex-shrink-0 rounded-full flex items-center justify-center text-[10px] font-bold ${isIncome ? "bg-green-500/15 text-green-500" : "bg-[var(--bg-elevated)] text-[var(--text-3)]"}`}>
-                        {isIncome ? "+" : tx.category?.slice(0, 1).toUpperCase() ?? "?"}
-                      </div>
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <span className={`h-1.5 w-1.5 flex-shrink-0 rounded-full ${isIncome ? "bg-emerald-500" : "bg-[var(--text-3)]"}`} />
                       <div className="min-w-0">
                         <p className="text-sm font-medium text-[var(--text-1)] truncate">{tx.merchant ?? (isIncome ? "Income" : "Transaction")}</p>
                         <p className="text-xs text-[var(--text-3)] mt-0.5">{formatDate(tx.date)}{tx.category ? ` · ${tx.category}` : ""}</p>
                       </div>
                     </div>
-                    <span className={`text-sm font-semibold flex-shrink-0 ${isIncome ? "text-[var(--color-income)]" : "text-[var(--color-expense)]"}`}>
-                      {isIncome ? "+" : ""}{formatUSDCents(Math.abs(Number(tx.amount)))}
+                    <span className={`text-sm font-semibold flex-shrink-0 ${isIncome ? "text-emerald-500" : "text-[var(--text-2)]"}`}>
+                      {isIncome ? "+" : "-"}{formatUSDCents(Math.abs(Number(tx.amount)))}
                     </span>
                   </a>
                 );
@@ -300,7 +298,7 @@ export default async function DashboardPage() {
                 const daysLeft = goal.deadline ? Math.ceil((new Date(goal.deadline).getTime() - Date.now()) / 86_400_000) : null;
                 const onTrack = daysLeft === null || daysLeft > 14;
                 return (
-                  <div key={goal.id} className="px-4 py-4">
+                  <div key={goal.id} className="px-4 py-5">
                     <div className="flex items-center justify-between">
                       <p className="text-sm font-medium text-[var(--text-1)]">{goal.name}</p>
                       <div className="flex items-center gap-2">
