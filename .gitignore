@@ -27,3 +27,4 @@ tsconfig.tsbuildinfo
 # MCP config (contains secrets)
 .mcp.json
 .vercel
+.env*.local

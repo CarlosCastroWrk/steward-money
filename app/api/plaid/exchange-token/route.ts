@@ -82,46 +82,65 @@ export async function POST(req: NextRequest) {
       (savedAccounts ?? []).map((a) => [a.plaid_account_id, a.id])
     );
 
+    // Get the plaid_item DB id we just inserted
+    const { data: newItem } = await supabase
+      .from("plaid_items")
+      .select("id")
+      .eq("item_id", itemId)
+      .eq("user_id", user.id)
+      .maybeSingle();
+
     let transactionsSynced = 0;
     try {
-      const endDate = new Date().toISOString().split("T")[0];
-      const startDate = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
+      // Use transactionsSync from the start so the cursor is set correctly for future incremental syncs.
+      // No cursor on first call = Plaid returns full history and sets the initial cursor.
+      let cursor: string | undefined = undefined;
+      let hasMore = true;
 
-      const txRes = await plaidClient.transactionsGet({
-        access_token: accessToken,
-        start_date: startDate,
-        end_date: endDate,
-      });
+      while (hasMore) {
+        const txRes = await plaidClient.transactionsSync({
+          access_token: accessToken,
+          cursor,
+          count: 500,
+        });
+        const { added, next_cursor, has_more } = txRes.data;
+        hasMore = has_more;
 
-      const rawCategory = (tx: typeof txRes.data.transactions[0]) =>
-        tx.personal_finance_category?.primary ?? tx.category?.[0] ?? null;
+        const txRows = added.map((tx) => {
+          const cat = tx.personal_finance_category?.primary ?? (tx.category?.[0] ?? null);
+          return {
+            user_id: user.id,
+            account_id: accountIdMap[tx.account_id] ?? null,
+            date: tx.date,
+            merchant: cleanName(tx.merchant_name ?? tx.name),
+            amount: -(tx.amount),
+            category: mapCategory(cat),
+            is_need: inferIsNeed(cat),
+            is_manual: false,
+            is_pending: tx.pending ?? false,
+            plaid_transaction_id: tx.transaction_id,
+          };
+        });
 
-      const txRows = txRes.data.transactions.map((tx) => {
-        const cat = rawCategory(tx);
-        return {
-          user_id: user.id,
-          account_id: accountIdMap[tx.account_id] ?? null,
-          date: tx.date,
-          merchant: cleanName(tx.merchant_name ?? tx.name),
-          amount: -(tx.amount),
-          category: mapCategory(cat),
-          is_need: inferIsNeed(cat),
-          is_manual: false,
-          plaid_transaction_id: tx.transaction_id,
-        };
-      });
+        if (txRows.length > 0) {
+          const { error: txErr } = await supabase
+            .from("transactions")
+            .upsert(txRows, { onConflict: "plaid_transaction_id" });
+          if (txErr) console.error("[exchange-token] transactions upsert:", txErr.message);
+          transactionsSynced += txRows.length;
+        }
 
-      if (txRows.length > 0) {
-        const { error: txErr } = await supabase
-          .from("transactions")
-          .upsert(txRows, { onConflict: "plaid_transaction_id" });
-        if (txErr) console.error("[exchange-token] transactions upsert:", txErr.message);
-        else transactionsSynced = txRows.length;
+        cursor = next_cursor;
+      }
+
+      // Persist cursor so subsequent syncs are truly incremental
+      if (newItem?.id && cursor) {
+        await supabase.from("plaid_items").update({ plaid_cursor: cursor }).eq("id", newItem.id);
       }
     } catch (err: unknown) {
       const plaidErr = err as { response?: { data?: { error_code?: string; error_message?: string } } };
       if (plaidErr?.response?.data?.error_code !== "PRODUCT_NOT_READY") {
-        console.error("[exchange-token] transactionsGet:", plaidErr?.response?.data?.error_message ?? err);
+        console.error("[exchange-token] transactionsSync:", plaidErr?.response?.data?.error_message ?? err);
       }
     }
 

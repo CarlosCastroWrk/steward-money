@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { useAutoSync } from "@/hooks/useAutoSync";
 import { AddTransactionModal } from "./AddTransactionModal";
 import { AskLukaButton } from "@/components/AskLukaButton";
 import { TabPills } from "@/components/ui/TabPills";
@@ -73,7 +74,6 @@ function timeSince(isoStr: string): string {
   return `${Math.floor(diff / 86400)}d ago`;
 }
 
-const SYNC_LS_KEY = "steward:lastSynced";
 
 export function TransactionsView({ transactions: initialTransactions, accounts, plaidConnected, institutionName, serverLastSynced, isSandbox = false }: Props) {
   const router = useRouter();
@@ -87,12 +87,26 @@ export function TransactionsView({ transactions: initialTransactions, accounts, 
   const [typeFilter, setTypeFilter] = useState<TxTypeFilter>("all");
   const [search, setSearch] = useState("");
   const [toast, setToast] = useState<string | null>(null);
-  const [syncing, setSyncing] = useState(false);
-  const [lastSynced, setLastSynced] = useState<string | null>(null);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Sync prop updates (after router.refresh) into local state
   useEffect(() => { setTxList(initialTransactions); }, [initialTransactions]);
+
+  // Auto-dismiss toast
+  const showToast = useCallback((msg: string) => {
+    setToast(msg);
+    if (toastTimer.current) clearTimeout(toastTimer.current);
+    toastTimer.current = setTimeout(() => setToast(null), 4000);
+  }, []);
+
+  const { syncing, lastSynced, syncNow: autoSyncNow } = useAutoSync({
+    serverLastSynced,
+    enabled: plaidConnected,
+    onSyncComplete: () => {
+      loadTransactionsFromClient();
+      showToast("Sync complete");
+    },
+  });
 
   // Self-heal: if server returned empty but Plaid is connected, fetch client-side
   useEffect(() => {
@@ -100,23 +114,6 @@ export function TransactionsView({ transactions: initialTransactions, accounts, 
       loadTransactionsFromClient();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  // Read last-synced from localStorage or server prop
-  useEffect(() => {
-    try {
-      const stored = localStorage.getItem(SYNC_LS_KEY);
-      setLastSynced(stored ?? serverLastSynced);
-    } catch {
-      setLastSynced(serverLastSynced);
-    }
-  }, [serverLastSynced]);
-
-  // Auto-dismiss toast
-  const showToast = useCallback((msg: string) => {
-    setToast(msg);
-    if (toastTimer.current) clearTimeout(toastTimer.current);
-    toastTimer.current = setTimeout(() => setToast(null), 4000);
   }, []);
 
   // Supabase Realtime subscription
@@ -238,22 +235,17 @@ export function TransactionsView({ transactions: initialTransactions, accounts, 
   }
 
   async function syncNow(deep = false) {
-    setSyncing(true);
-    try {
-      const res = await fetch("/api/plaid/sync", {
+    if (deep) {
+      // Deep sync resets cursor to force full 90-day pull
+      await fetch("/api/plaid/sync", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ deep }),
+        body: JSON.stringify({ reset_cursors: true }),
       });
-      if (res.ok) {
-        const now = new Date().toISOString();
-        localStorage.setItem(SYNC_LS_KEY, now);
-        setLastSynced(now);
-        await loadTransactionsFromClient();
-        showToast(deep ? "Deep sync complete — 90 days loaded" : "Sync complete");
-      }
-    } finally {
-      setSyncing(false);
+      await loadTransactionsFromClient();
+      showToast("Deep sync complete — full history reloaded");
+    } else {
+      await autoSyncNow();
     }
   }
 
@@ -417,7 +409,7 @@ export function TransactionsView({ transactions: initialTransactions, accounts, 
             { value: accountFilter,  onChange: (v: string) => setAccountFilter(v),              options: [{ v: "all", l: "All accounts" }, ...accounts.map((a) => ({ v: a.id, l: a.name }))] },
             { value: categoryFilter, onChange: (v: string) => setCategoryFilter(v),             options: [{ v: "all", l: "All categories" }, ...CATEGORIES.map((c) => ({ v: c, l: c }))] },
           ].map(({ value, onChange, options }, i) => (
-            <div key={i} className="relative">
+            <div key={i} className="relative min-w-0">
               <select className={selectClass} value={value} onChange={(e) => onChange(e.target.value)}>
                 {options.map(({ v, l }) => <option key={v} value={v}>{l}</option>)}
               </select>

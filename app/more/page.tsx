@@ -71,6 +71,11 @@ export default function MorePage() {
           </div>
         ))}
 
+        {/* Bank sync note */}
+        <p className="px-1 text-xs text-[var(--text-3)] leading-relaxed">
+          New transactions can take a few hours to appear from your bank. Steward syncs as fast as your bank allows — most transactions appear within 1–4 hours of posting.
+        </p>
+
         {/* Appearance + Sign out */}
         <div>
           <p className="mb-2 text-[10px] font-semibold uppercase tracking-widest text-[var(--text-3)] px-1">

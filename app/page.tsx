@@ -87,15 +87,7 @@ export default async function DashboardPage() {
   const lastSynced = lastSyncedResult.data?.last_synced ?? null;
   const hasAccounts = (accountsCheckResult.data?.length ?? 0) > 0;
   const isNewUser = !!user.created_at && (Date.now() - new Date(user.created_at).getTime()) < 7 * 86_400_000;
-  const { lastSyncedLabel, syncIsStale } = (() => {
-    if (!lastSynced) return { lastSyncedLabel: null, syncIsStale: true };
-    const secs = Math.floor((Date.now() - new Date(lastSynced).getTime()) / 1000);
-    const isStale = secs > 7200; // > 2 hours
-    if (secs < 60)    return { lastSyncedLabel: "Synced just now",                          syncIsStale: false };
-    if (secs < 3600)  return { lastSyncedLabel: `Synced ${Math.floor(secs / 60)}m ago`,     syncIsStale: false };
-    if (secs < 86400) return { lastSyncedLabel: `Synced ${Math.floor(secs / 3600)}h ago`,   syncIsStale: isStale };
-    return              { lastSyncedLabel: `Synced ${Math.floor(secs / 86400)}d ago`,        syncIsStale: true };
-  })();
+  // Pass raw timestamp to DashboardSyncButton — formatting happens client-side so it stays live
 
   return (
     <div className="overflow-x-hidden space-y-5 px-4 pb-10 pt-5 md:space-y-6 md:px-8 md:pt-8">
@@ -146,7 +138,7 @@ export default async function DashboardPage() {
             {formatUSD(result.safeToSpend)}
           </p>
           <p className="mt-1.5 text-xs text-white/40">After bills, buffer &amp; deductions</p>
-          <DashboardSyncButton lastSyncedLabel={lastSyncedLabel} syncIsStale={syncIsStale} />
+          <DashboardSyncButton serverLastSynced={lastSynced} />
           <div className="mt-4 flex gap-6 border-t border-white/10 pt-3.5">
             <div>
               <p className="text-[10px] uppercase tracking-wide text-white/50">Protected</p>

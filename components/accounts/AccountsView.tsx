@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useAutoSync } from "@/hooks/useAutoSync";
 import { AccountCard } from "./AccountCard";
 import { AddAccountModal } from "./AddAccountModal";
 import { PlaidLinkButton } from "./PlaidLinkButton";
@@ -120,10 +121,18 @@ type Props = {
   totalCash: number;
   totalDebt: number;
   net: number;
+  serverLastSynced?: string | null;
 };
 
-export function AccountsView({ accounts, plaidItems, totalCash, totalDebt, net }: Props) {
+export function AccountsView({ accounts, plaidItems, totalCash, totalDebt, net, serverLastSynced = null }: Props) {
   const [modalOpen, setModalOpen] = useState(false);
+  const router = useRouter();
+
+  useAutoSync({
+    serverLastSynced,
+    enabled: plaidItems.length > 0,
+    onSyncComplete: () => router.refresh(),
+  });
 
   const cash        = accounts.filter(isDepository);
   const creditCards = accounts.filter(isCredit);

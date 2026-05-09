@@ -39,7 +39,7 @@ export default async function AccountsPage() {
     return null;
   }
 
-  const [{ data, error }, { data: itemData }] = await Promise.all([
+  const [{ data, error }, { data: itemData }, { data: lastSyncedData }] = await Promise.all([
     supabase
       .from("accounts")
       .select("id, name, institution, type, plaid_type, plaid_subtype, current_balance, available_balance, credit_limit, is_manual, is_active, created_at, last_synced")
@@ -51,6 +51,14 @@ export default async function AccountsPage() {
       .select("id, item_id, institution_name, institution_id, created_at")
       .eq("user_id", user.id)
       .order("created_at", { ascending: false }),
+    supabase
+      .from("accounts")
+      .select("last_synced")
+      .eq("user_id", user.id)
+      .not("last_synced", "is", null)
+      .order("last_synced", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
   ]);
 
   if (error) {
@@ -60,6 +68,7 @@ export default async function AccountsPage() {
   const accounts = (data ?? []) as Account[];
   const plaidItems = (itemData ?? []) as PlaidItem[];
   const summary = computeSummary(accounts);
+  const serverLastSynced = lastSyncedData?.last_synced ?? null;
 
-  return <AccountsView accounts={accounts} plaidItems={plaidItems} {...summary} />;
+  return <AccountsView accounts={accounts} plaidItems={plaidItems} serverLastSynced={serverLastSynced} {...summary} />;
 }
