@@ -28,7 +28,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <>
       <Sidebar />
-      <main className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto bg-[var(--bg)] md:ml-[228px] pb-[calc(5rem+env(safe-area-inset-bottom))] md:pb-0 pt-[env(safe-area-inset-top)] md:pt-0">
+      <main className="min-h-0 flex-1 min-w-0 max-w-full overflow-y-auto bg-[var(--bg)] md:ml-[228px] pb-[calc(5rem+env(safe-area-inset-bottom))] md:pb-0 pt-[env(safe-area-inset-top)] md:pt-0" style={{ overflowX: "clip" }}>
         <SwipeableNavigator>
           {children}
         </SwipeableNavigator>

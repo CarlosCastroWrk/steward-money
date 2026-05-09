@@ -38,7 +38,7 @@ export async function middleware(request: NextRequest) {
 
   const onboardingCompleted = settings?.onboarding_completed === true;
 
-  if (!onboardingCompleted && !isOnboardingPage) {
+  if (!onboardingCompleted && !isOnboardingPage && !pathname.startsWith("/api/")) {
     const onboardingUrl = request.nextUrl.clone();
     onboardingUrl.pathname = "/onboarding/v2";
     return NextResponse.redirect(onboardingUrl);

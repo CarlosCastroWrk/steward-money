@@ -28,6 +28,7 @@ export function SwipeableNavigator({ children }: { children: React.ReactNode }) 
   const router = useRouter();
   const pathname = usePathname();
   const [direction, setDirection] = useState(0);
+  const [mounted, setMounted] = useState(false);
 
   const swipeDisabled = SWIPE_DISABLED_PREFIXES.some((p) => pathname.startsWith(p));
   const currentIndex = NAV_ROUTES.findIndex((r) =>
@@ -36,6 +37,7 @@ export function SwipeableNavigator({ children }: { children: React.ReactNode }) 
   const inPrimaryNav = currentIndex !== -1;
 
   useEffect(() => {
+    setMounted(true);
     function onNavDirection(e: Event) {
       setDirection((e as CustomEvent<{ direction: number }>).detail.direction);
     }
@@ -60,8 +62,18 @@ export function SwipeableNavigator({ children }: { children: React.ReactNode }) 
 
   if (swipeDisabled || !inPrimaryNav) return <>{children}</>;
 
+  if (!mounted) {
+    return (
+      <div style={{ display: "grid", overflow: "hidden", width: "100%" }}>
+        <div style={{ gridColumn: 1, gridRow: 1, touchAction: "pan-y", minWidth: 0, width: "100%" }}>
+          {children}
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div style={{ display: "grid", overflow: "hidden" }}>
+    <div style={{ display: "grid", overflow: "hidden", width: "100%" }}>
       <AnimatePresence initial={false} custom={direction}>
         <motion.div
           key={pathname}
@@ -72,7 +84,7 @@ export function SwipeableNavigator({ children }: { children: React.ReactNode }) 
           exit="exit"
           transition={{ type: "spring", stiffness: 350, damping: 30, mass: 0.8 }}
           onPanEnd={handlePanEnd}
-          style={{ gridColumn: 1, gridRow: 1, touchAction: "pan-y" }}
+          style={{ gridColumn: 1, gridRow: 1, touchAction: "pan-y", minWidth: 0, width: "100%" }}
         >
           {children}
         </motion.div>
