@@ -2,7 +2,13 @@
 
 _Last updated: 2026-05-09_
 
-## Shipped 2026-05-09
+## Shipped 2026-05-09 (session 2)
+
+- **Plaid sync — dashboard Sync button** — "Synced X ago · Sync" was a nav link to /transactions; replaced with `DashboardSyncButton` client component that calls `POST /api/plaid/sync` inline and calls `router.refresh()` so balances update without leaving the page
+- **Coming Up duplicates + variable income** — deleted 4 duplicate income_source rows (3× HEB, 2× BallerTV); added name-based dedup in ComingUpWidget; added variance detection against last 90 days of real paycheck transactions — if coefficient of variation > 15% across 3+ paychecks, specific dollar amount is suppressed and "earning" badge shows instead (HEB paychecks: $164–$250, CV=18%, now shows no amount)
+- **Luka delete/update tools** — added `delete_bill`, `delete_income_source`, `delete_goal` (two-step confirmation enforced at tool level: `confirmed: false` previews, `confirmed: true` executes), plus `update_income_source` and `update_goal`; system prompt updated with confirmation requirement
+
+## Shipped 2026-05-09 (session 1)
 
 - **Framer Motion hydration flash fix** — SwipeableNavigator: added `mounted` state so Framer Motion transforms don't apply on first render, eliminating the ~1s layout flash on Dashboard
 - **ComingUpWidget skeleton** — replaced `null` loading state with height-matched skeleton to prevent layout shift
