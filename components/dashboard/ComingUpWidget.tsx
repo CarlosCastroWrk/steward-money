@@ -247,9 +247,10 @@ export function ComingUpWidget() {
             <p className="text-sm text-[var(--text-3)]">Clear skies for the next two weeks.</p>
           </div>
         ) : (
+          <div className="w-full overflow-hidden">
           <div
-            className="flex gap-3 overflow-x-auto pb-1 w-full"
-            style={{ scrollbarWidth: "none", touchAction: "pan-x" }}
+            className="scroll-hidden flex gap-3 overflow-x-auto pb-1 w-full"
+            style={{ touchAction: "pan-x", WebkitOverflowScrolling: "touch" } as React.CSSProperties}
             onPointerDown={(e) => e.stopPropagation()}
           >
             {items.map((item) => {
@@ -259,7 +260,7 @@ export function ComingUpWidget() {
               const isCalendarEvent = !!item.cacheId;
 
               const card = (
-                <div className={`flex-shrink-0 rounded-xl border ${bg} p-3 min-w-[130px] max-w-[160px] ${isCalendarEvent ? "cursor-pointer active:scale-[0.97] transition-transform" : ""}`}>
+                <div className={`flex-shrink-0 rounded-xl border ${bg} p-3 w-[148px] ${isCalendarEvent ? "cursor-pointer active:scale-[0.97] transition-transform" : ""}`}>
                   <div className="flex items-center gap-1.5 mb-2">
                     <span className="text-sm">{icon}</span>
                     <span className={`text-[10px] font-semibold uppercase tracking-wide ${text}`}>
@@ -297,6 +298,7 @@ export function ComingUpWidget() {
 
               return <div key={item.id}>{card}</div>;
             })}
+          </div>
           </div>
         )}
       </section>

@@ -50,6 +50,7 @@ export default async function DashboardPage() {
     recentTxResult,
     lastSyncedResult,
     accountsCheckResult,
+    calendarConnResult,
   ] = await Promise.all([
     calculateSafeToSpend(supabase, user.id),
     supabase.from("goals").select("id, name, target_amount, current_amount, deadline").eq("user_id", user.id).order("priority", { ascending: true }),
@@ -64,7 +65,10 @@ export default async function DashboardPage() {
     supabase.from("transactions").select("id, merchant, amount, date, category").eq("user_id", user.id).gte("date", sevenDaysAgo).order("date", { ascending: false }).limit(5),
     supabase.from("accounts").select("last_synced").eq("user_id", user.id).not("last_synced", "is", null).order("last_synced", { ascending: false }).limit(1).maybeSingle(),
     supabase.from("accounts").select("id").eq("user_id", user.id).eq("is_active", true).limit(1),
+    supabase.from("calendar_connections").select("user_id").eq("user_id", user.id).maybeSingle(),
   ]);
+
+  const calendarConnected = !!calendarConnResult.data;
 
   const goals = goalsResult.data ?? [];
   const displayName = (settingsResult.data?.display_name ?? "there").trim();
@@ -174,8 +178,8 @@ export default async function DashboardPage() {
       )}
 
       {/* 3.5 Calendar (connected users) + opt-in (unconnected, env set) */}
-      <CalendarCard />
-      {process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID && <CalendarOptInCard />}
+      <CalendarCard initiallyConnected={calendarConnected} />
+      {process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID && <CalendarOptInCard initiallyConnected={calendarConnected} />}
 
       {/* 4. Stats row — tappable tiles */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">

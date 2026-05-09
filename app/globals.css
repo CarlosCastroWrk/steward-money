@@ -146,6 +146,8 @@ body {
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
+  scrollbar-gutter: stable;
   /* expose safe-area CSS env vars across the whole page */
   padding-left: env(safe-area-inset-left);
   padding-right: env(safe-area-inset-right);
@@ -167,6 +169,10 @@ body {
 ::-webkit-scrollbar { width: 4px; height: 4px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--border-default); border-radius: 4px; }
+
+/* Hide scrollbar on horizontal-scroll containers while keeping them scrollable */
+.scroll-hidden::-webkit-scrollbar { display: none; }
+.scroll-hidden { scrollbar-width: none; -ms-overflow-style: none; }
 
 /* ── Selection ─────────────────────────────────────────────── */
 ::selection { background: var(--accent); color: #fff; }

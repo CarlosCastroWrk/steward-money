@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 
 const DISMISS_KEY = "calendar_optin_dismissed_until";
 
-export function CalendarOptInCard() {
+export function CalendarOptInCard({ initiallyConnected }: { initiallyConnected?: boolean }) {
   const router = useRouter();
   const [visible, setVisible] = useState(false);
   const [connected, setConnected] = useState(false);
@@ -17,20 +17,23 @@ export function CalendarOptInCard() {
   const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID ?? "";
 
   useEffect(() => {
-    // Don't show if env var isn't set
     if (!clientId) return;
+    if (initiallyConnected === true) return; // server says already connected — skip
 
     // Don't show if user dismissed recently
     const dismissedUntil = localStorage.getItem(DISMISS_KEY);
     if (dismissedUntil && Date.now() < Number(dismissedUntil)) return;
 
-    // Check if already connected
-    fetch("/api/calendar/connect")
-      .then((r) => r.json())
-      .then((d) => {
-        if (!d.connected) setVisible(true);
-      })
-      .catch(() => {}); // silently skip
+    if (initiallyConnected === false) {
+      // Server confirmed not connected — show immediately, no API call needed
+      setVisible(true);
+    } else {
+      // Fallback: check via API
+      fetch("/api/calendar/connect")
+        .then((r) => r.json())
+        .then((d) => { if (!d.connected) setVisible(true); })
+        .catch(() => {});
+    }
 
     // Load Google Identity Services
     if (window.google?.accounts) {
@@ -42,7 +45,7 @@ export function CalendarOptInCard() {
       script.onload = () => setGsiLoaded(true);
       document.head.appendChild(script);
     }
-  }, [clientId]);
+  }, [clientId, initiallyConnected]);
 
   function handleDismiss() {
     localStorage.setItem(DISMISS_KEY, String(Date.now() + 7 * 86_400_000));

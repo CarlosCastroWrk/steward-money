@@ -29,25 +29,39 @@ const CATEGORY_EMOJI: Record<string, string> = {
   other: "📅",
 };
 
-export function CalendarCard() {
-  const [status, setStatus] = useState<ConnectionStatus | null>(null);
+export function CalendarCard({ initiallyConnected }: { initiallyConnected?: boolean }) {
   const [events, setEvents] = useState<CalEvent[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(initiallyConnected === true);
   const [syncing, setSyncing] = useState(false);
 
   useEffect(() => {
-    fetch("/api/calendar/connect")
-      .then((r) => r.json())
-      .then((d: ConnectionStatus) => {
-        setStatus(d);
-        if (d.connected) {
-          return fetch("/api/calendar/sync")
-            .then((r) => r.json())
-            .then((r) => setEvents(r.events ?? []));
+    if (initiallyConnected === false) return; // server says not connected — skip all fetching
+
+    async function load() {
+      try {
+        if (initiallyConnected === true) {
+          // Skip the connect check — just fetch events
+          const r = await fetch("/api/calendar/sync");
+          const data = await r.json();
+          setEvents(data.events ?? []);
+        } else {
+          // Fallback: check connection status first
+          const connRes = await fetch("/api/calendar/connect");
+          const connData = await connRes.json() as ConnectionStatus;
+          if (connData.connected) {
+            const evRes = await fetch("/api/calendar/sync");
+            const evData = await evRes.json();
+            setEvents(evData.events ?? []);
+          } else {
+            return; // not connected
+          }
         }
-      })
-      .finally(() => setLoading(false));
-  }, []);
+      } finally {
+        setLoading(false);
+      }
+    }
+    load();
+  }, [initiallyConnected]);
 
   async function handleSync() {
     setSyncing(true);
@@ -60,8 +74,13 @@ export function CalendarCard() {
     }
   }
 
-  if (loading) return null;
-  if (!status?.connected) return null;
+  // Server confirmed not connected — never render (no layout shift)
+  if (initiallyConnected === false) return null;
+
+  // Connected but still fetching events — reserve stable space with skeleton
+  if (loading) {
+    return <div className="h-16 rounded-2xl border border-[var(--border-default)] bg-[var(--bg-card)] animate-pulse" />;
+  }
 
   const next7 = events.filter((e) => {
     if (!e.start_time) return false;
