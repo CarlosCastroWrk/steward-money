@@ -662,13 +662,6 @@ export function Luka() {
     const now = new Date().toISOString();
     const userMsg: Message = { role: "user", content: text.trim(), created_at: now };
 
-    const supabase = createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (user) {
-      const id = await saveMsgToDB(userMsg, supabase, user.id, activeConvId);
-      if (id) userMsg.db_id = id;
-    }
-
     const newCount = userMsgCount + 1;
     setUserMsgCount(newCount);
 
@@ -682,10 +675,18 @@ export function Luka() {
     });
 
     const contextMessages = [...messages, userMsg].slice(-20).map((m) => ({ role: m.role, content: m.content }));
+    // Show user message and loading indicator immediately — before any async DB/auth work
     setMessages((prev) => [...prev, userMsg]);
     setInput("");
     if (inputRef.current) inputRef.current.style.height = "auto";
     setLoading(true);
+
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      const id = await saveMsgToDB(userMsg, supabase, user.id, activeConvId);
+      if (id) userMsg.db_id = id;
+    }
 
     try {
       const res = await fetch("/api/luka", {
@@ -705,7 +706,10 @@ export function Luka() {
         if (id) assistantMsg.db_id = id;
       }
       setMessages((prev) => [...prev, assistantMsg]);
-      if (data.refreshNeeded) router.refresh();
+      if (data.refreshNeeded) {
+        router.refresh();
+        window.dispatchEvent(new Event("financials:changed"));
+      }
 
       // Auto-title after the 2nd user message
       if (newCount === 2) {

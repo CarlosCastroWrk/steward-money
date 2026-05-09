@@ -1,7 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { ChevronDown } from "lucide-react";
 import { formatUSD } from "@/lib/format";
+
+const COLLAPSED_KEY = "steward:calendarCollapsed";
 
 interface CalEvent {
   id: string;
@@ -33,6 +36,20 @@ export function CalendarCard({ initiallyConnected }: { initiallyConnected?: bool
   const [events, setEvents] = useState<CalEvent[]>([]);
   const [loading, setLoading] = useState(initiallyConnected === true);
   const [syncing, setSyncing] = useState(false);
+  const [collapsed, setCollapsed] = useState(false);
+
+  useEffect(() => {
+    const stored = localStorage.getItem(COLLAPSED_KEY);
+    if (stored === "true") setCollapsed(true);
+  }, []);
+
+  function toggleCollapsed() {
+    setCollapsed((prev) => {
+      const next = !prev;
+      localStorage.setItem(COLLAPSED_KEY, String(next));
+      return next;
+    });
+  }
 
   useEffect(() => {
     if (initiallyConnected === false) return; // server says not connected — skip all fetching
@@ -95,23 +112,31 @@ export function CalendarCard({ initiallyConnected }: { initiallyConnected?: bool
   return (
     <div className="rounded-2xl border border-[var(--border-default)] bg-[var(--bg-card)] overflow-hidden" style={{ boxShadow: "var(--shadow-card)" }}>
       <div className="flex items-center justify-between px-4 pt-4 pb-3">
-        <div className="flex items-center gap-2">
+        <button
+          type="button"
+          onClick={toggleCollapsed}
+          className="flex items-center gap-2 flex-1 text-left"
+        >
           <div className="h-5 w-5 rounded-full bg-[var(--color-info)]/20 flex items-center justify-center">
             <span className="text-[9px] font-bold text-[var(--color-info)]">G</span>
           </div>
           <p className="text-[10px] font-semibold uppercase tracking-widest text-[var(--color-info)]">Calendar · This Week</p>
-        </div>
+          <ChevronDown
+            size={14}
+            className={`ml-1 text-[var(--text-muted)] transition-transform duration-200 ${collapsed ? "-rotate-90" : ""}`}
+          />
+        </button>
         <button
           type="button"
           onClick={handleSync}
           disabled={syncing}
-          className="text-[10px] text-[var(--text-muted)] hover:text-[var(--text-secondary)] transition-colors"
+          className="text-[10px] text-[var(--text-muted)] hover:text-[var(--text-secondary)] transition-colors ml-3"
         >
           {syncing ? "Syncing…" : "Refresh"}
         </button>
       </div>
 
-      <div className="divide-y divide-[var(--border-subtle)]">
+      {!collapsed && <div className="divide-y divide-[var(--border-subtle)]">
         {financialEvents.slice(0, 5).map((event) => {
           const emoji = CATEGORY_EMOJI[event.category ?? "other"] ?? "📅";
           const date = event.start_time
@@ -135,7 +160,7 @@ export function CalendarCard({ initiallyConnected }: { initiallyConnected?: bool
             </div>
           );
         })}
-      </div>
+      </div>}
     </div>
   );
 }

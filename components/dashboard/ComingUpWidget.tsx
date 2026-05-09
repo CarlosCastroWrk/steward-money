@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { CalendarEventDetailModal } from "./CalendarEventDetailModal";
@@ -9,7 +9,6 @@ type EventType = "income" | "expense" | "social" | "personal" | "needs_clarifica
 
 interface ComingItem {
   id: string;
-  // cacheId is the raw UUID from calendar_events_cache (for calendar events only)
   cacheId?: string;
   type: "bill" | "event" | "income" | "goal";
   eventType?: EventType;
@@ -90,115 +89,88 @@ export function ComingUpWidget() {
   const [calOAuthError, setCalOAuthError] = useState<string | null>(null);
   const [selectedEvent, setSelectedEvent] = useState<ComingItem | null>(null);
 
-  useEffect(() => {
-    async function load() {
-      const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) { setLoading(false); return; }
+  const load = useCallback(async () => {
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) { setLoading(false); return; }
 
-      const today = new Date().toISOString().split("T")[0];
-      const in14 = new Date(Date.now() + 14 * 86_400_000).toISOString().split("T")[0];
+    const today = new Date().toISOString().split("T")[0];
+    const in7 = new Date(Date.now() + 7 * 86_400_000).toISOString().split("T")[0];
 
-      const ago90 = new Date(Date.now() - 90 * 86_400_000).toISOString().split("T")[0];
+    const [billsRes, goalsRes, calRes, eventsRes] = await Promise.all([
+      supabase.from("bills").select("id, name, amount, next_due_date")
+        .eq("user_id", user.id).is("paid_at", null)
+        .gte("next_due_date", today).lte("next_due_date", in7)
+        .order("next_due_date", { ascending: true }).limit(5),
+      supabase.from("goals").select("id, name, target_amount, current_amount, deadline")
+        .eq("user_id", user.id).gte("deadline", today).lte("deadline", in7).limit(3),
+      supabase.from("calendar_connections").select("user_id").eq("user_id", user.id).maybeSingle(),
+      supabase.from("calendar_events_cache")
+        .select("id, title, start_time, spending_estimate, is_income_event, event_type, user_confirmed, location, description, user_notes")
+        .eq("user_id", user.id)
+        .gte("start_time", new Date().toISOString())
+        .lte("start_time", new Date(Date.now() + 7 * 86_400_000).toISOString())
+        .order("start_time", { ascending: true })
+        .limit(5),
+    ]);
 
-      const [billsRes, incomeRes, goalsRes, calRes, eventsRes, recentIncomeRes] = await Promise.all([
-        supabase.from("bills").select("id, name, amount, next_due_date").eq("user_id", user.id).gte("next_due_date", today).lte("next_due_date", in14).order("next_due_date", { ascending: true }).limit(5),
-        supabase.from("income_sources").select("id, name, amount, next_expected_date").eq("user_id", user.id).eq("is_active", true).gte("next_expected_date", today).lte("next_expected_date", in14).order("next_expected_date", { ascending: true }).limit(10),
-        supabase.from("goals").select("id, name, target_amount, current_amount, deadline").eq("user_id", user.id).gte("deadline", today).lte("deadline", in14).limit(3),
-        supabase.from("calendar_connections").select("user_id").eq("user_id", user.id).maybeSingle(),
-        supabase.from("calendar_events_cache")
-          .select("id, title, start_time, spending_estimate, is_income_event, event_type, user_confirmed, location, description, user_notes")
-          .eq("user_id", user.id)
-          .gte("start_time", new Date().toISOString())
-          .lte("start_time", new Date(Date.now() + 14 * 86_400_000).toISOString())
-          .order("start_time", { ascending: true })
-          .limit(5),
-        supabase.from("transactions").select("merchant, amount").eq("user_id", user.id).gt("amount", 50).gte("date", ago90).limit(100),
-      ]);
+    setCalendarConnected(!!calRes.data);
 
-      setCalendarConnected(!!calRes.data);
-
-      if (!calRes.data && GOOGLE_CLIENT_ID_SET) {
-        if (window.google?.accounts) {
-          setGsiLoaded(true);
-        } else {
-          const script = document.createElement("script");
-          script.src = "https://accounts.google.com/gsi/client";
-          script.async = true;
-          script.onload = () => setGsiLoaded(true);
-          document.head.appendChild(script);
-        }
+    if (!calRes.data && GOOGLE_CLIENT_ID_SET) {
+      if (window.google?.accounts) {
+        setGsiLoaded(true);
+      } else {
+        const script = document.createElement("script");
+        script.src = "https://accounts.google.com/gsi/client";
+        script.async = true;
+        script.onload = () => setGsiLoaded(true);
+        document.head.appendChild(script);
       }
-
-      // Build paycheck amount history per income source (normalized name matching)
-      function normName(s: string) { return s.toLowerCase().replace(/[^a-z0-9]/g, ""); }
-      function isHighVariance(amounts: number[]): boolean {
-        if (amounts.length < 3) return false;
-        const mean = amounts.reduce((s, v) => s + v, 0) / amounts.length;
-        if (mean === 0) return false;
-        const stddev = Math.sqrt(amounts.reduce((s, v) => s + (v - mean) ** 2, 0) / amounts.length);
-        return stddev / mean > 0.15;
-      }
-      const recentTx = recentIncomeRes.data ?? [];
-      const incomeHistory: Record<string, number[]> = {};
-      for (const src of incomeRes.data ?? []) {
-        const key = normName(src.name);
-        incomeHistory[key] = recentTx
-          .filter((t) => normName(t.merchant).includes(key))
-          .map((t) => Number(t.amount));
-      }
-
-      const combined: ComingItem[] = [];
-
-      for (const b of billsRes.data ?? []) {
-        combined.push({ id: `bill-${b.id}`, type: "bill", title: b.name, date: b.next_due_date, amount: Number(b.amount) });
-      }
-
-      // Deduplicate income sources by name — only show the earliest occurrence per name
-      const seenIncomeNames = new Set<string>();
-      for (const i of incomeRes.data ?? []) {
-        if (seenIncomeNames.has(i.name)) continue;
-        seenIncomeNames.add(i.name);
-        const key = normName(i.name);
-        const variable = isHighVariance(incomeHistory[key] ?? []);
-        combined.push({
-          id: `income-${i.id}`,
-          type: "income",
-          title: i.name,
-          date: i.next_expected_date,
-          amount: variable ? undefined : Number(i.amount),
-        });
-      }
-      for (const g of goalsRes.data ?? []) {
-        if (!g.deadline) continue;
-        combined.push({ id: `goal-${g.id}`, type: "goal", title: g.name, date: g.deadline, amount: Number(g.target_amount) - Number(g.current_amount) });
-      }
-      for (const e of eventsRes.data ?? []) {
-        if (!e.title) continue;
-        const isIncome = e.event_type === "income" || (e.is_income_event && !e.event_type);
-        const isConfirmedExpense = e.event_type === "expense" && e.user_confirmed;
-
-        combined.push({
-          id: `event-${e.id}`,
-          cacheId: e.id,
-          type: isIncome ? "income" : "event",
-          eventType: e.event_type ?? (isIncome ? "income" : "needs_clarification"),
-          userConfirmed: e.user_confirmed ?? false,
-          title: e.title,
-          date: e.start_time,
-          location: e.location,
-          description: e.description,
-          userNotes: e.user_notes,
-          amount: isConfirmedExpense && e.spending_estimate > 0 ? Number(e.spending_estimate) : undefined,
-        });
-      }
-
-      combined.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-      setItems(combined);
-      setLoading(false);
     }
-    load();
+
+    const combined: ComingItem[] = [];
+
+    for (const b of billsRes.data ?? []) {
+      combined.push({ id: `bill-${b.id}`, type: "bill", title: b.name, date: b.next_due_date, amount: Number(b.amount) });
+    }
+
+    for (const g of goalsRes.data ?? []) {
+      if (!g.deadline) continue;
+      combined.push({ id: `goal-${g.id}`, type: "goal", title: g.name, date: g.deadline, amount: Number(g.target_amount) - Number(g.current_amount) });
+    }
+
+    for (const e of eventsRes.data ?? []) {
+      if (!e.title) continue;
+      const isIncome = e.event_type === "income" || (e.is_income_event && !e.event_type);
+      const isConfirmedExpense = e.event_type === "expense" && e.user_confirmed;
+      combined.push({
+        id: `event-${e.id}`,
+        cacheId: e.id,
+        type: isIncome ? "income" : "event",
+        eventType: e.event_type ?? (isIncome ? "income" : "needs_clarification"),
+        userConfirmed: e.user_confirmed ?? false,
+        title: e.title,
+        date: e.start_time,
+        location: e.location,
+        description: e.description,
+        userNotes: e.user_notes,
+        amount: isConfirmedExpense && e.spending_estimate > 0 ? Number(e.spending_estimate) : undefined,
+      });
+    }
+
+    combined.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    setItems(combined);
+    setLoading(false);
   }, []);
+
+  useEffect(() => {
+    load();
+
+    // React to Luka mutations (add/update/delete bills or goals) without a full page reload
+    function handleFinancialsChanged() { load(); }
+    window.addEventListener("financials:changed", handleFinancialsChanged);
+    return () => window.removeEventListener("financials:changed", handleFinancialsChanged);
+  }, [load]);
 
   function handleCalendarConnect() {
     const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID ?? "";
@@ -251,7 +223,7 @@ export function ComingUpWidget() {
     return (
       <section className="min-w-0 max-w-full">
         <div className="mb-3 flex items-center justify-between">
-          <h2 className="text-[10px] font-semibold uppercase tracking-widest text-[var(--text-3)]">Coming up · next 14 days</h2>
+          <h2 className="text-[10px] font-semibold uppercase tracking-widest text-[var(--text-3)]">Coming up · next 7 days</h2>
           <a href="/transactions" className="text-xs text-purple-400 hover:text-purple-300 transition-colors">See all →</a>
         </div>
         <div className="h-[88px] rounded-xl bg-[var(--bg-elevated)] animate-pulse" />
@@ -263,7 +235,7 @@ export function ComingUpWidget() {
     <>
       <section className="min-w-0 max-w-full">
         <div className="mb-3 flex items-center justify-between">
-          <h2 className="text-[10px] font-semibold uppercase tracking-widest text-[var(--text-3)]">Coming up · next 14 days</h2>
+          <h2 className="text-[10px] font-semibold uppercase tracking-widest text-[var(--text-3)]">Coming up · next 7 days</h2>
           <a href="/transactions" className="text-xs text-purple-400 hover:text-purple-300 transition-colors">See all →</a>
         </div>
 
@@ -288,61 +260,61 @@ export function ComingUpWidget() {
           </div>
         ) : items.length === 0 ? (
           <div className="rounded-xl border border-dashed border-[var(--border)] p-4 text-center">
-            <p className="text-sm text-[var(--text-3)]">Clear skies for the next two weeks.</p>
+            <p className="text-sm text-[var(--text-3)]">Clear skies for the next week.</p>
           </div>
         ) : (
           <div className="w-full overflow-hidden">
-          <div
-            className="scroll-hidden flex gap-3 overflow-x-auto pb-1 w-full min-w-0"
-            style={{ touchAction: "pan-x", WebkitOverflowScrolling: "touch" } as React.CSSProperties}
-            onPointerDown={(e) => e.stopPropagation()}
-          >
-            {items.map((item) => {
-              const { bg, text, icon } = getCardStyle(item);
-              const isEarning = item.eventType === "income" || (item.type === "income" && !item.eventType);
-              const needsClarification = item.eventType === "needs_clarification";
-              const isCalendarEvent = !!item.cacheId;
+            <div
+              className="scroll-hidden flex gap-3 overflow-x-auto pb-1 w-full min-w-0"
+              style={{ touchAction: "pan-x", WebkitOverflowScrolling: "touch" } as React.CSSProperties}
+              onPointerDown={(e) => e.stopPropagation()}
+            >
+              {items.map((item) => {
+                const { bg, text, icon } = getCardStyle(item);
+                const isEarning = item.eventType === "income" || (item.type === "income" && !item.eventType);
+                const needsClarification = item.eventType === "needs_clarification";
+                const isCalendarEvent = !!item.cacheId;
 
-              const card = (
-                <div className={`flex-shrink-0 rounded-xl border ${bg} p-3 w-[148px] ${isCalendarEvent ? "cursor-pointer active:scale-[0.97] transition-transform" : ""}`}>
-                  <div className="flex items-center gap-1.5 mb-2">
-                    <span className="text-sm">{icon}</span>
-                    <span className={`text-[10px] font-semibold uppercase tracking-wide ${text}`}>
-                      {daysLabel(item.date)}
-                    </span>
-                    {needsClarification && (
-                      <span className="ml-auto text-[10px] text-amber-400 font-bold">?</span>
+                const card = (
+                  <div className={`flex-shrink-0 rounded-xl border ${bg} p-3 w-[148px] ${isCalendarEvent ? "cursor-pointer active:scale-[0.97] transition-transform" : ""}`}>
+                    <div className="flex items-center gap-1.5 mb-2">
+                      <span className="text-sm">{icon}</span>
+                      <span className={`text-[10px] font-semibold uppercase tracking-wide ${text}`}>
+                        {daysLabel(item.date)}
+                      </span>
+                      {needsClarification && (
+                        <span className="ml-auto text-[10px] text-amber-400 font-bold">?</span>
+                      )}
+                    </div>
+                    <p className="text-xs font-medium text-[var(--text-1)] leading-tight truncate">{item.title}</p>
+                    {isEarning && item.amount != null && item.amount > 0 && (
+                      <p className={`mt-1 text-sm font-semibold ${text}`}>+{fmt(item.amount)}</p>
+                    )}
+                    {isEarning && (item.amount == null || item.amount === 0) && (
+                      <p className="mt-1 text-[10px] font-semibold text-emerald-400 uppercase tracking-wide">earning</p>
+                    )}
+                    {!isEarning && !needsClarification && item.amount != null && item.amount > 0 && (
+                      <p className={`mt-1 text-sm font-semibold ${text}`}>{fmt(item.amount)}</p>
                     )}
                   </div>
-                  <p className="text-xs font-medium text-[var(--text-1)] leading-tight truncate">{item.title}</p>
-                  {isEarning && item.amount != null && item.amount > 0 && (
-                    <p className={`mt-1 text-sm font-semibold ${text}`}>+{fmt(item.amount)}</p>
-                  )}
-                  {isEarning && (item.amount == null || item.amount === 0) && (
-                    <p className="mt-1 text-[10px] font-semibold text-emerald-400 uppercase tracking-wide">earning</p>
-                  )}
-                  {!isEarning && !needsClarification && item.amount != null && item.amount > 0 && (
-                    <p className={`mt-1 text-sm font-semibold ${text}`}>{fmt(item.amount)}</p>
-                  )}
-                </div>
-              );
-
-              if (isCalendarEvent) {
-                return (
-                  <button
-                    key={item.id}
-                    type="button"
-                    onClick={() => setSelectedEvent(item)}
-                    className="text-left"
-                  >
-                    {card}
-                  </button>
                 );
-              }
 
-              return <div key={item.id}>{card}</div>;
-            })}
-          </div>
+                if (isCalendarEvent) {
+                  return (
+                    <button
+                      key={item.id}
+                      type="button"
+                      onClick={() => setSelectedEvent(item)}
+                      className="text-left"
+                    >
+                      {card}
+                    </button>
+                  );
+                }
+
+                return <div key={item.id}>{card}</div>;
+              })}
+            </div>
           </div>
         )}
       </section>

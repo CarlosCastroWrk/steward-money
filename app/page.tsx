@@ -11,6 +11,8 @@ import { DashboardTabs } from "@/components/dashboard/DashboardTabs";
 import { ConnectBankCard } from "@/components/dashboard/ConnectBankCard";
 import { DashboardSyncButton } from "@/components/dashboard/DashboardSyncButton";
 
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = {
   title: "Dashboard — Steward Money",
 };

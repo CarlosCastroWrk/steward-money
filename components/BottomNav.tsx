@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { Home, ArrowLeftRight, LayoutGrid, Activity, Wallet } from "lucide-react";
 
@@ -17,6 +18,10 @@ const MORE_ACTIVE_PREFIXES = ["/bills", "/card", "/goals", "/decide", "/council"
 export function BottomNav() {
   const router = useRouter();
   const pathname = usePathname();
+
+  useEffect(() => {
+    PRIMARY_NAV.forEach((item) => router.prefetch(item.href));
+  }, [router]);
 
   const currentNavIndex = NAV_ROUTES.findIndex((r) =>
     r === "/" ? pathname === "/" : pathname.startsWith(r)
