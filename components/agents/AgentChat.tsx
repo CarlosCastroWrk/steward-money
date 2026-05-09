@@ -23,7 +23,9 @@ export interface AgentChatProps {
   prefilledMessage?: string;
   context?: string;
   initialMessage?: string;
+  initialMessages?: Array<{ role: "user" | "assistant"; content: string }>;
   onClose: () => void;
+  embedded?: boolean;
 }
 
 // ─── Icons ────────────────────────────────────────────────────────────────────
@@ -201,12 +203,14 @@ function OverflowMenu({ open, onNewChat, onClose }: { open: boolean; onNewChat: 
 
 // ─── Main component ───────────────────────────────────────────────────────────
 
-export function AgentChat({ agent, prefilledMessage, context, initialMessage, onClose }: AgentChatProps) {
+export function AgentChat({ agent, prefilledMessage, context, initialMessage, initialMessages, onClose, embedded }: AgentChatProps) {
   const config = AGENT_REGISTRY[agent];
 
-  const seed: Message[] = initialMessage
-    ? [{ role: "assistant", content: initialMessage }]
-    : [];
+  const seed: Message[] = initialMessages
+    ? initialMessages.map((m) => ({ role: m.role, content: m.content }))
+    : initialMessage
+      ? [{ role: "assistant", content: initialMessage }]
+      : [];
 
   const [messages, setMessages] = useState<Message[]>(seed);
   const [input, setInput] = useState(prefilledMessage ?? "");
@@ -337,50 +341,52 @@ export function AgentChat({ agent, prefilledMessage, context, initialMessage, on
 
   return (
     <div
-      className="fixed inset-0 z-[60] flex flex-col bg-[var(--bg-base)]"
-      style={{ height: "100dvh" }}
+      className={embedded ? "flex flex-col flex-1 min-h-0 bg-[var(--bg-base)]" : "fixed inset-0 z-[60] flex flex-col bg-[var(--bg-base)]"}
+      style={embedded ? {} : { height: "100dvh" }}
     >
-      {/* ─── Header ─────────────────────────────────────────────────────── */}
-      <div
-        ref={headerRef}
-        className="relative flex-shrink-0 flex items-center justify-between bg-[var(--bg-card)] border-b border-[var(--border)] px-3"
-        style={{ paddingTop: "max(env(safe-area-inset-top), 12px)", paddingBottom: "12px" }}
-      >
-        <button
-          type="button"
-          onClick={onClose}
-          className="flex h-9 w-9 items-center justify-center rounded-xl text-[var(--text-3)] hover:bg-[var(--bg-elevated)] hover:text-[var(--text-1)] transition-colors"
-          aria-label="Back"
+      {/* ─── Header (overlay mode only) ──────────────────────────────────── */}
+      {!embedded && (
+        <div
+          ref={headerRef}
+          className="relative flex-shrink-0 flex items-center justify-between bg-[var(--bg-card)] border-b border-[var(--border)] px-3"
+          style={{ paddingTop: "max(env(safe-area-inset-top), 12px)", paddingBottom: "12px" }}
         >
-          <ChevronLeft />
-        </button>
-
-        <div className="flex items-center gap-2">
-          <div
-            className="h-6 w-6 flex-shrink-0 flex items-center justify-center rounded-full text-[10px] font-bold text-white"
-            style={{ backgroundColor: config.color }}
-          >
-            {config.name[0]}
-          </div>
-          <span className="text-sm font-semibold text-[var(--text-1)]">{config.name}</span>
-        </div>
-
-        <div className="relative">
           <button
             type="button"
-            onClick={(e) => { e.stopPropagation(); setOverflowOpen((o) => !o); }}
+            onClick={onClose}
             className="flex h-9 w-9 items-center justify-center rounded-xl text-[var(--text-3)] hover:bg-[var(--bg-elevated)] hover:text-[var(--text-1)] transition-colors"
-            aria-label="More"
+            aria-label="Back"
           >
-            <Dots />
+            <ChevronLeft />
           </button>
-          <OverflowMenu
-            open={overflowOpen}
-            onNewChat={() => { setMessages([]); setOverflowOpen(false); }}
-            onClose={() => setOverflowOpen(false)}
-          />
+
+          <div className="flex items-center gap-2">
+            <div
+              className="h-6 w-6 flex-shrink-0 flex items-center justify-center rounded-full text-[10px] font-bold text-white"
+              style={{ backgroundColor: config.color }}
+            >
+              {config.name[0]}
+            </div>
+            <span className="text-sm font-semibold text-[var(--text-1)]">{config.name}</span>
+          </div>
+
+          <div className="relative">
+            <button
+              type="button"
+              onClick={(e) => { e.stopPropagation(); setOverflowOpen((o) => !o); }}
+              className="flex h-9 w-9 items-center justify-center rounded-xl text-[var(--text-3)] hover:bg-[var(--bg-elevated)] hover:text-[var(--text-1)] transition-colors"
+              aria-label="More"
+            >
+              <Dots />
+            </button>
+            <OverflowMenu
+              open={overflowOpen}
+              onNewChat={() => { setMessages([]); setOverflowOpen(false); }}
+              onClose={() => setOverflowOpen(false)}
+            />
+          </div>
         </div>
-      </div>
+      )}
 
       {/* ─── Message area ────────────────────────────────────────────────── */}
       <div ref={scrollRef} className="flex-1 overflow-y-auto">
