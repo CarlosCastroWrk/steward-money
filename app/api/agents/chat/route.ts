@@ -127,7 +127,7 @@ export async function POST(req: NextRequest) {
             break;
           }
           case "search_memories": {
-            const found = await searchMemories(supabase, user.id, String(input.query), allowedCategories);
+            const found = await searchMemories(supabase, user.id, String(input.query));
             result = found.map((m) => ({ id: m.id, content: m.content, categories: m.categories, updated_at: m.updated_at }));
             break;
           }

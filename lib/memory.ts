@@ -168,11 +168,11 @@ export const MEMORY_TOOLS = [
   },
   {
     name: "search_memories",
-    description: "Search existing memories by keyword. Use before update_memory or delete_memory to find the right ID.",
+    description: "Search ALL of the user's memories by keyword. Use before update_memory or delete_memory to find the right ID. Searches across every category regardless of which agent saved it.",
     input_schema: {
       type: "object" as const,
       properties: {
-        query: { type: "string", description: "Keyword to search in memory content" },
+        query: { type: "string", description: "1-3 word keyword to search in memory content. Use a SHORT, specific word from what the user said — NOT a full sentence. E.g. 'ballertv', 'honda', 'HEB', 'tithe'. Short keywords match better." },
       },
       required: ["query"],
     },
@@ -180,7 +180,7 @@ export const MEMORY_TOOLS = [
 ];
 
 export const MEMORY_SYSTEM_PROMPT_ADDITION = `
-You have memory across conversations. When the user shares meaningful information about themselves — their job, income type, family situation, faith practices, recurring patterns, or communication preferences — call save_memory with the most relevant 1-2 categories. When you save, announce it briefly: "Got it, I'll remember [brief content]." No emoji.
+You have memory across conversations. When the user shares meaningful information about themselves — their job, income type, family situation, faith practices, recurring patterns, or communication preferences — call save_memory ONCE with all relevant categories as a single array. Never call save_memory more than once for the same piece of information. When you save, announce it briefly: "Got it, I'll remember [brief content]." No emoji.
 
 Do NOT save: hypotheticals, venting, one-off questions, or anything ambiguous. When in doubt, don't save.
 

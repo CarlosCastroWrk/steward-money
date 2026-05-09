@@ -782,10 +782,7 @@ async function executeTool(
       }
 
       case "search_memories": {
-        const found = await searchMemories(
-          supabase, userId, String(input.query),
-          AGENT_MEMORY_CATEGORIES.luka
-        );
+        const found = await searchMemories(supabase, userId, String(input.query));
         return {
           result: found.map((m) => ({ id: m.id, content: m.content, categories: m.categories, updated_at: m.updated_at })),
           refreshNeeded: false,

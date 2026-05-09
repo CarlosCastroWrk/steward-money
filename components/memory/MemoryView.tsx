@@ -200,7 +200,7 @@ export function MemoryView({ initialMemories }: Props) {
                     <div className="flex items-start gap-3">
                       <div className="flex-1 min-w-0">
                         <p className="text-sm text-[var(--text-1)] leading-relaxed">{mem.content}</p>
-                        <div className="flex items-center gap-2 mt-1.5">
+                        <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
                           <span
                             className="inline-block w-1.5 h-1.5 rounded-full flex-shrink-0"
                             style={{ backgroundColor: AGENT_COLORS[mem.saved_by_agent] ?? "var(--text-3)" }}
@@ -208,6 +208,19 @@ export function MemoryView({ initialMemories }: Props) {
                           <span className="text-[11px] text-[var(--text-3)] capitalize">{mem.saved_by_agent}</span>
                           <span className="text-[11px] text-[var(--text-dim)]">·</span>
                           <span className="text-[11px] text-[var(--text-dim)]">{relativeTime(mem.updated_at)}</span>
+                          {mem.categories.length > 1 && (
+                            <>
+                              <span className="text-[11px] text-[var(--text-dim)]">·</span>
+                              {mem.categories.map((cat) => (
+                                <span
+                                  key={cat}
+                                  className="inline-flex items-center rounded-full px-1.5 py-0.5 text-[10px] font-medium border border-[var(--border-subtle)] text-[var(--text-3)]"
+                                >
+                                  {cat}
+                                </span>
+                              ))}
+                            </>
+                          )}
                         </div>
                       </div>
                       <div className="flex items-center gap-2 flex-shrink-0 pt-0.5">
