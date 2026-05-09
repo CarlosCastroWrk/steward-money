@@ -195,6 +195,17 @@ const TOOLS: Anthropic.Tool[] = [
     },
   },
   {
+    name: "delete_all_bills",
+    description: "Delete ALL recurring expenses at once. Use this when the user wants to clear/remove all their bills or start fresh. ALWAYS call with confirmed: false first to show what will be deleted. Only call with confirmed: true after the user explicitly says yes.",
+    input_schema: {
+      type: "object",
+      properties: {
+        confirmed: { type: "boolean", description: "false = preview only (always start here); true = delete all bills" },
+      },
+      required: ["confirmed"],
+    },
+  },
+  {
     name: "delete_income_source",
     description: "Delete an income source. ALWAYS call with confirmed: false first — this shows the user what will be deleted and asks them to confirm. Only call with confirmed: true after the user explicitly says yes.",
     input_schema: {
@@ -650,6 +661,25 @@ async function executeTool(
         return { result: { success: true, message: `"${bill.name}" deleted.` }, refreshNeeded: true };
       }
 
+      case "delete_all_bills": {
+        const { data: allBills } = await supabase.from("bills").select("id, name, amount, frequency").eq("user_id", userId);
+        if (!allBills?.length) return { result: { message: "No bills found — nothing to delete." }, refreshNeeded: false };
+        if (!input.confirmed) {
+          const list = allBills.map((b) => `• ${b.name} — $${Number(b.amount).toLocaleString()}/${b.frequency}`).join("\n");
+          return {
+            result: {
+              needs_confirmation: true,
+              count: allBills.length,
+              message: `Found ${allBills.length} bill${allBills.length !== 1 ? "s" : ""}:\n${list}\n\nThis will permanently delete all of them. Call delete_all_bills again with confirmed: true only if the user says yes.`,
+            },
+            refreshNeeded: false,
+          };
+        }
+        const ids = allBills.map((b) => b.id);
+        await supabase.from("bills").delete().in("id", ids).eq("user_id", userId);
+        return { result: { success: true, deleted_count: ids.length, message: `All ${ids.length} bill${ids.length !== 1 ? "s" : ""} deleted.` }, refreshNeeded: true };
+      }
+
       case "delete_income_source": {
         const { data: sources } = await supabase.from("income_sources").select("id, name, amount, frequency").eq("user_id", userId).eq("is_active", true);
         const query = String(input.income_name ?? "").toLowerCase();
@@ -864,6 +894,8 @@ When asked to take action, use your tools. When asked a question, answer with re
 
 For deletes: ALWAYS call the delete tool with confirmed: false first. The tool will return what it found. Present that to the user: "I found [name] for $X — delete it permanently?" Then only call again with confirmed: true after the user explicitly says yes. Never skip this step, even if the user seems certain.
 
+When the user wants to delete ALL their bills (e.g. "delete all my bills", "clear my expenses", "start fresh"): use delete_all_bills — NOT delete_bill one at a time. Call it with confirmed: false first to show the full list, then confirmed: true after the user says yes. This deletes everything in one operation.
+
 For updates (update_bill, update_income_source, update_goal): match by name and only update the specific fields the user mentioned. Confirm what changed after the tool returns success.
 
 If the user mentions a significant life change (new job, moving, relationship change, major purchase), use the trigger_kairos tool and acknowledge the change warmly.${kairosOpener}${calendarEvents.length > 0 ? `\n\n${formatCalendarContextForAgent(calendarEvents)}` : ""}`;
@@ -877,6 +909,7 @@ If the user mentions a significant life change (new job, moving, relationship ch
     add_bill:               "Added recurring expense",
     update_bill:            "Updated recurring expense",
     delete_bill:            "Deleted recurring expense",
+    delete_all_bills:       "Deleted all recurring expenses",
     add_goal:               "Created savings goal",
     update_goal:            "Updated savings goal",
     delete_goal:            "Deleted savings goal",
