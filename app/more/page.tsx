@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { CreditCard, TrendingUp, Users, Target, FileText, RefreshCw, Settings, Plug, BarChart2, LogOut, ChevronRight, BookOpen } from "lucide-react";
+import { CreditCard, TrendingUp, Users, Target, FileText, RefreshCw, Settings, Plug, BarChart2, LogOut, ChevronRight, BookOpen, Calendar } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { ThemeToggle } from "@/components/ThemeToggle";
 
@@ -9,9 +9,10 @@ const SECTIONS = [
   {
     title: "Tools",
     items: [
-      { label: "Card",     href: "/card",    icon: <CreditCard size={18} strokeWidth={1.6} /> },
-      { label: "Forecast", href: "/decide",  icon: <TrendingUp size={18} strokeWidth={1.6} /> },
-      { label: "Council",  href: "/council", icon: <Users size={18} strokeWidth={1.6} /> },
+      { label: "Card",     href: "/card",           icon: <CreditCard size={18} strokeWidth={1.6} /> },
+      { label: "Calendar", href: "/more/calendar",  icon: <Calendar   size={18} strokeWidth={1.6} /> },
+      { label: "Forecast", href: "/decide",          icon: <TrendingUp size={18} strokeWidth={1.6} /> },
+      { label: "Council",  href: "/council",         icon: <Users      size={18} strokeWidth={1.6} /> },
     ],
   },
   {
