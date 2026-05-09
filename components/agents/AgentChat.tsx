@@ -389,99 +389,104 @@ export function AgentChat({ agent, prefilledMessage, context, initialMessage, in
       )}
 
       {/* ─── Message area ────────────────────────────────────────────────── */}
-      <div ref={scrollRef} className="flex-1 overflow-y-auto">
+      <div ref={scrollRef} className="flex-1 overflow-y-auto scroll-smooth">
 
         {/* Empty state */}
         {messages.length === 0 && !loading && (
-          <div className="flex flex-col items-center justify-center min-h-full px-6 gap-6 py-12">
-            <div
-              className="h-16 w-16 flex items-center justify-center rounded-full text-2xl font-bold text-white"
-              style={{ backgroundColor: config.color, boxShadow: `0 0 28px ${config.color}33` }}
-            >
-              {config.name[0]}
+          <div className="flex flex-col items-center justify-center min-h-full px-6 gap-8 py-16">
+            <div className="flex flex-col items-center gap-4">
+              <div
+                className="h-14 w-14 flex items-center justify-center rounded-2xl text-xl font-bold text-white shadow-lg"
+                style={{ backgroundColor: config.color, boxShadow: `0 8px 24px ${config.color}40` }}
+              >
+                {config.name[0]}
+              </div>
+              <div className="text-center">
+                <h2 className={`text-xl font-semibold text-[var(--text-1)] ${isSerif ? "font-[family-name:var(--font-display)]" : ""}`}>
+                  {config.greeting}
+                </h2>
+                <p className="mt-1.5 text-sm text-[var(--text-3)] max-w-xs">{config.subtitle}</p>
+              </div>
             </div>
-            <div className="text-center">
-              <h2 className={`text-2xl text-[var(--text-1)] ${isSerif ? "font-[family-name:var(--font-display)]" : "font-semibold"}`}>
-                {config.greeting}
-              </h2>
-              <p className="mt-2 text-sm text-[var(--text-2)]">{config.prompt}</p>
-            </div>
-            <SuggestionChips
-              suggestions={config.suggestions}
-              color={config.color}
-              onPick={(s) => send(s)}
-            />
+            <SuggestionChips suggestions={config.suggestions} color={config.color} onPick={(s) => send(s)} />
           </div>
         )}
 
         {/* Message thread */}
         {(messages.length > 0 || loading) && (
-          <div className="px-4 py-5 space-y-1">
+          <div className="mx-auto w-full max-w-2xl px-4 py-6 space-y-6">
             {messages.map((msg, i) => {
               if (msg.role === "user") {
-                // Group gap: user message is preceded by AI → add top margin
-                const prevIsAI = i > 0 && messages[i - 1].role === "assistant";
                 return (
-                  <div key={i} className={`flex justify-end ${prevIsAI ? "mt-5" : "mt-2"}`}>
-                    <div
-                      className="max-w-[75%] rounded-2xl rounded-br-sm px-3.5 py-2.5 text-sm text-white leading-relaxed"
-                      style={{ backgroundColor: config.color }}
-                    >
-                      {msg.content}
+                  <div key={i} className="flex justify-end">
+                    <div className="max-w-[78%] rounded-2xl rounded-br-sm bg-[var(--bg-elevated)] border border-[var(--border)] px-4 py-3 text-sm text-[var(--text-1)] leading-relaxed">
+                      <span className="whitespace-pre-wrap">{msg.content}</span>
                     </div>
                   </div>
                 );
               }
 
-              // AI message
-              const showLabel = isFirstAI(i);
-              const prevIsUser = i > 0 && messages[i - 1].role === "user";
+              // AI message — avatar + text, no background
+              const showAvatar = isFirstAI(i);
 
               return (
-                <div key={i} className={`${prevIsUser ? "mt-5" : "mt-1"}`}>
-                  {showLabel && (
-                    <div className="flex items-center gap-1.5 mb-1.5">
-                      <span
-                        className="h-1.5 w-1.5 rounded-full flex-shrink-0"
+                <div key={i} className="flex items-start gap-3">
+                  {/* Avatar column */}
+                  <div className="flex-shrink-0 w-7 mt-0.5">
+                    {showAvatar && (
+                      <div
+                        className="h-7 w-7 rounded-lg flex items-center justify-center text-[11px] font-bold text-white"
                         style={{ backgroundColor: config.color }}
-                      />
-                      <span className="text-[11px] font-semibold text-[var(--text-3)]">{config.name}</span>
-                    </div>
-                  )}
-                  <div className={`text-sm text-[var(--text-1)] ${isSerif ? "font-[family-name:var(--font-display)]" : ""} ${msg.failed ? "text-[var(--text-3)]" : ""}`}>
-                    {msg.animate ? (
-                      <AnimatedText text={msg.content} animate color={config.color} />
-                    ) : (
-                      <span className="whitespace-pre-wrap leading-relaxed">{msg.content}</span>
+                      >
+                        {config.name[0]}
+                      </div>
                     )}
                   </div>
-                  {msg.memoryActions?.map((action, ai) => (
-                    <MemoryPill key={ai} action={action} />
-                  ))}
-                  {msg.failed && retryText && (
-                    <button
-                      type="button"
-                      onClick={() => send(retryText, true)}
-                      className="mt-2 flex items-center gap-1.5 text-[11px] text-[var(--accent)] hover:opacity-80 transition-opacity"
-                    >
-                      <RefreshCw /> Retry
-                    </button>
-                  )}
+                  {/* Message text */}
+                  <div className="flex-1 min-w-0 pt-0.5">
+                    {showAvatar && (
+                      <p className="text-[11px] font-semibold text-[var(--text-3)] mb-1.5">{config.name}</p>
+                    )}
+                    <div className={`text-sm text-[var(--text-1)] leading-relaxed ${isSerif ? "font-[family-name:var(--font-display)]" : ""} ${msg.failed ? "opacity-50" : ""}`}>
+                      {msg.animate ? (
+                        <AnimatedText text={msg.content} animate color={config.color} />
+                      ) : (
+                        <span className="whitespace-pre-wrap">{msg.content}</span>
+                      )}
+                    </div>
+                    {msg.memoryActions?.map((action, ai) => (
+                      <MemoryPill key={ai} action={action} />
+                    ))}
+                    {msg.failed && retryText && (
+                      <button
+                        type="button"
+                        onClick={() => send(retryText, true)}
+                        className="mt-2 flex items-center gap-1.5 text-[11px] text-[var(--text-3)] hover:text-[var(--text-1)] transition-colors"
+                      >
+                        <RefreshCw /> Try again
+                      </button>
+                    )}
+                  </div>
                 </div>
               );
             })}
 
+            {/* Thinking state */}
             {loading && (
-              <div className="mt-5">
-                <div className="flex items-center gap-1.5 mb-1.5">
-                  <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: config.color }} />
-                  <span className="text-[11px] font-semibold text-[var(--text-3)]">{config.name}</span>
+              <div className="flex items-start gap-3">
+                <div className="flex-shrink-0 w-7 mt-0.5">
+                  <div className="h-7 w-7 rounded-lg flex items-center justify-center text-[11px] font-bold text-white" style={{ backgroundColor: config.color }}>
+                    {config.name[0]}
+                  </div>
                 </div>
-                <ThinkingDots color={config.color} />
+                <div className="flex-1 pt-1.5">
+                  <p className="text-[11px] font-semibold text-[var(--text-3)] mb-2">{config.name}</p>
+                  <ThinkingDots color={config.color} />
+                </div>
               </div>
             )}
 
-            <div className="h-2" />
+            <div className="h-1" />
           </div>
         )}
       </div>
@@ -489,43 +494,34 @@ export function AgentChat({ agent, prefilledMessage, context, initialMessage, in
       {/* ─── Composer ────────────────────────────────────────────────────── */}
       <div
         ref={composerRef}
-        className="flex-shrink-0 border-t border-[var(--border)] bg-[var(--bg-card)] px-3 pt-3"
+        className="flex-shrink-0 bg-[var(--bg-base)] px-4 pt-3"
         style={{ paddingBottom: "max(env(safe-area-inset-bottom), 16px)" }}
       >
-        <div className="flex items-end gap-2">
-          {/* Textarea wrapper with mic icon */}
-          <div className="relative flex-1 min-w-0">
+        <div className="mx-auto w-full max-w-2xl">
+          <div className="relative flex items-end rounded-2xl border border-[var(--border)] bg-[var(--bg-card)] focus-within:border-[var(--border-strong)] transition-colors">
             <textarea
               ref={inputRef}
               value={input}
               onChange={handleInput}
               onKeyDown={handleKeyDown}
-              placeholder={config.prompt}
+              placeholder="Message…"
               rows={1}
-              className="w-full resize-none rounded-2xl border border-[var(--border)] bg-[var(--bg-elevated)] py-2.5 pl-4 pr-10 text-sm text-[var(--text-1)] placeholder:text-[var(--text-3)] outline-none focus:border-[var(--border-strong)] transition-colors"
-              style={{ minHeight: "2.5rem", maxHeight: "7.5rem", lineHeight: "1.5" }}
+              className="flex-1 min-w-0 resize-none bg-transparent py-3.5 pl-4 pr-12 text-sm text-[var(--text-1)] placeholder:text-[var(--text-3)] outline-none"
+              style={{ minHeight: "3rem", maxHeight: "8rem", lineHeight: "1.5" }}
             />
-            {/* Mic icon (decorative position, right inside textarea) */}
             <button
               type="button"
-              className="absolute right-3 bottom-2.5 text-[var(--text-dim)] hover:text-[var(--text-3)] transition-colors"
-              tabIndex={-1}
-              aria-label="Voice input"
+              onClick={() => send(input)}
+              disabled={!input.trim() || loading}
+              className="absolute right-2.5 bottom-2.5 flex h-8 w-8 items-center justify-center rounded-xl text-white transition-all active:scale-95 disabled:opacity-25"
+              style={{ backgroundColor: input.trim() && !loading ? config.color : "var(--border-strong)" }}
             >
-              <Mic />
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4">
+                <path d="M12 19V5M5 12l7-7 7 7" />
+              </svg>
             </button>
           </div>
-
-          {/* Send button */}
-          <button
-            type="button"
-            onClick={() => send(input)}
-            disabled={!input.trim() || loading}
-            className="flex-shrink-0 flex h-10 w-10 items-center justify-center rounded-full text-white transition-all active:scale-95 disabled:opacity-30"
-            style={{ backgroundColor: config.color }}
-          >
-            <Send />
-          </button>
+          <p className="mt-2 text-center text-[10px] text-[var(--text-3)] opacity-50">Shift+Enter for new line</p>
         </div>
       </div>
     </div>
