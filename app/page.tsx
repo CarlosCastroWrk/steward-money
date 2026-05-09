@@ -9,6 +9,7 @@ import { CalendarCard } from "@/components/dashboard/CalendarCard";
 import { ComingUpWidget } from "@/components/dashboard/ComingUpWidget";
 import { DashboardTabs } from "@/components/dashboard/DashboardTabs";
 import { ConnectBankCard } from "@/components/dashboard/ConnectBankCard";
+import { DashboardSyncButton } from "@/components/dashboard/DashboardSyncButton";
 
 export const metadata: Metadata = {
   title: "Dashboard — Steward Money",
@@ -145,16 +146,7 @@ export default async function DashboardPage() {
             {formatUSD(result.safeToSpend)}
           </p>
           <p className="mt-1.5 text-xs text-white/40">After bills, buffer &amp; deductions</p>
-          {syncIsStale ? (
-            <a href="/transactions" className="mt-1 inline-flex items-center gap-1 text-[10px] text-amber-400/80 hover:text-amber-400 transition-colors">
-              <span className="h-1.5 w-1.5 rounded-full bg-amber-400/80" />
-              {lastSyncedLabel ? `${lastSyncedLabel} — Balance may be outdated · Sync now` : "Balance may be outdated · Sync now"}
-            </a>
-          ) : lastSyncedLabel ? (
-            <a href="/transactions" className="mt-1 inline-block text-[10px] text-white/30 hover:text-white/50 transition-colors">
-              {lastSyncedLabel} · Sync
-            </a>
-          ) : null}
+          <DashboardSyncButton lastSyncedLabel={lastSyncedLabel} syncIsStale={syncIsStale} />
           <div className="mt-4 flex gap-6 border-t border-white/10 pt-3.5">
             <div>
               <p className="text-[10px] uppercase tracking-wide text-white/50">Protected</p>
