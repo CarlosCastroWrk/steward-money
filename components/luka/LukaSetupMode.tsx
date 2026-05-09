@@ -81,8 +81,8 @@ export function LukaSetupMode({ onClose }: { onClose: () => void }) {
       {/* Header */}
       <div className="flex items-center justify-between border-b border-[var(--border)] px-4 py-3">
         <div className="flex items-center gap-2.5">
-          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-purple-600/20">
-            <span className="text-xs font-bold text-purple-400">L</span>
+          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[var(--luka)]/20">
+            <span className="text-xs font-bold text-[var(--luka)]">L</span>
           </div>
           <div>
             <p className="text-sm font-semibold text-[var(--text-1)]">Setup with Luka</p>
@@ -105,9 +105,9 @@ export function LukaSetupMode({ onClose }: { onClose: () => void }) {
           <div className="flex justify-start">
             <div className="max-w-xs rounded-2xl rounded-bl-sm bg-[var(--luka-msg-bg,#2d1f4e)] px-4 py-3">
               <div className="flex gap-1">
-                <span className="h-1.5 w-1.5 rounded-full bg-purple-400 animate-bounce" style={{ animationDelay: "0ms" }} />
-                <span className="h-1.5 w-1.5 rounded-full bg-purple-400 animate-bounce" style={{ animationDelay: "150ms" }} />
-                <span className="h-1.5 w-1.5 rounded-full bg-purple-400 animate-bounce" style={{ animationDelay: "300ms" }} />
+                <span className="h-1.5 w-1.5 rounded-full bg-[var(--luka)] animate-bounce" style={{ animationDelay: "0ms" }} />
+                <span className="h-1.5 w-1.5 rounded-full bg-[var(--luka)] animate-bounce" style={{ animationDelay: "150ms" }} />
+                <span className="h-1.5 w-1.5 rounded-full bg-[var(--luka)] animate-bounce" style={{ animationDelay: "300ms" }} />
               </div>
             </div>
           </div>
@@ -129,9 +129,9 @@ export function LukaSetupMode({ onClose }: { onClose: () => void }) {
           <div className="flex justify-start">
             <div className="max-w-xs rounded-2xl rounded-bl-sm bg-[var(--luka-msg-bg,#2d1f4e)] px-4 py-3">
               <div className="flex gap-1">
-                <span className="h-1.5 w-1.5 rounded-full bg-purple-400 animate-bounce" style={{ animationDelay: "0ms" }} />
-                <span className="h-1.5 w-1.5 rounded-full bg-purple-400 animate-bounce" style={{ animationDelay: "150ms" }} />
-                <span className="h-1.5 w-1.5 rounded-full bg-purple-400 animate-bounce" style={{ animationDelay: "300ms" }} />
+                <span className="h-1.5 w-1.5 rounded-full bg-[var(--luka)] animate-bounce" style={{ animationDelay: "0ms" }} />
+                <span className="h-1.5 w-1.5 rounded-full bg-[var(--luka)] animate-bounce" style={{ animationDelay: "150ms" }} />
+                <span className="h-1.5 w-1.5 rounded-full bg-[var(--luka)] animate-bounce" style={{ animationDelay: "300ms" }} />
               </div>
             </div>
           </div>
@@ -156,13 +156,13 @@ export function LukaSetupMode({ onClose }: { onClose: () => void }) {
             placeholder="Type your answer…"
             rows={1}
             disabled={loading}
-            className="flex-1 resize-none rounded-2xl border border-[var(--border)] bg-[var(--bg-elevated)] px-4 py-3 text-sm text-[var(--text-1)] placeholder:text-[var(--text-3)] outline-none focus:border-purple-500 disabled:opacity-50"
+            className="flex-1 resize-none rounded-2xl border border-[var(--border)] bg-[var(--bg-elevated)] px-4 py-3 text-sm text-[var(--text-1)] placeholder:text-[var(--text-3)] outline-none focus:border-[var(--luka)] disabled:opacity-50"
             style={{ maxHeight: "120px" }}
           />
           <button
             onClick={() => send(input, messages)}
             disabled={loading || !input.trim()}
-            className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full bg-purple-600 text-white transition hover:bg-purple-500 disabled:opacity-40"
+            className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full bg-[var(--luka)] text-white transition hover:opacity-85 disabled:opacity-40"
           >
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="h-4 w-4">
               <path d="M12 19V5M5 12l7-7 7 7" />

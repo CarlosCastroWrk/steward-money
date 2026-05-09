@@ -32,8 +32,8 @@ export function Step4Savings({ formData, onChange, onNext, onBack, isSaving, err
             onClick={() => onChange({ savings_rule: option.value })}
             className={`w-full rounded-lg border px-3 py-2 text-left text-sm ${
               formData.savings_rule === option.value
-                ? "border-white bg-white text-black"
-                : "border-zinc-700 text-zinc-300"
+                ? "border-[var(--accent)] bg-[var(--accent)] text-white"
+                : "border-[var(--border)] text-[var(--text-2)]"
             }`}
           >
             {option.label}

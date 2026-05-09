@@ -149,7 +149,7 @@ export function GoalsView({ goals }: Props) {
             <button
               type="button"
               onClick={() => { setEditing(null); setModalOpen(true); }}
-              className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white"
+              className="rounded-lg bg-[var(--accent)] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[var(--accent-deep)]"
             >
               Add goal
             </button>
@@ -191,7 +191,7 @@ export function GoalsView({ goals }: Props) {
               <button
                 type="button"
                 onClick={() => { setEditing(null); setModalOpen(true); }}
-                className="mt-4 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white"
+                className="mt-4 rounded-lg bg-[var(--accent)] px-4 py-2 text-sm font-medium text-white"
               >
                 Add your first goal
               </button>
@@ -312,7 +312,7 @@ export function GoalsView({ goals }: Props) {
                           type="button"
                           onClick={() => submitContribution(goal)}
                           disabled={contributing}
-                          className="rounded-lg bg-emerald-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-emerald-500 disabled:opacity-50"
+                          className="rounded-lg bg-[var(--accent)] px-4 py-1.5 text-sm font-medium text-white hover:bg-[var(--accent-deep)] disabled:opacity-50"
                         >
                           {contributing ? "Saving..." : "Add funds"}
                         </button>

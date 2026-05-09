@@ -187,7 +187,7 @@ function TypingDots() {
       {[0, 1, 2].map((i) => (
         <span
           key={i}
-          className="h-2 w-2 rounded-full bg-purple-400/60"
+          className="h-2 w-2 rounded-full bg-[var(--luka)]/60"
           style={{ animation: `lukaDot 1.2s ease-in-out ${i * 0.18}s infinite` }}
         />
       ))}
@@ -295,14 +295,14 @@ function MessageList({
           <div
             className={`px-3.5 py-2.5 text-sm leading-relaxed ${
               m.role === "user"
-                ? "rounded-[18px] rounded-br-[4px] bg-purple-600 text-white"
+                ? "rounded-[18px] rounded-br-[4px] bg-[var(--luka)] text-white"
                 : "rounded-[18px] rounded-bl-[4px] bg-[var(--luka-msg-bg)] text-[var(--text-1)]"
             }`}
             style={{ whiteSpace: "pre-wrap", wordBreak: "break-word" }}
           >
             {m.content}
             {m.role === "assistant" && voiceOutputEnabled && speaking && i === messages.length - 1 && (
-              <span className="ml-2 inline-flex items-center gap-1 text-purple-400 text-[10px]">
+              <span className="ml-2 inline-flex items-center gap-1 text-[var(--luka)] text-[10px]">
                 <SpeakerIcon active={true} /> speaking
               </span>
             )}
@@ -321,7 +321,7 @@ function MessageList({
     <div className="flex flex-col overflow-y-auto px-4 py-4" style={{ flex: 1, overscrollBehavior: "contain" }}>
       {messages.length === 0 && (
         <div className="flex flex-1 flex-col items-center justify-center gap-3 py-8 text-center">
-          <div className="flex h-14 w-14 items-center justify-center rounded-full bg-purple-600 shadow-lg shadow-purple-900/40">
+          <div className="flex h-14 w-14 items-center justify-center rounded-full bg-[var(--luka)] shadow-lg shadow-[var(--luka)]/30">
             <SparkleIcon className="h-7 w-7 text-white" />
           </div>
           <div className="space-y-1">
@@ -335,7 +335,7 @@ function MessageList({
               <button
                 key={s}
                 onClick={() => sendMessage(s)}
-                className="rounded-full border border-[var(--border)] px-3.5 py-1.5 text-xs text-[var(--text-2)] transition-all hover:border-purple-600/60 hover:bg-purple-600/10 hover:text-purple-400 active:scale-95"
+                className="rounded-full border border-[var(--border)] px-3.5 py-1.5 text-xs text-[var(--text-2)] transition-all hover:border-[var(--luka)]/60 hover:bg-[var(--luka)]/10 hover:text-[var(--luka)] active:scale-95"
               >
                 {s}
               </button>
@@ -346,7 +346,7 @@ function MessageList({
       {rendered}
       {loading && (
         <div className="mt-2 flex items-end gap-2 justify-start">
-          <div className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full bg-purple-600 shadow-sm luka-avatar-pulse">
+          <div className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full bg-[var(--luka)] shadow-sm luka-avatar-pulse">
             <SparkleIcon className="h-3.5 w-3.5 text-white" />
           </div>
           <div className="rounded-[18px] rounded-bl-[4px] bg-[var(--luka-msg-bg)] px-3.5 py-2.5">
@@ -421,7 +421,7 @@ function ConversationList({
     <div className="flex h-full flex-col">
       <div className="flex items-center justify-between border-b border-[var(--border)] px-3 py-3">
         <div className="flex items-center gap-2">
-          <div className="flex h-6 w-6 items-center justify-center rounded-full bg-purple-600">
+          <div className="flex h-6 w-6 items-center justify-center rounded-full bg-[var(--luka)]">
             <SparkleIcon className="h-3 w-3 text-white" />
           </div>
           <span className="text-sm font-semibold text-[var(--text-1)]">Luka</span>
@@ -446,7 +446,7 @@ function ConversationList({
               onClick={() => onSelect(conv.id)}
               className={`w-full px-3 py-2.5 text-left transition-colors ${
                 conv.id === activeId
-                  ? "bg-purple-600/10 text-[var(--text-1)]"
+                  ? "bg-[var(--luka)]/10 text-[var(--text-1)]"
                   : "text-[var(--text-2)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-1)]"
               }`}
             >
@@ -771,7 +771,7 @@ export function Luka() {
             type="button"
             onClick={listening ? stopListening : startListening}
             className={`mb-0.5 flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full transition-all ${
-              listening ? "bg-red-500 text-white" : "text-[var(--text-3)] hover:text-purple-400"
+              listening ? "bg-red-500 text-white" : "text-[var(--text-3)] hover:text-[var(--luka)]"
             }`}
             title={listening ? "Stop listening" : "Voice input"}
           >
@@ -781,7 +781,7 @@ export function Luka() {
         <button
           onClick={() => sendMessage(input)}
           disabled={!input.trim() || loading}
-          className="mb-0.5 flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full bg-purple-600 text-white transition-all active:scale-95 disabled:opacity-30"
+          className="mb-0.5 flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full bg-[var(--luka)] text-white transition-all active:scale-95 disabled:opacity-30"
         >
           {loading ? <SpinnerIcon /> : <SendIcon />}
         </button>
@@ -790,7 +790,7 @@ export function Luka() {
         <button
           type="button"
           onClick={() => { setOpen(false); setVoiceModeOpen(true); }}
-          className="flex items-center gap-1.5 rounded-full border border-[var(--border)] px-2.5 py-1 text-[10px] text-[var(--text-3)] transition-colors hover:border-purple-700/40 hover:text-purple-400"
+          className="flex items-center gap-1.5 rounded-full border border-[var(--border)] px-2.5 py-1 text-[10px] text-[var(--text-3)] transition-colors hover:border-[var(--luka)]/40 hover:text-[var(--luka)]"
         >
           <VoiceIcon /> Voice mode
         </button>
@@ -800,11 +800,12 @@ export function Luka() {
             if (voiceOutputEnabled && window.speechSynthesis) window.speechSynthesis.cancel();
             setVoiceOutputEnabled((v) => !v);
           }}
-          className={`flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] transition-colors ${
-            voiceOutputEnabled
-              ? "border-purple-700/60 bg-purple-900/20 text-purple-400"
-              : "border-[var(--border)] text-[var(--text-3)] hover:text-[var(--text-2)]"
-          }`}
+          className="flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] transition-colors"
+          style={voiceOutputEnabled ? {
+            borderColor: "color-mix(in srgb, var(--luka) 60%, transparent)",
+            backgroundColor: "color-mix(in srgb, var(--luka) 12%, transparent)",
+            color: "var(--luka)",
+          } : {}}
         >
           <SpeakerIcon active={voiceOutputEnabled} />
           {voiceOutputEnabled ? "Audio on" : "Audio off"}
@@ -817,7 +818,7 @@ export function Luka() {
   const desktopChatHeader = (
     <div className="flex-shrink-0 flex flex-col border-b border-[var(--border)] bg-[var(--luka-bg)]">
       <div className="flex items-center gap-2.5 px-4 py-3">
-        <div className={`flex h-7 w-7 items-center justify-center rounded-full bg-purple-600 flex-shrink-0 ${loading ? "luka-avatar-pulse" : ""}`}>
+        <div className={`flex h-7 w-7 items-center justify-center rounded-full bg-[var(--luka)] flex-shrink-0 ${loading ? "luka-avatar-pulse" : ""}`}>
           <SparkleIcon className="h-4 w-4 text-white" />
         </div>
         <div className="flex-1 min-w-0">
@@ -864,7 +865,7 @@ export function Luka() {
         >
           <MenuIcon />
         </button>
-        <div className={`flex h-7 w-7 items-center justify-center rounded-full bg-purple-600 flex-shrink-0 ${loading ? "luka-avatar-pulse" : ""}`}>
+        <div className={`flex h-7 w-7 items-center justify-center rounded-full bg-[var(--luka)] flex-shrink-0 ${loading ? "luka-avatar-pulse" : ""}`}>
           <SparkleIcon className="h-4 w-4 text-white" />
         </div>
         <p className="flex-1 text-sm font-medium text-[var(--text-1)]">Luka</p>
@@ -886,7 +887,7 @@ export function Luka() {
           type="button"
           onClick={startNewConversation}
           title="New conversation"
-          className="flex h-7 w-7 items-center justify-center rounded-lg text-[var(--text-3)] transition-colors hover:bg-[var(--bg-hover)] hover:text-purple-400"
+          className="flex h-7 w-7 items-center justify-center rounded-lg text-[var(--text-3)] transition-colors hover:bg-[var(--bg-hover)] hover:text-[var(--luka)]"
         >
           <PlusIcon />
         </button>
@@ -948,7 +949,7 @@ export function Luka() {
         onClick={() => setOpen((v) => !v)}
         className={`fixed left-1/2 z-[51] -translate-x-1/2 flex items-center gap-2 rounded-full border px-4 py-2 text-xs backdrop-blur-md transition-colors md:hidden ${
           open
-            ? "border-purple-700/50 bg-[var(--luka-bg)] text-purple-400"
+            ? "border-[var(--luka)]/50 bg-[var(--luka-bg)] text-[var(--luka)]"
             : "border-[var(--border)] bg-[var(--bg-card)]/90 text-[var(--text-3)]"
         }`}
         style={{ bottom: "calc(env(safe-area-inset-bottom) + 78px)" }}
@@ -989,7 +990,7 @@ export function Luka() {
                   <button
                     type="button"
                     onClick={startNewConversation}
-                    className="flex w-full items-center gap-2 px-4 py-3 text-left text-sm text-purple-400 hover:bg-[var(--bg-hover)]"
+                    className="flex w-full items-center gap-2 px-4 py-3 text-left text-sm text-[var(--luka)] hover:bg-[var(--bg-hover)]"
                   >
                     <PlusIcon /> New conversation
                   </button>
@@ -999,7 +1000,7 @@ export function Luka() {
                       type="button"
                       onClick={() => switchConversation(conv.id)}
                       className={`w-full px-4 py-3 text-left transition-colors ${
-                        conv.id === activeConvId ? "bg-purple-600/10 text-[var(--text-1)]" : "text-[var(--text-2)] hover:bg-[var(--bg-hover)]"
+                        conv.id === activeConvId ? "bg-[var(--luka)]/10 text-[var(--text-1)]" : "text-[var(--text-2)] hover:bg-[var(--bg-hover)]"
                       }`}
                     >
                       <p className="truncate text-[13px] font-medium">{conv.title ?? "New conversation"}</p>
@@ -1016,7 +1017,7 @@ export function Luka() {
       {/* Desktop fab */}
       <button
         onClick={() => setOpen((v) => !v)}
-        className="fixed bottom-6 right-6 z-[51] hidden h-12 w-12 items-center justify-center rounded-full bg-purple-600 shadow-lg shadow-purple-900/40 transition-transform hover:scale-105 active:scale-95 md:flex"
+        className="fixed bottom-6 right-6 z-[51] hidden h-12 w-12 items-center justify-center rounded-full bg-[var(--luka)] shadow-lg shadow-[var(--luka)]/30 transition-transform hover:scale-105 active:scale-95 md:flex"
         aria-label="Open Luka"
       >
         {open ? <CloseIcon /> : <SparkleIcon />}

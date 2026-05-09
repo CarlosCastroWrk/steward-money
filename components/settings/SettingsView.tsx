@@ -47,7 +47,12 @@ export function SettingsView({ settings, incomeSources, accounts, priorities }: 
           <button
             type="button"
             onClick={() => setSetupOpen(true)}
-            className="flex items-center gap-1.5 rounded-xl border border-blue-700/40 bg-blue-900/20 px-3 py-2 text-[13px] font-medium text-blue-400 transition hover:bg-blue-900/30"
+            className="flex items-center gap-1.5 rounded-xl border px-3 py-2 text-[13px] font-medium transition"
+            style={{
+              borderColor: "color-mix(in srgb, var(--luka) 30%, transparent)",
+              backgroundColor: "color-mix(in srgb, var(--luka) 8%, transparent)",
+              color: "var(--luka)",
+            }}
           >
             <span className="text-xs">✦</span> Setup with Luka
           </button>

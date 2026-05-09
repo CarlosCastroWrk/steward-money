@@ -154,7 +154,7 @@ export default async function DashboardPage() {
             </div>
             <div>
               <p className="text-[10px] uppercase tracking-wide text-white/40">Liquid</p>
-              <p className="text-sm font-semibold text-white/70">{formatUSD(result.liquidTotal)}</p>
+              <p className="text-sm font-semibold text-blue-300">{formatUSD(result.liquidTotal)}</p>
             </div>
           </div>
           <p className="mt-3.5 text-[11px] italic text-white/20">Faithfulness with what&apos;s been entrusted.</p>

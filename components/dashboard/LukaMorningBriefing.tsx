@@ -60,7 +60,13 @@ export function LukaMorningBriefing({ data }: { data: BriefingData }) {
   if (dismissed) return null;
 
   return (
-    <div className="rounded-xl border border-blue-900/50 bg-blue-950/30 p-4">
+    <div
+      className="rounded-xl border p-4"
+      style={{
+        borderColor: "color-mix(in srgb, var(--luka) 25%, transparent)",
+        backgroundColor: "color-mix(in srgb, var(--luka) 6%, transparent)",
+      }}
+    >
       <div className="flex items-start gap-3">
         <AgentAvatar agent="luka" size="md" />
         <div className="flex-1 min-w-0">

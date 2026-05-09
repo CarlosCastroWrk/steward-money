@@ -100,10 +100,10 @@ export function AddAccountModal({ open, onClose }: Props) {
         className="max-h-[90vh] w-full max-w-md overflow-y-auto rounded-2xl border border-[var(--border)] bg-[var(--bg-card)] p-6"
         onClick={(e) => e.stopPropagation()}
       >
-        <h2 className="text-lg font-medium text-white">Add account</h2>
+        <h2 className="text-lg font-medium text-[var(--text-1)]">Add account</h2>
         <form className="mt-6 space-y-4" onSubmit={handleSubmit}>
           <div>
-            <label htmlFor="acc-name" className="text-xs text-zinc-400">
+            <label htmlFor="acc-name" className="text-xs text-[var(--text-3)]">
               Account name <span className="text-red-400">*</span>
             </label>
             <input
@@ -116,7 +116,7 @@ export function AddAccountModal({ open, onClose }: Props) {
             />
           </div>
           <div>
-            <label htmlFor="acc-inst" className="text-xs text-zinc-400">
+            <label htmlFor="acc-inst" className="text-xs text-[var(--text-3)]">
               Institution
             </label>
             <input
@@ -129,7 +129,7 @@ export function AddAccountModal({ open, onClose }: Props) {
             />
           </div>
           <div>
-            <label htmlFor="acc-type" className="text-xs text-zinc-400">
+            <label htmlFor="acc-type" className="text-xs text-[var(--text-3)]">
               Type <span className="text-red-400">*</span>
             </label>
             <select id="acc-type" className={inputClass} value={type} onChange={(e) => setType(e.target.value)} required>
@@ -141,7 +141,7 @@ export function AddAccountModal({ open, onClose }: Props) {
             </select>
           </div>
           <div>
-            <label htmlFor="acc-bal" className="text-xs text-zinc-400">
+            <label htmlFor="acc-bal" className="text-xs text-[var(--text-3)]">
               Current balance
             </label>
             <input
@@ -154,7 +154,7 @@ export function AddAccountModal({ open, onClose }: Props) {
             />
           </div>
           <div>
-            <label htmlFor="acc-notes" className="text-xs text-zinc-400">
+            <label htmlFor="acc-notes" className="text-xs text-[var(--text-3)]">
               Notes
             </label>
             <textarea
@@ -166,21 +166,21 @@ export function AddAccountModal({ open, onClose }: Props) {
             />
           </div>
           {saveError && (
-            <p className="rounded-lg bg-red-950 px-3 py-2 text-sm text-red-400">{saveError}</p>
+            <p className="rounded-lg bg-red-500/10 border border-red-500/20 px-3 py-2 text-sm text-red-400">{saveError}</p>
           )}
           <div className="flex flex-wrap gap-2 pt-2">
             <button
               type="button"
               onClick={onClose}
               disabled={submitting}
-              className="rounded-lg border border-zinc-700 px-4 py-2 text-sm font-medium text-zinc-300 disabled:opacity-50"
+              className="rounded-lg border border-[var(--border)] px-4 py-2 text-sm font-medium text-[var(--text-2)] disabled:opacity-50"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={submitting}
-              className="rounded-lg bg-white px-4 py-2 text-sm font-medium text-black disabled:opacity-50"
+              className="rounded-lg bg-[var(--accent)] px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
             >
               Add account
             </button>

@@ -355,7 +355,7 @@ export function TransactionsView({ transactions: initialTransactions, accounts, 
             <button
               type="button"
               onClick={() => { setEditing(null); setModalOpen(true); }}
-              className="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-500"
+              className="rounded-xl bg-[var(--accent)] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[var(--accent-deep)]"
             >
               + Add
             </button>
@@ -466,7 +466,7 @@ export function TransactionsView({ transactions: initialTransactions, accounts, 
               </p>
               <div className="mt-4 flex justify-center gap-3">
                 {plaidConnected && (
-                  <button type="button" onClick={() => syncNow(false)} disabled={syncing} className="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-500 disabled:opacity-50">
+                  <button type="button" onClick={() => syncNow(false)} disabled={syncing} className="rounded-xl bg-[var(--accent)] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[var(--accent-deep)] disabled:opacity-50">
                     {syncing ? "Syncing…" : "Sync now"}
                   </button>
                 )}
@@ -536,8 +536,8 @@ export function TransactionsView({ transactions: initialTransactions, accounts, 
                                     {formatCategory(tx.category)}
                                   </a>
                                 )}
-                                {tx.is_need === true  && <span className="rounded-full bg-blue-500/10 px-2 py-0.5 text-blue-400">need</span>}
-                                {tx.is_need === false && <span className="rounded-full bg-blue-500/10 px-2 py-0.5 text-blue-400">want</span>}
+                                {tx.is_need === true  && <span className="rounded-full bg-emerald-500/10 px-2 py-0.5 text-emerald-400">need</span>}
+                                {tx.is_need === false && <span className="rounded-full bg-amber-500/10 px-2 py-0.5 text-amber-400">want</span>}
                                 {tx.account_id && accountMap[tx.account_id] && <span>{accountMap[tx.account_id]}</span>}
                                 {tx.notes && <span className="italic text-[var(--text-3)]">{tx.notes}</span>}
                               </div>

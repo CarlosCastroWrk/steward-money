@@ -30,10 +30,10 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
             key={t.id}
             className={`pointer-events-auto flex items-center gap-2.5 rounded-xl border px-4 py-3 text-sm shadow-2xl backdrop-blur-md animate-slide-in ${
               t.type === "success"
-                ? "border-green-800/60 bg-zinc-900/95 text-green-400"
+                ? "border-[var(--color-income)]/30 bg-[var(--bg-card)] text-[var(--color-income)]"
                 : t.type === "error"
-                ? "border-red-800/60 bg-zinc-900/95 text-red-400"
-                : "border-zinc-700/60 bg-zinc-900/95 text-zinc-300"
+                ? "border-[var(--color-danger)]/30 bg-[var(--bg-card)] text-[var(--color-expense)]"
+                : "border-[var(--border)] bg-[var(--bg-card)] text-[var(--text-2)]"
             }`}
           >
             <span className="text-base leading-none">

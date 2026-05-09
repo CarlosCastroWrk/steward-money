@@ -27,7 +27,7 @@ export function SaveButton({ onClick, status }: SaveButtonProps) {
   const map = {
     idle: {
       text: "Save changes",
-      className: "bg-[var(--bg-elevated)] border-[var(--border)] text-[var(--text-2)] hover:bg-[var(--bg-elevated)] hover:text-[var(--text-1)]"
+      className: "bg-[var(--accent)] border-[var(--accent)] text-white hover:bg-[var(--accent-deep)]"
     },
     saving: {
       text: "Saving...",

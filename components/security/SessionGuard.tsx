@@ -86,7 +86,7 @@ export function SessionGuard() {
           <button
             type="button"
             onClick={handleStillHere}
-            className="flex-1 rounded-xl bg-white py-2.5 text-sm font-medium text-black transition-all duration-150 hover:bg-zinc-100 active:scale-[0.98]"
+            className="flex-1 rounded-xl bg-[var(--accent)] py-2.5 text-sm font-medium text-white transition-all duration-150 hover:bg-[var(--accent-deep)] active:scale-[0.98]"
           >
             I&apos;m here
           </button>

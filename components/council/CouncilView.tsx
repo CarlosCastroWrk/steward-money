@@ -106,7 +106,7 @@ export function CouncilView() {
             type="button"
             onClick={() => handleSubmit()}
             disabled={loading || !question.trim()}
-            className="shrink-0 rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-medium text-white transition-all hover:bg-blue-500 disabled:opacity-40"
+            className="shrink-0 rounded-xl bg-[var(--accent)] px-5 py-2.5 text-sm font-medium text-white transition-all hover:bg-[var(--accent-deep)] disabled:opacity-40"
           >
             {loading ? "Convening…" : "Convene"}
           </button>
@@ -168,8 +168,14 @@ export function CouncilView() {
           </div>
 
           {/* Synthesis */}
-          <div className="rounded-xl border border-blue-500/30 bg-blue-950/20 p-5">
-            <p className="mb-2 text-[10px] font-semibold uppercase tracking-widest text-blue-400">Council Synthesis</p>
+          <div
+            className="rounded-xl border p-5"
+            style={{
+              borderColor: "color-mix(in srgb, var(--accent) 30%, transparent)",
+              backgroundColor: "color-mix(in srgb, var(--accent) 6%, transparent)",
+            }}
+          >
+            <p className="mb-2 text-[10px] font-semibold uppercase tracking-widest text-[var(--accent)]">Council Synthesis</p>
             <p className="text-sm text-[var(--text-2)] leading-relaxed">{result.synthesis}</p>
           </div>
 

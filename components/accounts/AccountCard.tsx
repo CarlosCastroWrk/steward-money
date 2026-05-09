@@ -12,12 +12,12 @@ function formatCurrency(value: number) {
 
 function typeBadgeClasses(type: string): string {
   const normalized = type.trim().toLowerCase();
-  if (normalized === "checking") return "bg-blue-950 text-blue-300";
-  if (normalized === "savings") return "bg-green-950 text-green-300";
-  if (normalized === "credit card") return "bg-red-950 text-red-300";
+  if (normalized === "checking") return "bg-[var(--accent)]/12 text-[var(--accent)]";
+  if (normalized === "savings") return "bg-emerald-500/12 text-emerald-400";
+  if (normalized === "credit card") return "bg-red-500/12 text-red-400";
   if (normalized === "cash" || normalized === "apple cash") return "bg-[var(--bg-elevated)] text-[var(--text-2)]";
-  if (normalized === "trading") return "bg-blue-950 text-blue-300";
-  if (normalized === "debt / installment") return "bg-orange-950 text-orange-300";
+  if (normalized === "trading") return "bg-[var(--accent)]/12 text-[var(--accent)]";
+  if (normalized === "debt / installment") return "bg-orange-500/12 text-orange-400";
   return "bg-[var(--bg-elevated)] text-[var(--text-2)]";
 }
 
@@ -132,7 +132,7 @@ export function AccountCard({ account }: { account: Account }) {
               type="button"
               onClick={saveBalance}
               disabled={busy}
-              className="rounded-lg bg-emerald-600 px-3 py-2 text-sm font-medium text-white disabled:opacity-50"
+              className="rounded-lg bg-[var(--accent)] px-3 py-2 text-sm font-medium text-white disabled:opacity-50"
             >
               Save
             </button>

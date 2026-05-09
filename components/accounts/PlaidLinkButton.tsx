@@ -54,7 +54,7 @@ function PlaidLinkReady({ token }: { token: string }) {
         type="button"
         onClick={() => open()}
         disabled={!ready || syncing}
-        className="rounded-lg bg-white px-4 py-2 text-sm font-medium text-black disabled:opacity-40"
+        className="rounded-lg bg-[var(--accent)] px-4 py-2 text-sm font-medium text-white disabled:opacity-40"
       >
         {syncing ? "Syncing…" : ready ? "Connect bank" : "Preparing…"}
       </button>
@@ -81,7 +81,7 @@ export function PlaidLinkButton() {
   if (error) {
     return (
       <div className="flex flex-col items-start gap-2">
-        <button type="button" disabled className="rounded-lg bg-white px-4 py-2 text-sm font-medium text-black opacity-40">
+        <button type="button" disabled className="rounded-lg bg-[var(--accent)] px-4 py-2 text-sm font-medium text-white opacity-40">
           Connect bank
         </button>
         <p className="text-xs text-red-400">{error}</p>
@@ -91,7 +91,7 @@ export function PlaidLinkButton() {
 
   if (!linkToken) {
     return (
-      <button type="button" disabled className="rounded-lg bg-white px-4 py-2 text-sm font-medium text-black opacity-40">
+      <button type="button" disabled className="rounded-lg bg-[var(--accent)] px-4 py-2 text-sm font-medium text-white opacity-40">
         Loading…
       </button>
     );

@@ -149,11 +149,16 @@ export function DecisionHub({ safeToSpend, weeklyNeedsTotal, recentDecisions: in
                 <button
                   onClick={askLuka}
                   disabled={lukaLoading}
-                  className="mt-3 flex items-center gap-1.5 rounded-xl border border-blue-700/30 bg-blue-900/20 px-3 py-2 text-xs font-medium text-blue-400 transition hover:bg-blue-900/30 disabled:opacity-50"
+                  className="mt-3 flex items-center gap-1.5 rounded-xl border px-3 py-2 text-xs font-medium transition disabled:opacity-50"
+                  style={{
+                    borderColor: "color-mix(in srgb, var(--luka) 30%, transparent)",
+                    backgroundColor: "color-mix(in srgb, var(--luka) 8%, transparent)",
+                    color: "var(--luka)",
+                  }}
                 >
                   {lukaLoading ? (
                     <>
-                      <span className="h-1.5 w-1.5 rounded-full bg-blue-400 animate-pulse" />
+                      <span className="h-1.5 w-1.5 rounded-full animate-pulse" style={{ backgroundColor: "var(--luka)" }} />
                       Asking Luka…
                     </>
                   ) : (
@@ -165,8 +170,14 @@ export function DecisionHub({ safeToSpend, weeklyNeedsTotal, recentDecisions: in
               )}
 
               {lukaReply && (
-                <div className="mt-3 rounded-xl border border-blue-700/20 bg-blue-900/10 px-4 py-3">
-                  <p className="text-[10px] font-semibold uppercase tracking-wide text-blue-400 mb-1.5">Luka says</p>
+                <div
+                  className="mt-3 rounded-xl border px-4 py-3"
+                  style={{
+                    borderColor: "color-mix(in srgb, var(--luka) 20%, transparent)",
+                    backgroundColor: "color-mix(in srgb, var(--luka) 6%, transparent)",
+                  }}
+                >
+                  <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wide" style={{ color: "var(--luka)" }}>Luka says</p>
                   <p className="text-sm text-[var(--text-2)] leading-relaxed">{lukaReply}</p>
                 </div>
               )}

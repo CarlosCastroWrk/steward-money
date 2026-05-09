@@ -40,12 +40,12 @@ function OrbAnimation({ state }: { state: OrbState }) {
       `}</style>
       <div className="relative flex items-center justify-center">
         <div
-          className={`absolute rounded-full bg-purple-600/20 transition-all duration-500 ${
+          className={`absolute rounded-full bg-[var(--luka)]/20 transition-all duration-500 ${
             state === "listening" ? "h-52 w-52" : state === "speaking" ? "h-48 w-48" : "h-44 w-44"
           }`}
         />
         <div
-          className={`absolute rounded-full bg-purple-600/30 transition-all duration-300 ${
+          className={`absolute rounded-full bg-[var(--luka)]/30 transition-all duration-300 ${
             state === "listening" ? "h-40 w-40" : state === "speaking" ? "h-36 w-36" : "h-34 w-34"
           }`}
         />
@@ -290,7 +290,7 @@ export function LukaVoiceMode({ onClose }: { onClose: () => void }) {
               <button
                 onClick={handleTextSend}
                 disabled={!textInput.trim() || orbState === "thinking"}
-                className="rounded-2xl bg-purple-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-purple-500 disabled:opacity-40"
+                className="rounded-2xl bg-[var(--luka)] px-4 py-3 text-sm font-semibold text-white transition hover:bg-purple-500 disabled:opacity-40"
               >
                 Send
               </button>

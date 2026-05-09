@@ -26,8 +26,8 @@ export function Step3Buffer({ formData, onChange, onNext, onBack, isSaving, erro
             onClick={() => onChange({ emergency_buffer: value })}
             className={`rounded-lg border px-3 py-2 text-sm ${
               formData.emergency_buffer === value
-                ? "border-white bg-white text-black"
-                : "border-zinc-700 text-zinc-300"
+                ? "border-[var(--accent)] bg-[var(--accent)] text-white"
+                : "border-[var(--border)] text-[var(--text-2)]"
             }`}
           >
             ${value.toLocaleString()}

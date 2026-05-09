@@ -86,7 +86,7 @@ export function CalendarOptInCard({ initiallyConnected }: { initiallyConnected?:
 
   if (showConfirm || connected) {
     return (
-      <div className="rounded-2xl border border-emerald-800/40 bg-emerald-950/20 p-4">
+      <div className="rounded-2xl border border-[var(--color-income)]/20 bg-[var(--color-income)]/5 p-4">
         <div className="flex items-center gap-3">
           <div className="flex h-8 w-8 items-center justify-center rounded-full bg-emerald-500/20 text-emerald-400 flex-shrink-0">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4">

@@ -341,7 +341,7 @@ function IncomeDraftForm({
             />
           </div>
           {est > 0 && (
-            <div className="col-span-2 rounded-lg border border-blue-900/50 bg-blue-950/20 px-3 py-2 text-sm text-blue-300">
+            <div className="col-span-2 rounded-lg border border-[var(--accent)]/20 bg-[var(--accent)]/5 px-3 py-2 text-sm text-[var(--accent)]">
               Estimated weekly income:{" "}
               <span className="font-semibold">
                 {new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(est)}

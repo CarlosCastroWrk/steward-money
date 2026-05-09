@@ -259,7 +259,7 @@ export function AddGoalModal({ open, onClose, goal }: Props) {
             />
           </div>
           {saveError && (
-            <p className="rounded-lg bg-red-950 px-3 py-2 text-sm text-red-400">{saveError}</p>
+            <p className="rounded-lg bg-red-500/10 border border-red-500/20 px-3 py-2 text-sm text-red-400">{saveError}</p>
           )}
           <div className="flex flex-wrap gap-2 pt-2">
             <button
@@ -273,7 +273,7 @@ export function AddGoalModal({ open, onClose, goal }: Props) {
             <button
               type="submit"
               disabled={submitting}
-              className="rounded-lg bg-white px-4 py-2 text-sm font-medium text-black disabled:opacity-50"
+              className="rounded-lg bg-[var(--accent)] px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
             >
               {editing ? "Save changes" : "Add goal"}
             </button>

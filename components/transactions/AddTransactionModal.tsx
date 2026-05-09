@@ -134,7 +134,7 @@ export function AddTransactionModal({ open, onClose, accounts, transaction }: Pr
         </h2>
         <form className="mt-6 space-y-4" onSubmit={handleSubmit}>
           {/* Type toggle */}
-          <div className="flex rounded-lg border border-zinc-700 p-1">
+          <div className="flex rounded-lg border border-[var(--border)] p-1">
             {(["expense", "income"] as const).map((t) => (
               <button
                 key={t}
@@ -145,7 +145,7 @@ export function AddTransactionModal({ open, onClose, accounts, transaction }: Pr
                     ? t === "expense"
                       ? "bg-red-900/60 text-red-200"
                       : "bg-emerald-900/60 text-emerald-200"
-                    : "text-zinc-500 hover:text-zinc-300"
+                    : "text-[var(--text-3)] hover:text-[var(--text-1)]"
                 }`}
               >
                 {t.charAt(0).toUpperCase() + t.slice(1)}
@@ -154,7 +154,7 @@ export function AddTransactionModal({ open, onClose, accounts, transaction }: Pr
           </div>
 
           <div>
-            <label htmlFor="tx-date" className="text-xs text-zinc-400">
+            <label htmlFor="tx-date" className="text-xs text-[var(--text-3)]">
               Date <span className="text-red-400">*</span>
             </label>
             <input
@@ -167,7 +167,7 @@ export function AddTransactionModal({ open, onClose, accounts, transaction }: Pr
             />
           </div>
           <div>
-            <label htmlFor="tx-merchant" className="text-xs text-zinc-400">
+            <label htmlFor="tx-merchant" className="text-xs text-[var(--text-3)]">
               {txType === "income" ? "Source" : "Merchant"}
             </label>
             <input
@@ -180,7 +180,7 @@ export function AddTransactionModal({ open, onClose, accounts, transaction }: Pr
             />
           </div>
           <div>
-            <label htmlFor="tx-amount" className="text-xs text-zinc-400">
+            <label htmlFor="tx-amount" className="text-xs text-[var(--text-3)]">
               Amount <span className="text-red-400">*</span>
             </label>
             <input
@@ -196,7 +196,7 @@ export function AddTransactionModal({ open, onClose, accounts, transaction }: Pr
             />
           </div>
           <div>
-            <label htmlFor="tx-cat" className="text-xs text-zinc-400">
+            <label htmlFor="tx-cat" className="text-xs text-[var(--text-3)]">
               Category
             </label>
             <select
@@ -213,7 +213,7 @@ export function AddTransactionModal({ open, onClose, accounts, transaction }: Pr
             </select>
           </div>
           <div>
-            <label htmlFor="tx-account" className="text-xs text-zinc-400">
+            <label htmlFor="tx-account" className="text-xs text-[var(--text-3)]">
               Account
             </label>
             <select
@@ -261,7 +261,7 @@ export function AddTransactionModal({ open, onClose, accounts, transaction }: Pr
             </div>
           )}
           <div>
-            <label htmlFor="tx-notes" className="text-xs text-zinc-400">
+            <label htmlFor="tx-notes" className="text-xs text-[var(--text-3)]">
               Notes
             </label>
             <textarea
@@ -273,21 +273,21 @@ export function AddTransactionModal({ open, onClose, accounts, transaction }: Pr
             />
           </div>
           {saveError && (
-            <p className="rounded-lg bg-red-950 px-3 py-2 text-sm text-red-400">{saveError}</p>
+            <p className="rounded-lg bg-red-500/10 border border-red-500/20 px-3 py-2 text-sm text-red-400">{saveError}</p>
           )}
           <div className="flex flex-wrap gap-2 pt-2">
             <button
               type="button"
               onClick={onClose}
               disabled={submitting}
-              className="rounded-lg border border-zinc-700 px-4 py-2 text-sm font-medium text-zinc-300 disabled:opacity-50"
+              className="rounded-lg border border-[var(--border)] px-4 py-2 text-sm font-medium text-[var(--text-2)] disabled:opacity-50"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={submitting}
-              className="rounded-lg bg-white px-4 py-2 text-sm font-medium text-black disabled:opacity-50"
+              className="rounded-lg bg-[var(--accent)] px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
             >
               {editing ? "Save changes" : "Add transaction"}
             </button>

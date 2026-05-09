@@ -52,8 +52,8 @@ export function Step2Giving({ formData, onChange, onNext, onBack, onSkip, isSavi
               onClick={() => onChange({ giving_type: "percentage" })}
               className={`rounded-lg border px-3 py-2 text-sm ${
                 formData.giving_type === "percentage"
-                  ? "bg-white text-black"
-                  : "border-zinc-700 text-zinc-300"
+                  ? "bg-[var(--accent)] text-white border-[var(--accent)]"
+                  : "border-[var(--border)] text-[var(--text-2)]"
               }`}
             >
               Percentage
@@ -62,7 +62,7 @@ export function Step2Giving({ formData, onChange, onNext, onBack, onSkip, isSavi
               type="button"
               onClick={() => onChange({ giving_type: "fixed" })}
               className={`rounded-lg border px-3 py-2 text-sm ${
-                formData.giving_type === "fixed" ? "bg-white text-black" : "border-zinc-700 text-zinc-300"
+                formData.giving_type === "fixed" ? "bg-[var(--accent)] text-white border-[var(--accent)]" : "border-[var(--border)] text-[var(--text-2)]"
               }`}
             >
               Fixed amount

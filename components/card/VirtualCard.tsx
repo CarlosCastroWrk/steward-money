@@ -212,7 +212,7 @@ export function VirtualCard({
           </div>
           <button
             onClick={simulate}
-            className="rounded-xl bg-white px-4 py-2.5 text-sm font-medium text-black hover:bg-zinc-100 active:scale-[0.98] transition-all duration-150"
+            className="rounded-xl bg-[var(--accent)] px-4 py-2.5 text-sm font-medium text-white hover:bg-[var(--accent-deep)] active:scale-[0.98] transition-all duration-150"
           >
             Check
           </button>
