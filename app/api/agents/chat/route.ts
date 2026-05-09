@@ -74,6 +74,7 @@ export async function POST(req: NextRequest) {
   let reply = "";
   let totalInput = 0;
   let totalOutput = 0;
+  const memoryActions: Array<{ type: "save" | "delete" | "update"; content?: string }> = [];
 
   // Simple tool-use loop (max 3 iterations — memory tools only)
   for (let i = 0; i < 3; i++) {
@@ -113,6 +114,7 @@ export async function POST(req: NextRequest) {
               (input.categories as string[]) as import("@/lib/memory").MemoryCategory[],
               String(input.content)
             );
+            if (mem) memoryActions.push({ type: "save", content: String(input.content) });
             result = mem ? { success: true, memory_id: mem.id } : { error: "Failed to save memory" };
             break;
           }
@@ -123,6 +125,7 @@ export async function POST(req: NextRequest) {
           }
           case "delete_memory": {
             const ok = await deleteMemory(supabase, user.id, String(input.memory_id));
+            if (ok) memoryActions.push({ type: "delete" });
             result = ok ? { success: true } : { error: "Failed to delete memory" };
             break;
           }
@@ -159,5 +162,5 @@ export async function POST(req: NextRequest) {
 
   await logAgentUsage(supabase, user.id, agent, config.model, totalInput, totalOutput);
 
-  return NextResponse.json({ reply });
+  return NextResponse.json({ reply, memoryActions: memoryActions.length > 0 ? memoryActions : undefined });
 }
