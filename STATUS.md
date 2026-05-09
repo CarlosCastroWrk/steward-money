@@ -2,6 +2,15 @@
 
 _Last updated: 2026-05-09_
 
+## Shipped 2026-05-09 (session 3)
+
+- **Plaid webhooks** — `/api/plaid/webhook` rebuilt with full JWT signature verification (jose library, Plaid-Verification header, request_body_sha256 body hash). Handles SYNC_UPDATES_AVAILABLE/DEFAULT_UPDATE (cursor-based transactionsSync), TRANSACTIONS_REMOVED (delete by plaid_transaction_id), ITEM_LOGIN_REQUIRED (sets needs_reauth=true). Unknown codes return 200. Added `needs_reauth` + `webhook_url` columns to plaid_items. `/api/plaid/setup-webhooks` one-time route registers existing items.
+- **exchange-token uses transactionsSync** — new bank connections now set the cursor from day 1; subsequent syncs are truly incremental.
+- **Auto-sync hook** — `hooks/useAutoSync.ts`: fires sync on mount (if >2 min stale), on visibilitychange (app resume), 2-min cooldown. Used in Dashboard, Activity, Accounts.
+- **Live sync indicator** — `DashboardSyncButton` refactored: raw timestamp in, formats client-side with 60s ticker. States: Syncing spinner / amber stale warning / red error+retry / dim fresh label.
+- **Bug 3 fix** — `delete_all_bills` Luka tool: deletes all bills in one atomic operation instead of 13 serial calls hitting the 6-iteration limit. Dashboard bill queries now filter `paid_at IS NULL` so auto-detected-paid bills don't inflate Monthly Expenses total.
+- **Transaction sync cursor** — switched from `transactionsGet` (date range, re-fetches same window) to `transactionsSync` (cursor-based, only new transactions). Both manual sync and cron auto-sync updated.
+
 ## Shipped 2026-05-09 (session 2)
 
 - **Plaid sync — dashboard Sync button** — "Synced X ago · Sync" was a nav link to /transactions; replaced with `DashboardSyncButton` client component that calls `POST /api/plaid/sync` inline and calls `router.refresh()` so balances update without leaving the page
