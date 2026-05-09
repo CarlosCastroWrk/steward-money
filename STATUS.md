@@ -2,6 +2,15 @@
 
 _Last updated: 2026-05-09_
 
+## Shipped 2026-05-09 (session 5)
+
+- **Detail pass II** — all dark-mode hardcoded colors eliminated: `bg-zinc-*`, `bg-purple-*`, `bg-white text-black`, `bg-red-950`, `bg-blue-950`, `border-green-900` → CSS tokens throughout. 30 files changed. Covers: Luka.tsx (full purple→`--luka`), Toast, AccountCard type badges, TalkToLukaButton, LukaSetupMode, LukaVoiceMode, all modal submit buttons (Goals, Bills, Subscriptions, Transactions, Accounts, PlaidLinkButton), SessionGuard, AskLukaButton, Settings (SaveButton, IncomeSection), Pulse (PulseView subtitle added), SubscriptionsView status badges, login error box, onboarding Step2–8 + StepWrapper, CalendarOptInCard, TransactionsView (toast + Plaid banner).
+- **Agent detail page fixed** — `/pulse/[agent_name]` changed from `height: 100dvh` inside scroll container to `fixed inset-0 z-[60]` overlay. Bottom nav no longer clips the chat. Loading skeleton shown while conversation history fetches.
+- **Loading states** — added `loading.tsx` skeletons for: `/pulse`, `/merchant/[name]`, `/category/[name]`, `/more/calendar`. All use shimmer animation with proper CSS var borders/backgrounds.
+- **Calendar tab** — `/more/calendar` with month grid + agenda views. Unified financial overlay: bills (red), income (green), Google Calendar events (purple), transactions, goal deadlines — all on one calendar. Day drawer slides up on tap showing items + net cash flow. Connect-calendar nudge if not linked. Added to More page navigation.
+- **Notifications** — `lib/notifications.ts` helper for deduped alert writes from anywhere. Plaid sync error notifications: `ITEM_LOGIN_REQUIRED` → danger severity, others → warning (6h dedup, `PRODUCT_NOT_READY` suppressed). NotificationBell: all hardcoded colors → CSS variables.
+- **Regression check** — `lib/safe-to-spend.ts` and `middleware.ts` untouched. All 22+ Luka tools intact (confirmed via grep). Cron auth pattern (`x-vercel-cron: 1`) intact across all 8 cron routes. Admin client used only in cron/webhook paths. TypeScript clean (`npx tsc --noEmit` exits 0).
+
 ## Shipped 2026-05-09 (session 4)
 
 - **Reactive dashboard** — `app/page.tsx` marked `force-dynamic` so RSC re-runs on every request (prevents stale RSC cache after Luka mutations). `financials:changed` browser event dispatched after `data.refreshNeeded` in Luka.tsx, so ComingUpWidget reloads bills/goals without a full page refresh.
