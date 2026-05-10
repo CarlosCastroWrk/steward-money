@@ -208,30 +208,20 @@ export default async function DashboardPage() {
             <div className="overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--bg-card)] divide-y divide-[var(--border)]">
               {recentTx.map((tx) => {
                 const isIncome = Number(tx.amount) > 0;
-                const name = tx.merchant ?? (isIncome ? "Income" : "Transaction");
-                const avatarColors = [
-                  "bg-rose-500", "bg-orange-500", "bg-amber-500", "bg-lime-500",
-                  "bg-emerald-500", "bg-teal-500", "bg-cyan-500", "bg-blue-500",
-                  "bg-indigo-500", "bg-violet-500", "bg-blue-500", "bg-pink-500",
-                ];
-                const hash = name.split("").reduce((a: number, c: string) => a + c.charCodeAt(0), 0);
-                const avatarBg = avatarColors[hash % avatarColors.length];
                 return (
                   <a
                     key={tx.id}
                     href={tx.merchant ? `/merchant/${encodeURIComponent(tx.merchant)}` : "/transactions"}
-                    className="flex items-center justify-between px-4 py-3 gap-3 transition-colors hover:bg-[var(--bg-elevated)] active:bg-[var(--bg-elevated)]"
+                    className="flex items-center justify-between px-4 py-3.5 gap-3 transition-colors hover:bg-[var(--bg-elevated)] active:bg-[var(--bg-elevated)]"
                   >
-                    <div className="flex items-center gap-3 min-w-0">
-                      <div className={`h-9 w-9 flex-shrink-0 flex items-center justify-center rounded-full ${avatarBg} text-white text-sm font-semibold`}>
-                        {name[0]?.toUpperCase() ?? "?"}
-                      </div>
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <span className={`h-1.5 w-1.5 flex-shrink-0 rounded-full ${isIncome ? "bg-emerald-500" : "bg-[var(--text-3)]"}`} />
                       <div className="min-w-0">
-                        <p className="text-sm font-medium text-[var(--text-1)] truncate">{name}</p>
+                        <p className="text-sm font-medium text-[var(--text-1)] truncate">{tx.merchant ?? (isIncome ? "Income" : "Transaction")}</p>
                         <p className="text-xs text-[var(--text-3)] mt-0.5">{formatDate(tx.date)}{tx.category ? ` · ${tx.category}` : ""}</p>
                       </div>
                     </div>
-                    <span className={`text-sm font-semibold flex-shrink-0 ${isIncome ? "text-emerald-500" : "text-red-500"}`}>
+                    <span className={`text-sm font-semibold flex-shrink-0 ${isIncome ? "text-emerald-500" : "text-[var(--text-2)]"}`}>
                       {isIncome ? "+" : "−"}{formatUSDCents(Math.abs(Number(tx.amount)))}
                     </span>
                   </a>

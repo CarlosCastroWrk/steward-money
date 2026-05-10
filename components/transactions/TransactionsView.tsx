@@ -365,9 +365,9 @@ export function TransactionsView({ transactions: initialTransactions, accounts, 
         {/* Summary cards */}
         <div className="mt-6 grid grid-cols-2 gap-2.5 sm:grid-cols-5">
           {[
-            { label: "Spent",  value: formatUSD(totalExpenses),   color: "text-red-400"     },
-            { label: "Income", value: formatUSD(totalIncome),     color: "text-emerald-400" },
-            { label: "Net",    value: formatUSDSigned(netAmount), color: netAmount >= 0 ? "text-emerald-400" : "text-red-400" },
+            { label: "Spent",  value: formatUSD(totalExpenses),   color: "text-[var(--text-2)]" },
+            { label: "Income", value: formatUSD(totalIncome),     color: "text-emerald-400"     },
+            { label: "Net",    value: formatUSDSigned(netAmount), color: netAmount >= 0 ? "text-emerald-400" : "text-[var(--text-2)]" },
             { label: "Needs",  value: formatUSD(needsTotal),      color: "text-blue-400"    },
             { label: "Wants",  value: formatUSD(wantsTotal),      color: "text-blue-400"  },
           ].map(({ label, value, color }) => (
@@ -494,7 +494,7 @@ export function TransactionsView({ transactions: initialTransactions, accounts, 
                     <p className="text-xs font-medium uppercase tracking-wide text-[var(--text-3)]">
                       {new Date(date + "T12:00:00").toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })}
                     </p>
-                    <p className={`text-xs font-medium ${dayNet >= 0 ? "text-emerald-500" : "text-red-500"}`}>
+                    <p className={`text-xs font-medium ${dayNet >= 0 ? "text-emerald-500" : "text-[var(--text-3)]"}`}>
                       {formatUSDSigned(dayNet)}
                     </p>
                   </div>
@@ -545,7 +545,7 @@ export function TransactionsView({ transactions: initialTransactions, accounts, 
                           </div>
 
                           <div className="flex flex-shrink-0 items-center gap-2">
-                            <p className={`text-sm font-semibold ${isExpense ? "text-red-400" : "text-emerald-400"}`}>
+                            <p className={`text-sm font-semibold ${isExpense ? "text-[var(--text-2)]" : "text-emerald-400"}`}>
                               {isExpense ? `-${formatUSD(Math.abs(tx.amount))}` : `+${formatUSD(tx.amount)}`}
                             </p>
                             <button type="button" onClick={() => { setEditing(tx); setModalOpen(true); }} className="rounded-lg border border-[var(--border)] px-2.5 py-1 text-xs text-[var(--text-3)] transition hover:text-[var(--text-1)]">
