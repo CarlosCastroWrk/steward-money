@@ -235,28 +235,16 @@ export function AgentChat({ agent, prefilledMessage, context, initialMessage, in
     }
   }, [messages, loading]);
 
-  // iOS keyboard — shrink container to visual viewport so composer stays above keyboard
+  // Scroll to bottom when keyboard appears/disappears
   useEffect(() => {
     const vv = window.visualViewport;
     if (!vv) return;
     function onVVResize() {
-      // Overlay mode: set this component's own height to the visible viewport
-      if (!embedded && containerRef.current) {
-        containerRef.current.style.height = `${vv!.height}px`;
-      }
-      // Embedded mode: parent page handles the outer container; just scroll to bottom
-      if (scrollRef.current) {
-        scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-      }
+      if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
-    onVVResize();
     vv.addEventListener("resize", onVVResize);
-    vv.addEventListener("scroll", onVVResize);
-    return () => {
-      vv.removeEventListener("resize", onVVResize);
-      vv.removeEventListener("scroll", onVVResize);
-    };
-  }, [embedded]);
+    return () => vv.removeEventListener("resize", onVVResize);
+  }, []);
 
   // Close overflow on outside click
   useEffect(() => {
@@ -343,6 +331,7 @@ export function AgentChat({ agent, prefilledMessage, context, initialMessage, in
     <div
       ref={containerRef}
       className={embedded ? "flex flex-col flex-1 min-h-0 bg-[var(--bg-base)]" : "fixed inset-0 z-[60] flex flex-col bg-[var(--bg-base)]"}
+      style={!embedded ? { height: "100dvh" } : undefined}
     >
       {/* ─── Header (overlay mode only) ──────────────────────────────────── */}
       {!embedded && (

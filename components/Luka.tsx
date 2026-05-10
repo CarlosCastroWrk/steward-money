@@ -487,26 +487,10 @@ export function Luka() {
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
 
-  // Mobile keyboard avoidance
-  const [vpHeight, setVpHeight] = useState<number | null>(null);
-  const [vpOffsetTop, setVpOffsetTop] = useState(0);
-
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const router = useRouter();
   const pathname = usePathname();
-
-  // ── Visual viewport (mobile keyboard) ─────────────────────────────────────
-  useEffect(() => {
-    if (!open) { setVpHeight(null); setVpOffsetTop(0); return; }
-    const vv = window.visualViewport;
-    if (!vv) return;
-    const handler = () => { setVpHeight(vv.height); setVpOffsetTop(vv.offsetTop ?? 0); };
-    handler();
-    vv.addEventListener("resize", handler);
-    vv.addEventListener("scroll", handler);
-    return () => { vv.removeEventListener("resize", handler); vv.removeEventListener("scroll", handler); };
-  }, [open]);
 
   // ── External open trigger ──────────────────────────────────────────────────
   useEffect(() => {
@@ -614,13 +598,8 @@ export function Luka() {
       if (!user) return;
       const convs = await fetchConversationList(supabase, user.id);
       setConversations(convs);
-      if (convs.length > 0) {
-        const latestId = convs[0].id;
-        setActiveConvId(latestId);
-        await fetchConversationMessages(supabase, user.id, latestId);
-      } else {
-        setActiveConvId(crypto.randomUUID());
-      }
+      // Always start a new conversation — history accessible via the sidebar
+      setActiveConvId(crypto.randomUUID());
       setHistoryLoaded(true);
     });
   }, [open, historyLoaded]);
@@ -914,9 +893,14 @@ export function Luka() {
     />
   );
 
-  const mobilePanelStyle: React.CSSProperties = vpHeight != null
-    ? { position: "fixed", top: 0, height: vpHeight, left: 0, right: 0 }
-    : { position: "fixed", top: 0, left: 0, right: 0, bottom: 0 };
+  // 100dvh = dynamic viewport height — automatically shrinks when iOS keyboard appears
+  const mobilePanelStyle: React.CSSProperties = {
+    position: "fixed",
+    top: 0,
+    left: 0,
+    right: 0,
+    height: "100dvh",
+  };
 
   return (
     <>

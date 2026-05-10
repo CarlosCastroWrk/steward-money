@@ -2,7 +2,6 @@
 
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState, useRef, useCallback } from "react";
-import type { CSSProperties } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { AGENT_REGISTRY, type AgentName } from "@/lib/agents/registry";
 import { AgentChat } from "@/components/agents/AgentChat";
@@ -73,23 +72,9 @@ export default function AgentDetailPage() {
   const [history, setHistory] = useState<ConversationMessage[] | null>(null);
   const [chatKey, setChatKey] = useState(0);
   const [menuOpen, setMenuOpen] = useState(false);
-  const [vpHeight, setVpHeight] = useState<number | null>(null);
   const [activeTab, setActiveTab] = useState<Tab>("insight");
   const [insightIdx, setInsightIdx] = useState(0);
   const cleared = useRef(false);
-
-  // iOS keyboard — shrink outer container to visible viewport
-  useEffect(() => {
-    const vv = window.visualViewport;
-    if (!vv) return;
-    function update() { setVpHeight(vv!.height); }
-    update();
-    vv.addEventListener("resize", update);
-    vv.addEventListener("scroll", update);
-    return () => { vv.removeEventListener("resize", update); vv.removeEventListener("scroll", update); };
-  }, []);
-
-  const outerStyle: CSSProperties = vpHeight != null ? { height: vpHeight } : {};
 
   const load = useCallback(async () => {
     if (!agent) return;
@@ -137,14 +122,13 @@ export default function AgentDetailPage() {
     );
   }
 
-  const initialMessages = history ?? [];
   const isSerif = config.fontTreatment === "serif";
   const currentInsight = insights[insightIdx] ?? null;
 
   // Loading skeleton
   if (history === null) {
     return (
-      <div className="fixed inset-0 z-[60] flex flex-col bg-[var(--bg-base)]" style={outerStyle}>
+      <div className="fixed inset-0 z-[60] flex flex-col bg-[var(--bg-base)]" style={{ height: "100dvh" }}>
         <div style={{ backgroundColor: config.color, height: 3, flexShrink: 0 }} />
         <div
           className="flex-shrink-0 flex items-center justify-between bg-[var(--bg-card)] border-b border-[var(--border)] px-3"
@@ -173,7 +157,7 @@ export default function AgentDetailPage() {
   }
 
   return (
-    <div className="fixed inset-0 z-[60] flex flex-col bg-[var(--bg-base)]" style={outerStyle}>
+    <div className="fixed inset-0 z-[60] flex flex-col bg-[var(--bg-base)]" style={{ height: "100dvh" }}>
 
       {/* ── Color accent strip ──────────────────────────────────────────── */}
       <div style={{ backgroundColor: config.color, height: 3, flexShrink: 0 }} />
@@ -330,7 +314,7 @@ export default function AgentDetailPage() {
           key={chatKey}
           agent={agent}
           embedded
-          initialMessages={initialMessages}
+          initialMessages={[]}
           onClose={() => router.back()}
         />
       )}
