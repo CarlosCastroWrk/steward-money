@@ -721,7 +721,9 @@ export function Luka() {
   const { listening, supported: micSupported, start: startListening, stop: stopListening } = useSpeechRecognition(handleVoiceResult, handleVoiceEnd);
 
   const isAuthPage = pathname === "/login" || pathname.startsWith("/onboarding");
-  if (!authed || isAuthPage) return null;
+  // Agent detail pages are full-screen overlays — hide the Luka pill
+  const isAgentPage = pathname.startsWith("/pulse/");
+  if (!authed || isAuthPage || isAgentPage) return null;
 
   function handleKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
     if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); if (!loading) sendMessage(input); }

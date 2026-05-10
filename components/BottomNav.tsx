@@ -23,6 +23,9 @@ export function BottomNav() {
     PRIMARY_NAV.forEach((item) => router.prefetch(item.href));
   }, [router]);
 
+  // Hide on full-screen overlays (agent detail pages use fixed inset-0 overlay)
+  if (pathname.startsWith("/pulse/")) return null;
+
   const currentNavIndex = NAV_ROUTES.findIndex((r) =>
     r === "/" ? pathname === "/" : pathname.startsWith(r)
   );
