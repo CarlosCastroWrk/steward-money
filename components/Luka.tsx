@@ -2,6 +2,7 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
+import { createPortal } from "react-dom";
 import { useRouter, usePathname } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { LukaVoiceMode } from "@/components/luka/LukaVoiceMode";
@@ -482,6 +483,10 @@ export function Luka() {
   const [showConvDrawer, setShowConvDrawer] = useState(false);
   const [userMsgCount, setUserMsgCount] = useState(0);
 
+  // Ensure portal target exists (avoid SSR mismatch)
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+
   // Mobile keyboard avoidance
   const [vpHeight, setVpHeight] = useState<number | null>(null);
   const [vpOffsetTop, setVpOffsetTop] = useState(0);
@@ -942,8 +947,6 @@ export function Luka() {
         .luka-avatar-pulse { animation: lukaAvatarPulse 1.4s ease-out infinite; }
       `}</style>
 
-      {voiceModeOpen && <LukaVoiceMode onClose={() => setVoiceModeOpen(false)} />}
-
       {/* Mobile pill trigger */}
       <button
         onClick={() => setOpen((v) => !v)}
@@ -961,59 +964,65 @@ export function Luka() {
         <span>Ask Luka…</span>
       </button>
 
-      {/* Mobile backdrop */}
-      {open && (
-        <div className="fixed inset-0 z-[51] bg-black/60 md:hidden" onClick={() => { setShowConvDrawer(false); if (!showConvDrawer) setOpen(false); }} />
-      )}
+      {/* Mobile panel + backdrop — portaled to body to escape any CSS transform ancestor */}
+      {mounted && createPortal(
+        <>
+          {voiceModeOpen && <LukaVoiceMode onClose={() => setVoiceModeOpen(false)} />}
 
-      {/* Mobile full-screen chat */}
-      {open && (
-        <div
-          className="luka-sheet z-[52] flex flex-col overflow-hidden bg-[var(--luka-bg)] md:hidden"
-          style={mobilePanelStyle}
-        >
-          {mobileChatHeader}
-          {messageListEl}
-          {inputArea}
-
-          {/* Mobile conversation drawer (slides in from left) */}
-          {showConvDrawer && (
-            <>
-              <div
-                className="absolute inset-0 z-[10] bg-black/50"
-                onClick={() => setShowConvDrawer(false)}
-              />
-              <div className="luka-drawer absolute left-0 top-0 z-[11] h-full w-[280px] overflow-hidden border-r border-[var(--border)] bg-[var(--bg-base)]">
-                <div className="flex items-center justify-between border-b border-[var(--border)] px-4 py-3">
-                  <span className="text-sm font-semibold text-[var(--text-1)]">Conversations</span>
-                  <button type="button" onClick={() => setShowConvDrawer(false)} className="text-[var(--text-3)]"><CloseIcon /></button>
-                </div>
-                <div className="overflow-y-auto" style={{ height: "calc(100% - 50px)" }}>
-                  <button
-                    type="button"
-                    onClick={startNewConversation}
-                    className="flex w-full items-center gap-2 px-4 py-3 text-left text-sm text-[var(--luka)] hover:bg-[var(--bg-hover)]"
-                  >
-                    <PlusIcon /> New conversation
-                  </button>
-                  {conversations.map((conv) => (
-                    <button
-                      key={conv.id}
-                      type="button"
-                      onClick={() => switchConversation(conv.id)}
-                      className={`w-full px-4 py-3 text-left transition-colors ${
-                        conv.id === activeConvId ? "bg-[var(--luka)]/10 text-[var(--text-1)]" : "text-[var(--text-2)] hover:bg-[var(--bg-hover)]"
-                      }`}
-                    >
-                      <p className="truncate text-[13px] font-medium">{conv.title ?? "New conversation"}</p>
-                      <p className="mt-0.5 text-[11px] text-[var(--text-dim)]">{formatConvTime(conv.updatedAt)}</p>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </>
+          {open && (
+            <div className="fixed inset-0 z-[51] bg-black/60 md:hidden" onClick={() => { setShowConvDrawer(false); if (!showConvDrawer) setOpen(false); }} />
           )}
-        </div>
+
+          {open && (
+            <div
+              className="luka-sheet z-[52] flex flex-col overflow-hidden bg-[var(--luka-bg)] md:hidden"
+              style={mobilePanelStyle}
+            >
+              {mobileChatHeader}
+              {messageListEl}
+              {inputArea}
+
+              {/* Mobile conversation drawer (slides in from left) */}
+              {showConvDrawer && (
+                <>
+                  <div
+                    className="absolute inset-0 z-[10] bg-black/50"
+                    onClick={() => setShowConvDrawer(false)}
+                  />
+                  <div className="luka-drawer absolute left-0 top-0 z-[11] h-full w-[280px] overflow-hidden border-r border-[var(--border)] bg-[var(--bg-base)]">
+                    <div className="flex items-center justify-between border-b border-[var(--border)] px-4 py-3">
+                      <span className="text-sm font-semibold text-[var(--text-1)]">Conversations</span>
+                      <button type="button" onClick={() => setShowConvDrawer(false)} className="text-[var(--text-3)]"><CloseIcon /></button>
+                    </div>
+                    <div className="overflow-y-auto" style={{ height: "calc(100% - 50px)" }}>
+                      <button
+                        type="button"
+                        onClick={startNewConversation}
+                        className="flex w-full items-center gap-2 px-4 py-3 text-left text-sm text-[var(--luka)] hover:bg-[var(--bg-hover)]"
+                      >
+                        <PlusIcon /> New conversation
+                      </button>
+                      {conversations.map((conv) => (
+                        <button
+                          key={conv.id}
+                          type="button"
+                          onClick={() => switchConversation(conv.id)}
+                          className={`w-full px-4 py-3 text-left transition-colors ${
+                            conv.id === activeConvId ? "bg-[var(--luka)]/10 text-[var(--text-1)]" : "text-[var(--text-2)] hover:bg-[var(--bg-hover)]"
+                          }`}
+                        >
+                          <p className="truncate text-[13px] font-medium">{conv.title ?? "New conversation"}</p>
+                          <p className="mt-0.5 text-[11px] text-[var(--text-dim)]">{formatConvTime(conv.updatedAt)}</p>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+          )}
+        </>,
+        document.body
       )}
 
       {/* Desktop fab */}

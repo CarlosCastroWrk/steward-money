@@ -22,6 +22,8 @@ const PLACEHOLDERS: Record<AgentName, string> = {
   silas:   "I notice patterns.",
 };
 
+type Tab = "insight" | "chat";
+
 interface ConversationMessage {
   role: "user" | "assistant";
   content: string;
@@ -40,7 +42,9 @@ function timeAgo(iso: string): string {
   if (m < 60) return `${m}m ago`;
   const h = Math.floor(m / 60);
   if (h < 24) return `${h}h ago`;
-  return `${Math.floor(h / 24)}d ago`;
+  const d = Math.floor(h / 24);
+  if (d < 7) return `${d}d ago`;
+  return `${Math.floor(d / 7)}w ago`;
 }
 
 function Dots() {
@@ -70,6 +74,8 @@ export default function AgentDetailPage() {
   const [chatKey, setChatKey] = useState(0);
   const [menuOpen, setMenuOpen] = useState(false);
   const [vpHeight, setVpHeight] = useState<number | null>(null);
+  const [activeTab, setActiveTab] = useState<Tab>("insight");
+  const [insightIdx, setInsightIdx] = useState(0);
   const cleared = useRef(false);
 
   // iOS keyboard — shrink outer container to visible viewport
@@ -91,7 +97,6 @@ export default function AgentDetailPage() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
-    // Clear unread count
     if (!cleared.current) {
       cleared.current = true;
       supabase
@@ -100,7 +105,6 @@ export default function AgentDetailPage() {
         .then(() => {});
     }
 
-    // Load conversation history (last 40 messages for chat context, ascending)
     const { data } = await supabase
       .from("agent_conversations")
       .select("role, content, created_at")
@@ -112,14 +116,12 @@ export default function AgentDetailPage() {
     const rows = ((data ?? []) as ConversationMessage[]).reverse();
     setHistory(rows);
 
-    // Latest 3 assistant messages for insights section
     const assistantRows = rows.filter((r) => r.role === "assistant").slice(-3).reverse();
     setInsights(assistantRows);
   }, [agent]);
 
   useEffect(() => { load(); }, [load]);
 
-  // Close menu on outside click
   useEffect(() => {
     if (!menuOpen) return;
     function close() { setMenuOpen(false); }
@@ -136,8 +138,10 @@ export default function AgentDetailPage() {
   }
 
   const initialMessages = history ?? [];
+  const isSerif = config.fontTreatment === "serif";
+  const currentInsight = insights[insightIdx] ?? null;
 
-  // Loading skeleton — shown while history fetches
+  // Loading skeleton
   if (history === null) {
     return (
       <div className="fixed inset-0 z-[60] flex flex-col bg-[var(--bg-base)]" style={outerStyle}>
@@ -153,15 +157,17 @@ export default function AgentDetailPage() {
           </div>
           <div className="h-9 w-9 shimmer rounded-xl" />
         </div>
-        <div className="flex-shrink-0 border-b border-[var(--border)] bg-[var(--bg-card)] px-4 py-4 space-y-3">
-          <div className="h-2 w-32 shimmer rounded" />
-          <div className="space-y-1.5">
-            <div className="h-3 w-full shimmer rounded" />
-            <div className="h-3 w-4/5 shimmer rounded" />
-            <div className="h-2.5 w-16 shimmer rounded mt-1" />
+        <div className="flex-1 px-5 py-8 space-y-6">
+          <div className="space-y-2">
+            <div className="h-8 w-40 shimmer rounded" />
+            <div className="h-3 w-28 shimmer rounded" />
+          </div>
+          <div className="pl-4 border-l-2 space-y-2" style={{ borderColor: config.color + "40" }}>
+            <div className="h-3.5 w-full shimmer rounded" />
+            <div className="h-3.5 w-5/6 shimmer rounded" />
+            <div className="h-3.5 w-4/6 shimmer rounded" />
           </div>
         </div>
-        <div className="flex-1" />
       </div>
     );
   }
@@ -180,7 +186,7 @@ export default function AgentDetailPage() {
         {/* Back */}
         <button
           onClick={() => router.back()}
-          className="flex h-9 w-9 items-center justify-center rounded-xl text-[var(--text-3)] hover:bg-[var(--bg-elevated)] hover:text-[var(--text-1)] transition-colors"
+          className="flex h-9 w-9 items-center justify-center rounded-xl text-[var(--text-3)] hover:bg-[var(--bg-elevated)] transition-colors"
           aria-label="Back"
           style={{ color: config.color }}
         >
@@ -189,10 +195,23 @@ export default function AgentDetailPage() {
           </svg>
         </button>
 
-        {/* Agent name + role */}
-        <div className="text-center">
-          <p className="text-sm font-semibold text-[var(--text-1)]">{config.name}</p>
-          <p className="text-[11px] text-[var(--text-3)]">{config.role}</p>
+        {/* Tab toggle */}
+        <div className="flex rounded-xl border border-[var(--border)] overflow-hidden">
+          {(["insight", "chat"] as Tab[]).map((tab) => (
+            <button
+              key={tab}
+              type="button"
+              onClick={() => setActiveTab(tab)}
+              className="px-4 py-1.5 text-xs font-semibold capitalize transition-colors"
+              style={
+                activeTab === tab
+                  ? { backgroundColor: config.color, color: "#fff" }
+                  : { color: "var(--text-3)" }
+              }
+            >
+              {tab}
+            </button>
+          ))}
         </div>
 
         {/* More menu */}
@@ -200,7 +219,7 @@ export default function AgentDetailPage() {
           <button
             type="button"
             onClick={(e) => { e.stopPropagation(); setMenuOpen((o) => !o); }}
-            className="flex h-9 w-9 items-center justify-center rounded-xl text-[var(--text-3)] hover:bg-[var(--bg-elevated)] hover:text-[var(--text-1)] transition-colors"
+            className="flex h-9 w-9 items-center justify-center rounded-xl text-[var(--text-3)] hover:bg-[var(--bg-elevated)] transition-colors"
             aria-label="More"
           >
             <Dots />
@@ -209,7 +228,7 @@ export default function AgentDetailPage() {
             <div className="absolute right-0 top-full mt-1 z-10 w-44 rounded-xl border border-[var(--border)] bg-[var(--bg-card)] shadow-lg overflow-hidden">
               <button
                 type="button"
-                onClick={() => { setChatKey((k) => k + 1); setMenuOpen(false); }}
+                onClick={() => { setChatKey((k) => k + 1); setActiveTab("chat"); setMenuOpen(false); }}
                 className="flex w-full items-center gap-2.5 px-4 py-3 text-sm text-[var(--text-1)] hover:bg-[var(--bg-elevated)] transition-colors"
               >
                 <Plus /> New chat
@@ -219,31 +238,94 @@ export default function AgentDetailPage() {
         </div>
       </div>
 
-      {/* ── Insights strip ──────────────────────────────────────────────── */}
-      {history !== null && (
-        <div className="flex-shrink-0 border-b border-[var(--border)] bg-[var(--bg-card)]">
-          <div className="px-4 py-3">
-            <p className="text-[10px] font-semibold uppercase tracking-widest text-[var(--text-3)] mb-2">
-              Latest from {config.name}
-            </p>
-            {insights.length === 0 ? (
-              <p className="text-sm text-[var(--text-3)] italic">{PLACEHOLDERS[agent]}</p>
-            ) : (
-              <div className="space-y-2.5">
+      {/* ── Insight view ────────────────────────────────────────────────── */}
+      {activeTab === "insight" && (
+        <div className="flex-1 overflow-y-auto">
+          <div className="px-5 pt-8 pb-10 max-w-lg mx-auto">
+
+            {/* Agent hero */}
+            <div className="mb-8">
+              <div className="flex items-center gap-2.5 mb-1.5">
+                <p
+                  className={`text-3xl font-bold tracking-tight ${isSerif ? "font-serif" : ""}`}
+                  style={{ color: config.color }}
+                >
+                  {config.name}
+                </p>
+                <span
+                  className="text-[10px] font-semibold tracking-widest px-2 py-0.5 rounded-full border"
+                  style={{
+                    color: config.color,
+                    borderColor: config.color + "50",
+                    backgroundColor: config.color + "12",
+                  }}
+                >
+                  • {config.role.split(" ").slice(0, 2).join(" ").toUpperCase()}
+                </span>
+              </div>
+              <p className="text-sm text-[var(--text-3)]">{config.subtitle}</p>
+            </div>
+
+            {/* Insight blockquote */}
+            <div className="mb-5">
+              <div
+                className="pl-4 py-0.5 border-l-[3px] mb-3"
+                style={{ borderColor: config.color }}
+              >
+                {currentInsight ? (
+                  <p
+                    className={`text-[15px] leading-relaxed text-[var(--text-1)] ${isSerif ? "italic" : ""}`}
+                    style={isSerif ? { fontFamily: "Georgia, serif" } : {}}
+                  >
+                    {currentInsight.content}
+                  </p>
+                ) : (
+                  <p className="text-sm italic text-[var(--text-3)]">
+                    {PLACEHOLDERS[agent]}
+                  </p>
+                )}
+              </div>
+              {currentInsight && (
+                <p className="text-[11px] text-[var(--text-3)] pl-4">{timeAgo(currentInsight.created_at)}</p>
+              )}
+            </div>
+
+            {/* Time chips */}
+            {insights.length > 1 && (
+              <div className="flex gap-2 flex-wrap mb-10">
                 {insights.map((ins, i) => (
-                  <div key={i}>
-                    <p className="text-sm text-[var(--text-1)] leading-snug line-clamp-3">{ins.content}</p>
-                    <p className="mt-0.5 text-[11px] text-[var(--text-3)]">{timeAgo(ins.created_at)}</p>
-                  </div>
+                  <button
+                    key={i}
+                    type="button"
+                    onClick={() => setInsightIdx(i)}
+                    className="px-3 py-1 rounded-full text-xs font-medium transition-colors"
+                    style={
+                      i === insightIdx
+                        ? { backgroundColor: config.color, color: "#fff" }
+                        : { backgroundColor: "var(--bg-elevated)", color: "var(--text-3)" }
+                    }
+                  >
+                    {i === 0 ? "Latest" : timeAgo(ins.created_at)}
+                  </button>
                 ))}
               </div>
             )}
+
+            {/* Chat CTA */}
+            <button
+              type="button"
+              onClick={() => setActiveTab("chat")}
+              className="w-full py-3 rounded-2xl text-sm font-semibold text-white transition-opacity active:opacity-80"
+              style={{ backgroundColor: config.color }}
+            >
+              Chat with {config.name}
+            </button>
           </div>
         </div>
       )}
 
-      {/* ── Embedded chat ───────────────────────────────────────────────── */}
-      {history !== null && (
+      {/* ── Chat view ───────────────────────────────────────────────────── */}
+      {activeTab === "chat" && (
         <AgentChat
           key={chatKey}
           agent={agent}
