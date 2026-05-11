@@ -11,6 +11,57 @@ npm run lint      # ESLint via next lint
 npx tsc --noEmit  # Type-check without emitting (run this before committing)
 ```
 
+## Off-Limits Files
+
+These files must not be modified without explicit user instruction:
+
+- `lib/safe-to-spend.ts` — the financial calculation source of truth. Bugs here cascade to every screen showing money.
+- `middleware.ts` — auth + onboarding routing. Bugs here lock users out.
+
+If a task seems to require changes to these files, STOP and ask the user before proceeding. Do not refactor "while you're in there." Do not make even small style, comment, or formatting changes to these files.
+
+## Deploy Workflow
+
+This project operates as an agentic workflow. After every successful build that completes both `npx tsc --noEmit` and `npm run build` without errors:
+
+1. `git add . && git commit -m "<short descriptive message>"`
+2. `git push origin main`
+3. `vercel --prod`
+4. Report the deploy URL and commit SHA in the chat
+5. If significant changes shipped, run `npm run verify:deploy` and report pass/fail
+
+If any step fails: stop, report the error, do not retry blindly. If the failure is in TypeScript or build, investigate the cause before proceeding.
+
+After every ship, append a section to STATUS.md with the date, commit SHA, and what changed. This is the audit trail for the project — future agents and humans rely on it.
+
+## Decision-Making
+
+This project is built as an agentic workflow where AI agents operate the application across user, developer, and CEO perspectives. When tasks are ambiguous, default to these patterns:
+
+1. **Diagnose before fixing.** For high-stakes changes (DB schema, auth, payments, financial calc), report what was found before changing anything. Wait for confirmation on the fix direction.
+
+2. **Don't fix unrelated things "while you're in there."** Note them in chat for later, but do not include them in the current diff. Surgical changes only.
+
+3. **Don't guess.** Don't guess column names, environment variables, external API response shapes, or library behavior. Read the actual schema, check actual env, fetch actual docs. If still unsure, report and ask.
+
+4. **Don't refactor large files (>500 lines) mid-feature.** Note the file as a refactor candidate for STATUS.md and proceed surgically.
+
+5. **Don't introduce new dependencies or design systems without approval.** No shadcn migration, no MUI, no Chakra, no new state management libraries mid-task. Stick with Tailwind plus existing primitives unless the user explicitly approves a new direction.
+
+6. **Stop and report if scope expands unexpectedly.** If a "small fix" reveals 10 related issues, surface them in a list. Do not silently fix all 10. Let the user decide what's in scope for this session.
+
+7. **Operate as if this app were already launched.** Code, decisions, and tradeoffs should reflect production thinking: real users, real money, real consequences. Build with developer rigor, user empathy, and CEO accountability.
+
+## Project Documents
+
+Before making significant changes, check these files for context:
+
+- `STATUS.md` — running log of what shipped, when, and why. Append after every ship with date, commit SHA, and summary.
+- `AUDIT_2026-05-09.md` — most recent full-codebase audit. Lists known deferred issues and priority order for technical debt.
+- `tests/README.md` — testing conventions and test account setup.
+
+These documents are the project's institutional memory. They prevent rediscovery of issues already known and ensure new work builds on the documented state rather than guesses.
+
 ## Testing
 
 Playwright E2E tests run against the live production app. Test files are in `tests/e2e/`.
@@ -71,6 +122,26 @@ Each agent is an API route under `/api/agents/`. Cron routes are identified by t
 **Luka agentic loop**: `app/api/luka/route.ts` runs up to 6 iterations. Each iteration calls the Anthropic API; if `stop_reason === "tool_use"`, tools are executed and results are appended as a `user` role message before the next iteration. Only the final `end_turn` response text is returned to the client. Tool action cards are only added to the response when the tool returns `success: true` (never on error).
 
 **Kairos pending flow**: when `kairos_pending = true` in `user_settings`, Luka's system prompt instructs it to open with a plan review prompt. After the review, call `PATCH /api/agents/kairos` to clear the flag and set `last_plan_review`.
+
+### Cross-Agent Memory System
+
+All 10 agents read from and write to the `agent_memories` table. The architecture is **Hybrid + Categorized**.
+
+- **Hybrid save model**: agents auto-save important facts based on conversation context AND users can explicitly trigger save with phrases like "remember that..." or delete with "forget that...". Agents announce saves in chat with a "Remembered" pill so users see what was captured.
+
+- **Categorized storage**: memories are tagged with one or more of six categories: `identity`, `financial`, `faith`, `relationships`, `patterns`, `preferences`. Stored as a `text[]` array on each memory row (multi-tag, one row per memory — never duplicate rows per category).
+
+- **Per-agent scoping**: each agent only reads memories whose categories overlap with that agent's allowed set. See `lib/agents/registry.ts` for the scope map. Example: Solomon reads `faith + financial + identity`; Manna reads `faith + preferences`; Echo and Luka read all categories.
+
+- **Memory page**: `/more/memory` displays all memories grouped by category with agent badge dots, inline edit, delete, search, and "Clear all" per category.
+
+Tools available to all agents (via system prompts):
+- `save_memory(categories, content)` — multi-tag in a single INSERT
+- `update_memory(memory_id, new_content)`
+- `delete_memory(memory_id)` — soft delete via deleted_at
+- `search_memories(query)` — text search across user's full memory bank regardless of calling agent's scope (so "forget" can find memories saved by any agent)
+
+Echo has a special role: with access to all categories, she proactively surfaces relevant past memories at conversation start. Other agents save passively; Echo recalls actively.
 
 ### Core Financial Logic
 
@@ -163,7 +234,8 @@ PLAID_SECRET
 PLAID_ENV                       # "sandbox" | "development" | "production"
 ANTHROPIC_API_KEY               # Used server-side only in agent routes
 SUPABASE_SERVICE_ROLE_KEY       # Used only in lib/supabase/admin.ts (cron paths)
-RESEND_API_KEY                  # Welcome email on signup — get from resend.com
+# RESEND_API_KEY removed May 2026 — welcome email feature scrapped.
+# Do not re-add /api/email/welcome route without explicit user instruction.
 NEXT_PUBLIC_APP_URL             # Full app URL for email links (e.g. https://steward-money.vercel.app)
 
 # Google Calendar (optional)
@@ -206,3 +278,21 @@ Link flow: `PlaidLinkButton` → `/api/plaid/create-link-token` → Plaid Link �
 `/api/plaid/auto-sync` — cron-only (requires `x-vercel-cron: 1` header), runs daily at 6am via `vercel.json`. Uses admin client to sync all users.
 
 `PLAID_ENV=sandbox` during development — sandbox returns synthetic transactions that include unrealistic merchants.
+
+## Security Posture
+
+This app handles real financial data and real user identities. Security rules are non-negotiable:
+
+- **RLS on every table**, scoped to `auth.uid() = user_id`. New tables must include RLS policies in their migration before any code reads from or writes to them.
+
+- **Service role key** (`SUPABASE_SERVICE_ROLE_KEY`) only used in `lib/supabase/admin.ts`. Admin client is only acceptable in cron routes. Never use it to bypass RLS for convenience.
+
+- **Cron routes** require both the `CRON_SECRET` environment variable check AND the `x-vercel-cron: 1` header. See `lib/cron-auth.ts`. Without both checks, cron endpoints can be hit by anyone on the internet and burn Anthropic credits.
+
+- **Plaid webhooks** verify JWT signature via Plaid's verification endpoint, plus a 5-minute replay window via timestamp check. See `/api/plaid/webhook`.
+
+- **All API routes require auth checks** unless explicitly public (webhooks only). Public routes must include a comment explaining why they are unauthenticated.
+
+- **No secrets in client code, URLs, error messages, or logs.** Plaid, Anthropic, Supabase service role, and any future API keys must remain server-side only. If a sensitive value would appear in a URL query parameter, switch to a POST body or server action.
+
+- **Audit before deploy if security-adjacent code changes.** Auth, RLS policies, cron handlers, webhook verifiers, and the admin client all warrant a slow read before pushing.
