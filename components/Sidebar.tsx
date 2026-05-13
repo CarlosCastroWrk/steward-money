@@ -14,7 +14,6 @@ import {
   Target,
   Scale,
   Layers,
-  Users,
   Settings,
 } from "lucide-react";
 
@@ -33,7 +32,6 @@ const PRIMARY_NAV: NavItem[] = [
   { label: "Goals",     href: "/goals",        icon: <Target size={16} strokeWidth={1.6} /> },
   { label: "Decide",    href: "/decide",       icon: <Scale size={16} strokeWidth={1.6} /> },
   { label: "Card",      href: "/card",         icon: <Layers size={16} strokeWidth={1.6} /> },
-  { label: "Council",   href: "/council",      icon: <Users size={16} strokeWidth={1.6} /> },
 ];
 
 const SETTINGS_NAV: NavItem = {

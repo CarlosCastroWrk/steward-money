@@ -26,7 +26,7 @@ const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 const TOOLS: Anthropic.Tool[] = [
   {
     name: "read_financial_summary",
-    description: "Get the user's current financial overview: account balances, safe-to-spend, upcoming expenses, active goals, income sources, recent transactions, Argus alerts, and latest Silas insight.",
+    description: "Get the user's current financial overview: account balances, safe-to-spend, upcoming expenses, active goals, income sources, and recent transactions.",
     input_schema: { type: "object", properties: {}, required: [] },
   },
   {
@@ -323,7 +323,7 @@ async function executeTool(
   try {
     switch (name) {
       case "read_financial_summary": {
-        const [accounts, bills, goals, income, settings, recentTx, safe, alerts, insights] = await Promise.all([
+        const [accounts, bills, goals, income, settings, recentTx, safe] = await Promise.all([
           supabase.from("accounts").select("name, type, current_balance").eq("user_id", userId).eq("is_active", true),
           supabase.from("bills").select("name, amount, frequency, next_due_date, is_autopay").eq("user_id", userId).order("next_due_date", { ascending: true }),
           supabase.from("goals").select("name, target_amount, current_amount, deadline").eq("user_id", userId),
@@ -331,8 +331,6 @@ async function executeTool(
           supabase.from("user_settings").select("*").eq("user_id", userId).maybeSingle(),
           supabase.from("transactions").select("date, merchant, amount, category").eq("user_id", userId).order("date", { ascending: false }).limit(10),
           calculateSafeToSpend(supabase, userId),
-          supabase.from("alerts").select("message, severity, alert_type").eq("user_id", userId).eq("is_read", false).limit(4),
-          supabase.from("pulse_insights").select("insight_text, insight_type").eq("user_id", userId).eq("is_active", true).eq("is_dismissed", false).limit(2),
         ]);
         return {
           result: {
@@ -347,8 +345,6 @@ async function executeTool(
             income_sources: income.data,
             settings: settings.data,
             recent_transactions: recentTx.data,
-            active_alerts: alerts.data,
-            silas_insights: insights.data,
           },
           refreshNeeded: false,
         };
@@ -816,11 +812,9 @@ export async function POST(req: NextRequest) {
   };
   const { messages: clientMessages, setup_mode: setupMode = false } = body;
 
-  const [settingsResult, safeResult, alertsResult, insightsResult, solomonResult, kairosResult, agentMemoryContext, accountsResult, calendarEvents, userMemories] = await Promise.all([
+  const [settingsResult, safeResult, solomonResult, kairosResult, agentMemoryContext, accountsResult, calendarEvents, userMemories] = await Promise.all([
     supabase.from("user_settings").select("*").eq("user_id", user.id).maybeSingle(),
     calculateSafeToSpend(supabase, user.id),
-    supabase.from("alerts").select("message, severity").eq("user_id", user.id).eq("is_read", false).limit(4),
-    supabase.from("pulse_insights").select("insight_text").eq("user_id", user.id).eq("is_active", true).eq("is_dismissed", false).limit(2),
     supabase.from("weekly_reports").select("solomon_word, stewardship_score").eq("user_id", user.id).order("created_at", { ascending: false }).limit(1).maybeSingle(),
     supabase.from("user_settings").select("kairos_pending").eq("user_id", user.id).maybeSingle(),
     summarizeAgentMemoriesForLuka(supabase, user.id),
@@ -837,8 +831,6 @@ export async function POST(req: NextRequest) {
 
   const fmt = (n: number) => new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(n);
 
-  const activeAlerts = (alertsResult.data ?? []).map((a) => `• ${a.message}`).join("\n") || "None";
-  const silasInsights = (insightsResult.data ?? []).map((i) => `• ${i.insight_text}`).join("\n") || "Not enough data yet";
   const solomonWord = solomonResult.data?.solomon_word ?? "No report yet this week";
   const kairoPending = kairosResult.data?.kairos_pending ?? false;
 
@@ -909,10 +901,6 @@ Current snapshot:
 ${billsList}
 - Connected accounts (use these exact names when calling update_account_purpose):
 ${accountList}
-- Active Argus alerts:
-${activeAlerts}
-- Latest Silas insight:
-${silasInsights}
 - Solomon's word this week: ${solomonWord}
 - Life stage: ${lifeStage}
 - Giving enabled: ${settings?.giving_enabled ? `yes (${settings.giving_value}%)` : "no"}

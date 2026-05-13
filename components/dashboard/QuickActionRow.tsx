@@ -32,22 +32,11 @@ function ShieldIcon() {
   );
 }
 
-function CouncilIcon() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5">
-      <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" />
-      <circle cx="9" cy="7" r="4" />
-      <path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75" />
-    </svg>
-  );
-}
-
 const ACTIONS = [
   { lines: ["Add", "Transaction"], href: "/transactions", Icon: PlusIcon,    color: "text-emerald-400", bg: "bg-emerald-500/10" },
   { lines: ["Add", "Bill"],        href: "/bills",        Icon: ReceiptIcon, color: "text-red-400",     bg: "bg-red-500/10"     },
   { lines: ["Add", "Goal"],        href: "/goals",        Icon: FlagIcon,    color: "text-blue-400",    bg: "bg-blue-500/10"    },
   { lines: ["Before I", "Spend"],  href: "/decide",       Icon: ShieldIcon,  color: "text-amber-400",   bg: "bg-amber-500/10"   },
-  { lines: ["The", "Council"],     href: "/council",      Icon: CouncilIcon, color: "text-[var(--luka)]", bg: "bg-[var(--luka)]/10" },
 ];
 
 export function QuickActionRow() {

@@ -31,7 +31,7 @@ const AGENTS: AgentConfig[] = [
   { name: "nova",    label: "Nova",    description: "Behavioral nudges + motivational messages",      route: "/api/agents/nova",     method: "GET" },
   { name: "manna",   label: "Manna",   description: "Daily allowance (daily bread) calculator",      route: "/api/agents/manna",    method: "GET" },
   { name: "iron",    label: "Iron",    description: "Commitments + accountability check-ins",         route: "/api/agents/iron",     method: "GET" },
-  { name: "echo",    label: "Echo",    description: "Persistent memory store for user facts",         route: "/api/agents/echo",     method: "GET" },
+  { name: "echo",    label: "Echo",    description: "Conversational memory keeper",                  route: "/api/agents/chat",     method: "POST", body: { agent: "echo", messages: [{ role: "user", content: "What do you remember about me?" }] } },
 ];
 
 type TriggerResult = { ok: boolean; output: string };

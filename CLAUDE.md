@@ -96,28 +96,23 @@ Supabase auth uses `@supabase/ssr`. Three client factories:
 
 All DB queries are scoped to `user.id` via RLS on every table.
 
-### The Ten Agents
+### The Five Active Agents
 
-Each agent is an API route under `/api/agents/`. Cron routes are identified by the `x-vercel-cron: 1` header and use the admin client to iterate all users. All agents can call `saveAgentMemory()` from `lib/agent-memory.ts` to persist observations to the `agent_memories` table.
+The active council is Luka, Solomon, Kairos, Iron, and Echo. Each has an API route under `/api/agents/` (Luka is at `/api/luka`). Cron routes are identified by the `x-vercel-cron: 1` header and use the admin client. All agents can call `saveAgentMemory()` from `lib/agent-memory.ts`.
 
 | Agent | Route | Trigger | Storage |
 |-------|-------|---------|---------|
 | **Luka** | `/api/luka` | Chat messages from client | — (stateless, uses session messages) |
-| **Argus** | `/api/agents/argus` | Dashboard load + daily cron 8am | `alerts` table |
 | **Solomon** | `/api/agents/solomon` | Sunday cron 9am + manual POST | `weekly_reports` table |
-| **Silas** | `/api/agents/silas` | Sunday cron 9am + manual POST | `pulse_insights` table |
 | **Kairos** | `/api/agents/kairos` | Luka `trigger_kairos` tool + event detection | `life_events` table; sets `kairos_pending` on `user_settings` |
-| **Eden** | `/api/agents/eden` | Manual POST from Pulse | `vision_moments` table; reads `personal_vision` from `user_settings` |
-| **Nova** | `/api/agents/nova` | Behavioral triggers + cron | `nova_messages` table |
-| **Manna** | `/api/agents/manna` | Dashboard load / daily | `manna_daily` table |
 | **Iron** | `/api/agents/iron` | Manual POST from Pulse | `commitments` + `commitment_checkins` tables |
-| **Echo** | `/api/agents/echo` | Read/write agent memory | `echo_memories` table |
+| **Echo** | `/api/agents/chat` | Chat messages from client (same route as other agents) | `user_memories` table |
 
-**Argus sub-routes**: `GET /api/agents/argus/alerts` returns max 4 unread alerts (used by Pulse — does NOT run the full agent).
+**Five archived agents** (routes exist but are UI-removed, no crons): Argus, Silas, Manna, Eden, Nova. The `app/pulse/[agent_name]/page.tsx` shows a retirement message for these. Do not add new UI surfaces for them.
 
 **Solomon sub-routes**: `GET /api/agents/solomon/latest` returns the current week's report. `GET /api/agents/solomon/strategy` generates a 2-3 sentence strategic recommendation via claude-haiku-4-5-20251001.
 
-**Luka** is the only agent users interact with directly. Its system prompt is built fresh on every call using live data: safe-to-spend, active Argus alerts, top Silas insights, latest Solomon word, connected account list, and whether Kairos has a pending life-change review. It uses `claude-sonnet-4-6`.
+**Luka** is the only chat agent with live financial data. Its system prompt is built fresh on every call: safe-to-spend, latest Solomon word, connected account list, and whether Kairos has a pending life-change review. It uses `claude-sonnet-4-6`.
 
 **Luka agentic loop**: `app/api/luka/route.ts` runs up to 6 iterations. Each iteration calls the Anthropic API; if `stop_reason === "tool_use"`, tools are executed and results are appended as a `user` role message before the next iteration. Only the final `end_turn` response text is returned to the client. Tool action cards are only added to the response when the tool returns `success: true` (never on error).
 
@@ -125,13 +120,13 @@ Each agent is an API route under `/api/agents/`. Cron routes are identified by t
 
 ### Cross-Agent Memory System
 
-All 10 agents read from and write to the `agent_memories` table. The architecture is **Hybrid + Categorized**.
+All five active agents read from and write to the `user_memories` table. The architecture is **Hybrid + Categorized**.
 
 - **Hybrid save model**: agents auto-save important facts based on conversation context AND users can explicitly trigger save with phrases like "remember that..." or delete with "forget that...". Agents announce saves in chat with a "Remembered" pill so users see what was captured.
 
 - **Categorized storage**: memories are tagged with one or more of six categories: `identity`, `financial`, `faith`, `relationships`, `patterns`, `preferences`. Stored as a `text[]` array on each memory row (multi-tag, one row per memory — never duplicate rows per category).
 
-- **Per-agent scoping**: each agent only reads memories whose categories overlap with that agent's allowed set. See `lib/agents/registry.ts` for the scope map. Example: Solomon reads `faith + financial + identity`; Manna reads `faith + preferences`; Echo and Luka read all categories.
+- **Per-agent scoping**: each agent only reads memories whose categories overlap with that agent's allowed set. See `AGENT_MEMORY_CATEGORIES` in `lib/agents/registry.ts`. Example: Solomon reads `faith + financial + identity`; Echo reads `identity + relationships + patterns + preferences`; Luka reads all categories.
 
 - **Memory page**: `/more/memory` displays all memories grouped by category with agent badge dots, inline edit, delete, search, and "Clear all" per category.
 
@@ -141,7 +136,7 @@ Tools available to all agents (via system prompts):
 - `delete_memory(memory_id)` — soft delete via deleted_at
 - `search_memories(query)` — text search across user's full memory bank regardless of calling agent's scope (so "forget" can find memories saved by any agent)
 
-Echo has a special role: with access to all categories, she proactively surfaces relevant past memories at conversation start. Other agents save passively; Echo recalls actively.
+Echo has a special role: with access to identity, relationships, patterns, and preferences, she proactively surfaces relevant past memories at conversation start. Other agents save passively; Echo recalls actively.
 
 ### Core Financial Logic
 
@@ -174,7 +169,8 @@ Migrations in `supabase/migrations/`. Key tables:
 - `calendar_connections` — one row per user when Google Calendar is linked. Stores `access_token`, `refresh_token`, `expires_at`.
 - `calendar_events_cache` — cached Google Calendar events. Key columns: `event_type` ("income" | "expense" | "social" | "personal" | "needs_clarification"), `confidence` ("high" | "medium" | "low"), `user_confirmed` (boolean), `user_categorized_as` (user's own label), `spending_estimate` (only meaningful when `event_type=expense` AND `user_confirmed=true`). Never show `spending_estimate` as a cost unless both conditions hold.
 - `calendar_patterns` — learned per-user patterns. When a user confirms 3+ events with the same keyword as the same type, a pattern row is created so future events with that keyword are auto-categorized without AI.
-- `nova_messages`, `manna_daily`, `commitments`, `commitment_checkins`, `vision_moments`, `echo_memories`, `agent_memories` — written by newer agents.
+- `nova_messages`, `manna_daily`, `commitments`, `commitment_checkins`, `vision_moments`, `agent_memories` — written by agents (archived agents write to their tables but are no longer triggered from UI).
+- `user_memories` — the primary memory table used by all five active agents. Replaces the retired `echo_memories` system.
 
 RLS is enabled on all tables — every policy uses `auth.uid() = user_id`.
 
@@ -220,7 +216,7 @@ Semantic Tailwind colors that work in both modes: `text-emerald-500` (income/suc
 
 ### Navigation
 
-- **Bottom nav (mobile)**: Home / Expenses / Pulse / Card — defined in `components/BottomNav.tsx`. More menu: Activity / Accounts / Goals / Decide / Council / Settings.
+- **Bottom nav (mobile)**: Home / Expenses / Pulse / Card — defined in `components/BottomNav.tsx`. More menu: Activity / Accounts / Goals / Decide / Settings.
 - **Sidebar (desktop)**: `components/Sidebar.tsx`.
 - **Transactions page** is branded as **Activity** (`/transactions`).
 

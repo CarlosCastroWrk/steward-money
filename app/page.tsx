@@ -48,7 +48,6 @@ export default async function DashboardPage() {
     allBillsResult,
     subsResult,
     spendingRes,
-    alertsResult,
     upcomingExpensesWeekResult,
     upcomingExpensesMonthResult,
     recentTxResult,
@@ -63,7 +62,6 @@ export default async function DashboardPage() {
     supabase.from("bills").select("name, amount, frequency, next_due_date").eq("user_id", user.id).is("paid_at", null),
     supabase.from("bills").select("amount, subscription_status").eq("user_id", user.id).eq("is_subscription", true).is("paid_at", null),
     supabase.from("transactions").select("amount").eq("user_id", user.id).lt("amount", 0).gte("date", monthStart),
-    supabase.from("alerts").select("id, message, severity, alert_type").eq("user_id", user.id).eq("is_read", false).order("created_at", { ascending: false }).limit(2),
     supabase.from("upcoming_expenses").select("id, name, amount, expense_date").eq("user_id", user.id).eq("is_paid", false).gte("expense_date", today).lte("expense_date", sevenDaysOut).order("expense_date", { ascending: true }),
     supabase.from("upcoming_expenses").select("amount").eq("user_id", user.id).eq("is_paid", false).gte("expense_date", monthStart),
     supabase.from("transactions").select("id, merchant, amount, date, category").eq("user_id", user.id).gte("date", sevenDaysAgo).order("date", { ascending: false }).order("created_at", { ascending: false }).limit(10),
@@ -77,7 +75,6 @@ export default async function DashboardPage() {
   const goals = goalsResult.data ?? [];
   const displayName = (settingsResult.data?.display_name ?? "there").trim();
   const upcomingBills = upcomingBillsResult.data ?? [];
-  const alerts = alertsResult.data ?? [];
 
   const monthlyRecurringTotal = (allBillsResult.data ?? []).reduce((s, b) => s + toMonthly(Number(b.amount), b.frequency), 0);
   const monthlyUpcomingTotal = (upcomingExpensesMonthResult.data ?? []).reduce((s, e) => s + Number(e.amount), 0);
@@ -105,28 +102,6 @@ export default async function DashboardPage() {
         </div>
       )}
 
-      {/* 2. Argus alerts — urgent only, max 2 */}
-      {alerts.length > 0 && (
-        <div className="flex flex-col gap-2">
-          {alerts.map((alert) => (
-            <div
-              key={alert.id}
-              className={`rounded-xl border p-3 text-sm ${
-                alert.severity === "danger"
-                  ? "border-red-900/50 bg-red-950/40 text-red-300"
-                  : alert.severity === "info"
-                  ? "border-zinc-700/50 bg-zinc-900 text-zinc-400"
-                  : "border-amber-900/50 bg-amber-950/40 text-amber-300"
-              }`}
-            >
-              {alert.message}
-            </div>
-          ))}
-          <a href="/pulse" className="self-end text-xs text-blue-400 hover:text-blue-300">
-            View all in Pulse →
-          </a>
-        </div>
-      )}
 
       {/* 3. Safe-to-spend hero — or connect bank nudge if no accounts */}
       {!hasAccounts ? (

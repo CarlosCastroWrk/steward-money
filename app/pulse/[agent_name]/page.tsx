@@ -7,18 +7,15 @@ import { AGENT_REGISTRY, type AgentName } from "@/lib/agents/registry";
 import { AgentChat } from "@/components/agents/AgentChat";
 
 const VALID_AGENTS = Object.keys(AGENT_REGISTRY) as AgentName[];
+const ARCHIVED_AGENTS = ["argus", "silas", "manna", "eden", "nova"] as const;
+type ArchivedAgent = typeof ARCHIVED_AGENTS[number];
 
-const PLACEHOLDERS: Record<AgentName, string> = {
+const PLACEHOLDERS: Partial<Record<AgentName, string>> = {
   luka:    "I'll surface what needs your attention.",
   solomon: "Wisdom on Sundays.",
   kairos:  "Reading your time.",
-  argus:   "Watching the numbers.",
   iron:    "I'll hold you to your commitments.",
-  manna:   "Today is enough.",
-  eden:    "What does abundance look like for you?",
-  nova:    "Looking ahead so you don't have to.",
   echo:    "I remember what matters.",
-  silas:   "I notice patterns.",
 };
 
 type Tab = "insight" | "chat";
@@ -113,6 +110,34 @@ export default function AgentDetailPage() {
     document.addEventListener("pointerdown", close);
     return () => document.removeEventListener("pointerdown", close);
   }, [menuOpen]);
+
+  if (ARCHIVED_AGENTS.includes(agent_name as ArchivedAgent)) {
+    return (
+      <div className="fixed inset-0 z-[60] flex flex-col bg-[var(--bg-base)]" style={{ height: "100dvh" }}>
+        <div style={{ height: 3, backgroundColor: "var(--border)", flexShrink: 0 }} />
+        <div
+          className="flex-shrink-0 flex items-center bg-[var(--bg-card)] border-b border-[var(--border)] px-3"
+          style={{ paddingTop: "max(env(safe-area-inset-top), 12px)", paddingBottom: "12px" }}
+        >
+          <button
+            onClick={() => router.back()}
+            className="flex h-9 w-9 items-center justify-center rounded-xl text-[var(--text-3)] hover:bg-[var(--bg-elevated)] transition-colors"
+            aria-label="Back"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5">
+              <path d="M15 18l-6-6 6-6" />
+            </svg>
+          </button>
+        </div>
+        <div className="flex-1 flex flex-col items-center justify-center px-8 text-center">
+          <p className="text-lg font-semibold text-[var(--text-1)] capitalize mb-2">{agent_name}</p>
+          <p className="text-sm text-[var(--text-3)] leading-relaxed">
+            This adviser has been retired. Your council is now Luka, Solomon, Kairos, Iron, and Echo.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   if (!agent || !config) {
     return (
@@ -265,7 +290,7 @@ export default function AgentDetailPage() {
                   </p>
                 ) : (
                   <p className="text-sm italic text-[var(--text-3)]">
-                    {PLACEHOLDERS[agent]}
+                    {PLACEHOLDERS[agent] ?? "Tap to start a conversation."}
                   </p>
                 )}
               </div>

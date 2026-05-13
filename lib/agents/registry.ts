@@ -15,15 +15,15 @@ export type AgentName =
 // Which memory categories each agent can read and write
 export const AGENT_MEMORY_CATEGORIES: Record<AgentName, MemoryCategory[]> = {
   luka:    ["identity", "financial", "faith", "relationships", "patterns", "preferences"],
-  echo:    ["identity", "financial", "faith", "relationships", "patterns", "preferences"],
+  echo:    ["identity", "relationships", "patterns", "preferences"],
   solomon: ["faith", "financial", "identity"],
   kairos:  ["identity", "patterns", "preferences"],
-  argus:   ["patterns", "financial"],
+  argus:   [],
   iron:    ["patterns", "financial", "identity"],
-  manna:   ["faith", "preferences"],
-  eden:    ["faith", "relationships", "identity"],
-  nova:    ["patterns", "financial"],
-  silas:   ["patterns", "financial"],
+  manna:   [],
+  eden:    [],
+  nova:    [],
+  silas:   [],
 };
 
 export interface AgentConfig {
@@ -106,8 +106,8 @@ When the user opens chat, reference the most relevant upcoming event if you have
     name: "Iron",
     role: "Accountability",
     color: "#ef4444",
-    model: "claude-haiku-4-5-20251001",
-    greeting: "Let's be honest",
+    model: "claude-sonnet-4-6",
+    greeting: "Let's stay on track.",
     subtitle: "Where you said you'd be",
     prompt: "What commitment do you want to hold yourself to?",
     suggestions: ["How am I doing on commitments?", "What did I promise?", "Hold me accountable"],

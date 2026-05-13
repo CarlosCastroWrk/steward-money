@@ -9,19 +9,17 @@ interface Window {
 const store = new Map<string, Window>();
 
 const LIMITS: Record<string, { requests: number; windowMs: number }> = {
-  "/api/luka":              { requests: 20, windowMs: 60_000 },
-  "/api/agents/council":    { requests:  3, windowMs: 60_000 },
-  "/api/agents":            { requests: 10, windowMs: 60_000 },
-  "/api/calendar/sync":     { requests:  5, windowMs: 60_000 },
-  "/api/plaid":             { requests: 10, windowMs: 60_000 },
+  "/api/luka":          { requests: 20, windowMs: 60_000 },
+  "/api/agents":        { requests: 10, windowMs: 60_000 },
+  "/api/calendar/sync": { requests:  5, windowMs: 60_000 },
+  "/api/plaid":         { requests: 10, windowMs: 60_000 },
 };
 
 function getLimitConfig(path: string) {
-  if (path.startsWith("/api/agents/council")) return LIMITS["/api/agents/council"];
-  if (path.startsWith("/api/agents"))         return LIMITS["/api/agents"];
-  if (path.startsWith("/api/luka"))           return LIMITS["/api/luka"];
-  if (path.startsWith("/api/calendar"))       return LIMITS["/api/calendar/sync"];
-  if (path.startsWith("/api/plaid"))          return LIMITS["/api/plaid"];
+  if (path.startsWith("/api/agents"))   return LIMITS["/api/agents"];
+  if (path.startsWith("/api/luka"))     return LIMITS["/api/luka"];
+  if (path.startsWith("/api/calendar")) return LIMITS["/api/calendar/sync"];
+  if (path.startsWith("/api/plaid"))    return LIMITS["/api/plaid"];
   return null;
 }
 

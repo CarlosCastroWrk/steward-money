@@ -13,7 +13,7 @@ const PRIMARY_NAV = [
   { label: "Accounts", href: "/accounts",     icon: <Wallet size={22} strokeWidth={1.6} /> },
 ];
 
-const MORE_ACTIVE_PREFIXES = ["/bills", "/card", "/goals", "/decide", "/council", "/settings", "/more", "/subscriptions"];
+const MORE_ACTIVE_PREFIXES = ["/bills", "/card", "/goals", "/decide", "/settings", "/more", "/subscriptions"];
 
 export function BottomNav() {
   const router = useRouter();

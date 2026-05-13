@@ -6,21 +6,15 @@ import { createClient } from "@/lib/supabase/client";
 import { AGENT_REGISTRY, type AgentName } from "@/lib/agents/registry";
 
 const AGENT_ORDER: AgentName[] = [
-  "luka", "solomon", "kairos", "argus", "iron",
-  "manna", "eden", "nova", "echo", "silas",
+  "luka", "solomon", "kairos", "iron", "echo",
 ];
 
-const PLACEHOLDERS: Record<AgentName, string> = {
+const PLACEHOLDERS: Partial<Record<AgentName, string>> = {
   luka:    "I'll surface what needs your attention.",
   solomon: "Wisdom on Sundays.",
   kairos:  "Reading your time.",
-  argus:   "Watching the numbers.",
   iron:    "I'll hold you to your commitments.",
-  manna:   "Today is enough.",
-  eden:    "What does abundance look like for you?",
-  nova:    "Looking ahead so you don't have to.",
   echo:    "I remember what matters.",
-  silas:   "I notice patterns.",
 };
 
 interface LastMessage {
@@ -100,7 +94,7 @@ function AgentCard({
 
         {/* Row 2: latest insight preview */}
         <p className={`mt-2 text-sm leading-snug line-clamp-2 ${lastMsg ? "text-[var(--text-2)]" : "text-[var(--text-3)] italic"}`}>
-          {lastMsg ? lastMsg.content : PLACEHOLDERS[agent]}
+          {lastMsg ? lastMsg.content : (PLACEHOLDERS[agent] ?? "Tap to start")}
         </p>
 
         {/* Row 3: footer */}

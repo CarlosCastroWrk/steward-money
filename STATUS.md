@@ -1,6 +1,25 @@
 # STATUS.md — Steward Money
 
-_Last updated: 2026-05-09_
+_Last updated: 2026-05-11_
+
+## Shipped 2026-05-11 — Phase 1.5: Council Deleted (session 6)
+
+Deleted the Council multi-agent deliberation feature entirely. Council was a separate page (`/council`) that convened silas, argus, eden, and nova — all archived agents — to answer a financial question. It was missed in Phase 1 because Phase 0 scoped only to the Pulse cards surface. Los's call: not on the keep list. Deleted `app/council/page.tsx`, `app/api/agents/council/route.ts`, `components/council/CouncilView.tsx`. Removed nav entry from Sidebar, More page, and BottomNav prefix list. Removed "The Council" quick action from `QuickActionRow`. Removed council rate limit from `lib/rate-limit.ts`. tsc + build clean.
+
+## Shipped 2026-05-11 — Phase 1: Agent Consolidation (session 6)
+
+The council is now five: **Luka, Solomon, Kairos, Iron, Echo**. Archived: Argus, Silas, Manna, Eden, Nova (routes kept, UI removed, crons removed).
+
+Changes:
+- **Pulse** — CouncilCards reduced to 5 agents. Agent detail page shows retirement message for archived agents. PulseView subtitle updated to "Your council."
+- **Dashboard** — Argus alerts surface removed from `app/page.tsx`. No replacement.
+- **Luka system prompt** — removed Argus alerts and Silas insights from live context. Now provides: safe-to-spend, Solomon's word, connected accounts, Kairos pending flag.
+- **Echo migration** — deleted orphaned `/api/agents/echo/route.ts` (was CRUD for retired `echo_memories` table). Echo now routes through `/api/agents/chat` with `ECHO_SYSTEM_PROMPT_ADDITION` injected. Memory scope narrowed to `identity + relationships + patterns + preferences`.
+- **Dead components deleted** — `SilasInsights.tsx`, `NovaMessage.tsx`, `MannaCard.tsx`, `EdenMoment.tsx`, `LukaMorningBriefing.tsx`, `SolomonWord.tsx`, `AgentChatModal.tsx`.
+- **Registry cleanup** — Archived agent `AGENT_MEMORY_CATEGORIES` set to `[]`. Iron model fixed to `claude-sonnet-4-6` (was haiku). Iron greeting softened to "Let's stay on track."
+- **Cron cleanup** — Removed Argus (daily 8am), Silas (Sunday 9am), Nova (daily 7am) from `vercel.json`.
+- **CLAUDE.md** — Updated to reflect 5-agent architecture.
+- TypeScript clean. Production build passes.
 
 ## Shipped 2026-05-09 (session 5)
 
