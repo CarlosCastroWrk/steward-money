@@ -1,6 +1,18 @@
 # STATUS.md — Steward Money
 
-_Last updated: 2026-05-11_
+_Last updated: 2026-05-12_
+
+## Shipped 2026-05-12 — Phase 3: Calendar Cards Unified (session 7)
+
+Commit `5771adc6`. Deploy: `steward-money-w8m8-29awk9van-carloscastrowrk.vercel.app`
+
+Replaced two calendar surfaces (CalendarCard + ComingUpWidget) with one clean card.
+
+- **`components/dashboard/CalendarCard.tsx`** — rewritten: no category emojis, RotateCcw refresh icon (no text), Income/Expense pill badges (green/red), empty state message instead of returning null, retain collapse toggle.
+- **`components/dashboard/DashboardTabs.tsx`** — removed "Coming Up" tab (was the only ComingUpWidget surface in DashboardTabs). Now three tabs: Overview, Cash Flow, Categories.
+- **`app/page.tsx`** — removed `<ComingUpWidget />` from Overview tab children and its import.
+- **`components/dashboard/ComingUpWidget.tsx`** — deleted (437 lines removed).
+- tsc + build clean.
 
 ## Shipped 2026-05-11 — Phase 2: Luka Daily Insight (session 6)
 
