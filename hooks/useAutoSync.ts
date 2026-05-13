@@ -23,6 +23,11 @@ export function useAutoSync({ serverLastSynced, onSyncComplete, enabled = true }
   const [lastSynced, setLastSynced] = useState<string | null>(serverLastSynced);
   const [syncError, setSyncError] = useState<string | null>(null);
   const lastSyncedRef = useRef<string | null>(serverLastSynced);
+  // Ref-based in-flight guard: unlike `syncing` state, a ref update is synchronous
+  // and visible to all closures immediately, preventing the double-fire that occurs
+  // when mount and visibilitychange both call syncNow before the first setSyncing(true)
+  // propagates through a re-render.
+  const inFlightRef = useRef(false);
 
   // Hydrate from localStorage on mount
   useEffect(() => {
@@ -37,7 +42,8 @@ export function useAutoSync({ serverLastSynced, onSyncComplete, enabled = true }
   }, [serverLastSynced]);
 
   const syncNow = useCallback(async () => {
-    if (syncing) return;
+    if (inFlightRef.current) return;
+    inFlightRef.current = true;
     setSyncing(true);
     setSyncError(null);
     try {
@@ -51,9 +57,10 @@ export function useAutoSync({ serverLastSynced, onSyncComplete, enabled = true }
     } catch (err) {
       setSyncError((err as Error).message ?? "Sync failed");
     } finally {
+      inFlightRef.current = false;
       setSyncing(false);
     }
-  }, [syncing, onSyncComplete]);
+  }, [onSyncComplete]);
 
   function isStale(ts: string | null): boolean {
     if (!ts) return true;
@@ -66,7 +73,6 @@ export function useAutoSync({ serverLastSynced, onSyncComplete, enabled = true }
     if (isStale(lastSyncedRef.current)) {
       syncNow();
     }
-    // Only run on mount
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [enabled]);
 

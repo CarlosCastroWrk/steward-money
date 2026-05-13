@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { plaidClient } from "@/lib/plaid";
 import { cleanName, mapCategory, inferIsNeed } from "@/lib/plaid-utils";
-import { notify } from "@/lib/notifications";
+import { notify, type AlertDiagnostics } from "@/lib/notifications";
 
 async function autoDetectBillPayments(
   supabase: ReturnType<typeof createClient>,
@@ -201,19 +201,51 @@ export async function POST(req: NextRequest) {
       transactionsSynced += addedCount + modifiedCount;
 
     } catch (err: unknown) {
-      const plaidErr = err as { response?: { data?: { error_code?: string; error_message?: string } } };
-      const code = plaidErr?.response?.data?.error_code ?? "UNKNOWN";
-      const msg  = plaidErr?.response?.data?.error_message ?? String(err);
-      console.error(`[sync] item ${item.id} failed: ${code} — ${msg}`);
-      const { data: itemRow } = await supabase.from("plaid_items").select("institution_name").eq("id", item.id).maybeSingle();
-      itemErrors.push({ institution: itemRow?.institution_name ?? item.id, code, message: msg });
+      const plaidData = (err as { response?: { data?: Record<string, unknown> } })?.response?.data;
+      const code    = (plaidData?.error_code    as string | undefined) ?? "UNKNOWN";
+      const errType = (plaidData?.error_type    as string | undefined) ?? null;
+      const errMsg  = (plaidData?.error_message as string | undefined) ?? (err instanceof Error ? err.message : String(err));
+      const reqId   = (plaidData?.request_id   as string | undefined) ?? null;
+
+      console.error("[plaid-sync] error", JSON.stringify({
+        user_id:       user.id,
+        item_id:       item.id,
+        error_code:    code,
+        error_type:    errType,
+        error_message: errMsg,
+        request_id:    reqId,
+      }));
+
+      const { data: itemRow } = await supabase
+        .from("plaid_items")
+        .select("institution_name, item_id")
+        .eq("id", item.id)
+        .maybeSingle();
+
+      itemErrors.push({ institution: itemRow?.institution_name ?? item.id, code, message: errMsg });
+
       if (code !== "PRODUCT_NOT_READY") {
+        const diagnostics: AlertDiagnostics = {
+          error_code:    code !== "UNKNOWN" ? code : null,
+          error_type:    errType,
+          error_message: errMsg,
+          request_id:    reqId,
+          metadata: {
+            display_message: (plaidData?.display_message as string | undefined) ?? null,
+            item_id:         itemRow?.item_id ?? null,
+          },
+        };
         await notify(supabase, user.id, {
           type: `plaid_sync_error_${item.id}`,
-          message: `Bank sync failed for ${itemRow?.institution_name ?? "your bank"} — ${code === "ITEM_LOGIN_REQUIRED" ? "reconnection required. Go to Accounts." : "we'll retry automatically."}`,
+          message: `Bank sync failed for ${itemRow?.institution_name ?? "your bank"} — ${
+            code === "ITEM_LOGIN_REQUIRED"
+              ? "reconnection required. Go to Accounts."
+              : "we'll retry automatically."
+          }`,
           severity: code === "ITEM_LOGIN_REQUIRED" ? "danger" : "warning",
           agent: "system",
           dedupWindowHours: 6,
+          diagnostics,
         });
       }
     }
