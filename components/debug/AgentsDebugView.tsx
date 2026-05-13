@@ -2,6 +2,7 @@
 
 import { useState, useCallback } from "react";
 import { AgentAvatar } from "@/components/AgentAvatar";
+import type { LukaInsight } from "@/lib/daily-insight";
 
 type AgentName = "luka" | "argus" | "solomon" | "silas" | "kairos" | "eden" | "nova" | "manna" | "iron" | "echo";
 
@@ -139,10 +140,77 @@ function AgentCard({
   );
 }
 
+function LukaInsightDebugSection({ initialInsight }: { initialInsight: LukaInsight | null }) {
+  const [insight, setInsight] = useState<LukaInsight | null>(initialInsight);
+  const [running, setRunning] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const forceRegen = useCallback(async () => {
+    setRunning(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/luka/insight", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ force: true }),
+      });
+      const data = await res.json() as { insight?: LukaInsight; error?: string };
+      if (!res.ok) throw new Error(data.error ?? "Request failed");
+      setInsight(data.insight ?? null);
+    } catch (e) {
+      setError(String(e));
+    } finally {
+      setRunning(false);
+    }
+  }, []);
+
+  return (
+    <div className="rounded-2xl border border-[var(--border)] bg-[var(--bg-card)] p-4 space-y-3">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className="text-sm font-semibold text-[var(--text-1)]">Luka Daily Insight</p>
+          <p className="text-[11px] text-[var(--text-3)]">Home screen insight · claude-sonnet-4-6 · 3/day cap</p>
+        </div>
+        <button
+          onClick={forceRegen}
+          disabled={running}
+          className="flex-shrink-0 rounded-xl border border-[var(--border)] px-3 py-1.5 text-xs text-[var(--text-3)] transition hover:border-blue-700/40 hover:text-blue-400 disabled:opacity-40"
+        >
+          {running ? "Generating…" : "Force regenerate"}
+        </button>
+      </div>
+
+      {insight ? (
+        <div className="rounded-xl border border-[var(--border)] bg-[var(--bg-elevated)] px-3 py-2 space-y-1.5">
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] font-medium uppercase tracking-wide text-[var(--text-3)]">
+              {insight.trigger_reason}
+            </span>
+            <span className="text-[10px] text-[var(--text-3)]">
+              {new Date(insight.generated_at).toLocaleString()}
+            </span>
+          </div>
+          <p className="text-xs text-[var(--text-2)] leading-relaxed">{insight.insight_text}</p>
+        </div>
+      ) : (
+        <p className="text-xs text-[var(--text-3)] italic">No active insight yet</p>
+      )}
+
+      {error && (
+        <div className="rounded-xl border border-red-700/30 bg-red-900/10 px-3 py-2 text-xs text-red-300">
+          {error}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function AgentsDebugView({
   memories,
+  activeInsight,
 }: {
   memories: Memory[];
+  activeInsight: LukaInsight | null;
 }) {
   const [runAll, setRunAll] = useState(false);
 
@@ -167,6 +235,9 @@ export function AgentsDebugView({
         </div>
 
         <div className="space-y-3">
+          {process.env.NODE_ENV === "development" && (
+            <LukaInsightDebugSection initialInsight={activeInsight} />
+          )}
           {AGENTS.map((agent) => (
             <AgentCard
               key={agent.name}

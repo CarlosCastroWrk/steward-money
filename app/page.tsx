@@ -5,12 +5,14 @@ import { createClient } from "@/lib/supabase/server";
 import { formatUSD, formatUSDCents, formatDate } from "@/lib/format";
 import Link from "next/link";
 import { GreetingHeader } from "@/components/dashboard/GreetingHeader";
+import { LukaDailyInsight } from "@/components/dashboard/LukaDailyInsight";
 import { CalendarOptInCard } from "@/components/dashboard/CalendarOptInCard";
 import { CalendarCard } from "@/components/dashboard/CalendarCard";
 import { ComingUpWidget } from "@/components/dashboard/ComingUpWidget";
 import { DashboardTabs } from "@/components/dashboard/DashboardTabs";
 import { ConnectBankCard } from "@/components/dashboard/ConnectBankCard";
 import { DashboardSyncButton } from "@/components/dashboard/DashboardSyncButton";
+import { generateInsightIfNeeded } from "@/lib/daily-insight";
 
 export const dynamic = "force-dynamic";
 
@@ -42,6 +44,7 @@ export default async function DashboardPage() {
 
   const [
     result,
+    insight,
     goalsResult,
     settingsResult,
     upcomingBillsResult,
@@ -56,6 +59,7 @@ export default async function DashboardPage() {
     calendarConnResult,
   ] = await Promise.all([
     calculateSafeToSpend(supabase, user.id),
+    generateInsightIfNeeded(supabase, user.id).catch(() => null),
     supabase.from("goals").select("id, name, target_amount, current_amount, deadline").eq("user_id", user.id).order("priority", { ascending: true }),
     supabase.from("user_settings").select("display_name, last_plan_review").eq("user_id", user.id).maybeSingle(),
     supabase.from("bills").select("id, name, amount, next_due_date, is_autopay").eq("user_id", user.id).not("next_due_date", "is", null).gte("next_due_date", today).lte("next_due_date", sevenDaysOut).order("next_due_date", { ascending: true }),
@@ -102,6 +106,9 @@ export default async function DashboardPage() {
         </div>
       )}
 
+
+      {/* 2. Luka daily insight */}
+      <LukaDailyInsight insight={insight} />
 
       {/* 3. Safe-to-spend hero — or connect bank nudge if no accounts */}
       {!hasAccounts ? (

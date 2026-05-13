@@ -5,6 +5,7 @@ export const dynamic = "force-dynamic";
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { AgentsDebugView } from "@/components/debug/AgentsDebugView";
+import { getActiveInsight } from "@/lib/daily-insight";
 
 export default async function AgentsDebugPage() {
   const supabase = createClient();
@@ -26,5 +27,7 @@ export default async function AgentsDebugPage() {
     return true;
   });
 
-  return <AgentsDebugView memories={latestPerAgent} />;
+  const activeInsight = await getActiveInsight(supabase, user.id);
+
+  return <AgentsDebugView memories={latestPerAgent} activeInsight={activeInsight} />;
 }

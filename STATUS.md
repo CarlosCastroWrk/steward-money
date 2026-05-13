@@ -2,6 +2,19 @@
 
 _Last updated: 2026-05-11_
 
+## Shipped 2026-05-11 — Phase 2: Luka Daily Insight (session 6)
+
+New `luka_daily_insights` table (migrations 027 + 028). Luka now surfaces a daily 2-3 sentence observation on the home screen — observation + specific number + soft question. Not a report: an insight.
+
+- **`lib/daily-insight.ts`** — owns all logic: `getActiveInsight`, `shouldRegenerate`, `detectCategoryJump`, `detectLargeTransaction`, `generateInsightIfNeeded`. Category-jump trigger (>20% WoW, ≥$50 floor). Large-transaction trigger (≥$200 in last 24h). 6h cooldown between trigger regenerations. 3/day hard cap. User timezone from `user_settings`, defaults to America/Chicago.
+- **`app/api/luka/insight/route.ts`** — GET returns active insight. POST triggers generation; `force: true` bypasses checks (dev only, 403 in prod).
+- **`components/dashboard/LukaDailyInsight.tsx`** — home screen card. Placeholder shown to new users.
+- **`app/page.tsx`** — `generateInsightIfNeeded` added to `Promise.all`. Card renders between greeting and safe-to-spend.
+- **Webhook** — after Plaid transaction sync, insight regeneration fires and-forget via admin client.
+- **Debug** — `/debug/agents` shows active insight text + force-regenerate button (dev only).
+- Model: `claude-sonnet-4-6`. tsc + build clean.
+- **Pending**: run migration 028 in Supabase SQL editor before testing (user-level write policies).
+
 ## Shipped 2026-05-11 — Phase 1.5: Council Deleted (session 6)
 
 Deleted the Council multi-agent deliberation feature entirely. Council was a separate page (`/council`) that convened silas, argus, eden, and nova — all archived agents — to answer a financial question. It was missed in Phase 1 because Phase 0 scoped only to the Pulse cards surface. Los's call: not on the keep list. Deleted `app/council/page.tsx`, `app/api/agents/council/route.ts`, `components/council/CouncilView.tsx`. Removed nav entry from Sidebar, More page, and BottomNav prefix list. Removed "The Council" quick action from `QuickActionRow`. Removed council rate limit from `lib/rate-limit.ts`. tsc + build clean.

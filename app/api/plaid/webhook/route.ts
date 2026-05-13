@@ -4,6 +4,7 @@ import { plaidClient } from "@/lib/plaid";
 import { cleanName, mapCategory, inferIsNeed } from "@/lib/plaid-utils";
 import { importJWK, jwtVerify } from "jose";
 import { createHash } from "crypto";
+import { generateInsightIfNeeded } from "@/lib/daily-insight";
 
 // Cache verification keys for up to 5 minutes to avoid calling Plaid on every webhook.
 const keyCache = new Map<string, { key: Awaited<ReturnType<typeof importJWK>>; expiresAt: number }>();
@@ -162,6 +163,10 @@ export async function POST(req: NextRequest) {
       if (webhookCode === "SYNC_UPDATES_AVAILABLE" || webhookCode === "DEFAULT_UPDATE" ||
           webhookCode === "INITIAL_UPDATE" || webhookCode === "HISTORICAL_UPDATE") {
         await runTransactionSync(item.access_token, item.id, item.user_id);
+        // Fire-and-forget: check if the new transactions should refresh the daily insight
+        generateInsightIfNeeded(supabase, item.user_id).catch((err) => {
+          console.error("[webhook] insight regen failed (non-fatal):", err);
+        });
       } else if (webhookCode === "TRANSACTIONS_REMOVED") {
         const removedIds = (body.removed_transactions as string[] | undefined) ?? [];
         if (removedIds.length > 0) {

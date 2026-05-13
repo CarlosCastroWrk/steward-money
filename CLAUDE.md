@@ -116,6 +116,33 @@ The active council is Luka, Solomon, Kairos, Iron, and Echo. Each has an API rou
 
 **Luka agentic loop**: `app/api/luka/route.ts` runs up to 6 iterations. Each iteration calls the Anthropic API; if `stop_reason === "tool_use"`, tools are executed and results are appended as a `user` role message before the next iteration. Only the final `end_turn` response text is returned to the client. Tool action cards are only added to the response when the tool returns `success: true` (never on error).
 
+### Luka Daily Insight
+
+A proactive, daily observation card on the home screen. Luka surfaces a 2-3 sentence insight about the user's spending patterns — observation + number + soft framing. Not a report, not a lecture.
+
+**Generation logic** (`lib/daily-insight.ts`):
+- Generates once per calendar day (user's timezone, defaults to America/Chicago)
+- Regenerates early if either trigger fires AND under the 3/day cap:
+  - **Category jump**: any category's rolling 7-day spend jumps >20% vs prior 7 days AND current week ≥$50
+  - **Large transaction**: any single expense ≥$200 in the last 24h
+- 6-hour cooldown between trigger-based regenerations
+- Fallback insight if Claude fails: `"Quiet week. Nothing unusual in your spending."`
+- `generateInsightIfNeeded(supabase, userId, force?)` is the main entry point
+
+**API route** (`app/api/luka/insight/route.ts`):
+- `GET` — returns active insight (used by client-side reads)
+- `POST` — triggers `generateInsightIfNeeded`. `{ force: true }` bypasses all checks (development only, returns 403 in production)
+
+**Storage**: `luka_daily_insights` table. Columns: `id`, `user_id`, `insight_text`, `generated_at`, `trigger_reason` (`daily|category_jump|large_transaction|debug`), `is_active`. Only one row per user has `is_active = true` at any time.
+
+**Model**: `claude-sonnet-4-6`. Intentional — this is the flagship moment of the rebuild. Haiku would produce generic summaries; Sonnet detects patterns.
+
+**Home screen**: `LukaDailyInsight` component renders in the slot between the greeting and safe-to-spend card. If no insight exists yet, shows "Luka is still getting to know your patterns. Check back tomorrow."
+
+**Debug**: `/debug/agents` includes a "Luka Daily Insight" section with force-regenerate button. Visible in development only (`process.env.NODE_ENV === 'development'`).
+
+**Webhook trigger**: after `runTransactionSync` completes in the Plaid webhook handler, `generateInsightIfNeeded` is called fire-and-forget with the admin client.
+
 **Kairos pending flow**: when `kairos_pending = true` in `user_settings`, Luka's system prompt instructs it to open with a plan review prompt. After the review, call `PATCH /api/agents/kairos` to clear the flag and set `last_plan_review`.
 
 ### Cross-Agent Memory System
