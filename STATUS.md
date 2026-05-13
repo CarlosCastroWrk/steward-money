@@ -1,6 +1,19 @@
 # STATUS.md — Steward Money
 
-_Last updated: 2026-05-12_
+_Last updated: 2026-05-13_
+
+## Shipped 2026-05-13 — Plaid Stability Bugfix (session 7)
+
+Commit `045e7e4e`. Deploy: `steward-money-w8m8-ajkrg4kvv-carloscastrowrk.vercel.app`
+
+Four surgical fixes to the Plaid integration following diagnostic session.
+
+- **Migration 029** — Added `error_code`, `error_type`, `error_message`, `request_id`, `metadata` columns to `alerts`. Added composite index on `(user_id, alert_type, created_at desc)`.
+- **Migration 030** — Added `dedup_key` column + unique index on `(user_id, dedup_key)`. Backfilled existing rows.
+- **`lib/notifications.ts`** — Replaced racy SELECT+INSERT with single INSERT using deterministic time-bucket `dedup_key`. Concurrent inserts collide on the unique constraint (Postgres `23505`) and are silently dropped. Removed 5 lines of dedup logic.
+- **`app/api/plaid/sync/route.ts`** — Catch block now extracts full Plaid error shape (`error_code`, `error_type`, `error_message`, `request_id`, `display_message`). Logs structured JSON. Passes all fields to `notify()` as `AlertDiagnostics`. Next Chase failure will have the actual error code in the DB.
+- **`hooks/useAutoSync.ts`** — Replaced `if (syncing) return` state-based guard with `inFlightRef` (synchronous, visible to all closures). Removed `syncing` from `useCallback` deps. Stops the double-fire that was amplifying each sync error into 4+ duplicate alerts.
+- **Pending**: After confirming diff, run the webhook registration curl command to wire up Plaid webhooks for all three items. See previous session report for exact command.
 
 ## Shipped 2026-05-12 — Phase 3: Calendar Cards Unified (session 7)
 
