@@ -8,7 +8,6 @@ import { GreetingHeader } from "@/components/dashboard/GreetingHeader";
 import { LukaDailyInsight } from "@/components/dashboard/LukaDailyInsight";
 import { CalendarOptInCard } from "@/components/dashboard/CalendarOptInCard";
 import { CalendarCard } from "@/components/dashboard/CalendarCard";
-import { ComingUpWidget } from "@/components/dashboard/ComingUpWidget";
 import { DashboardTabs } from "@/components/dashboard/DashboardTabs";
 import { ConnectBankCard } from "@/components/dashboard/ConnectBankCard";
 import { DashboardSyncButton } from "@/components/dashboard/DashboardSyncButton";
@@ -271,9 +270,6 @@ export default async function DashboardPage() {
             </div>
           )}
         </section>
-
-        {/* Coming up */}
-        <ComingUpWidget />
 
         {/* Goals */}
         <section>

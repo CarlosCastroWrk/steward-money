@@ -4,13 +4,11 @@ import { useState } from "react";
 import { TabPills } from "@/components/ui/TabPills";
 import { CashFlowView } from "./CashFlowView";
 import { CategoriesView } from "./CategoriesView";
-import { ComingUpWidget } from "./ComingUpWidget";
 
 const TABS = [
   { id: "overview", label: "Overview" },
   { id: "cashflow", label: "Cash Flow" },
   { id: "categories", label: "Categories" },
-  { id: "coming-up", label: "Coming Up" },
 ];
 
 export function DashboardTabs({ children }: { children: React.ReactNode }) {
@@ -39,11 +37,7 @@ export function DashboardTabs({ children }: { children: React.ReactNode }) {
             <CategoriesView />
           </div>
         )}
-        {mounted.has("coming-up") && (
-          <div className={active === "coming-up" ? "block" : "hidden"}>
-            <ComingUpWidget />
-          </div>
-        )}
+
       </div>
     </div>
   );
