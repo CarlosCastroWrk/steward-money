@@ -37,30 +37,24 @@ export default async function DashboardPage() {
     insight,
     goalsResult,
     settingsResult,
-    upcomingBillsResult,
     allBillsResult,
-    subsResult,
-    spendingRes,
-    upcomingExpensesWeekResult,
-    upcomingExpensesMonthResult,
-    recentTxResult,
-    lastSyncedResult,
-    accountsCheckResult,
+    txResult,
+    upcomingExpensesResult,
+    accountsResult,
     calendarConnResult,
   ] = await Promise.all([
     calculateSafeToSpend(supabase, user.id),
     generateInsightIfNeeded(supabase, user.id).catch(() => null),
     supabase.from("goals").select("id, name, target_amount, current_amount, deadline").eq("user_id", user.id).order("priority", { ascending: true }),
     supabase.from("user_settings").select("display_name, last_plan_review").eq("user_id", user.id).maybeSingle(),
-    supabase.from("bills").select("id, name, amount, next_due_date, is_autopay").eq("user_id", user.id).not("next_due_date", "is", null).gte("next_due_date", today).lte("next_due_date", sevenDaysOut).order("next_due_date", { ascending: true }),
-    supabase.from("bills").select("name, amount, frequency, next_due_date").eq("user_id", user.id).is("paid_at", null),
-    supabase.from("bills").select("amount, subscription_status").eq("user_id", user.id).eq("is_subscription", true).is("paid_at", null),
-    supabase.from("transactions").select("amount").eq("user_id", user.id).lt("amount", 0).gte("date", monthStart),
-    supabase.from("upcoming_expenses").select("id, name, amount, expense_date").eq("user_id", user.id).eq("is_paid", false).gte("expense_date", today).lte("expense_date", sevenDaysOut).order("expense_date", { ascending: true }),
-    supabase.from("upcoming_expenses").select("amount").eq("user_id", user.id).eq("is_paid", false).gte("expense_date", monthStart),
-    supabase.from("transactions").select("id, merchant, amount, date, category").eq("user_id", user.id).gte("date", sevenDaysAgo).order("date", { ascending: false }).order("created_at", { ascending: false }).limit(10),
-    supabase.from("accounts").select("last_synced").eq("user_id", user.id).not("last_synced", "is", null).order("last_synced", { ascending: false }).limit(1).maybeSingle(),
-    supabase.from("accounts").select("id").eq("user_id", user.id).eq("is_active", true).limit(1),
+    // Bills: one query, filter client-side for upcoming/monthly/subscriptions
+    supabase.from("bills").select("id, name, amount, frequency, next_due_date, is_autopay, is_subscription, subscription_status").eq("user_id", user.id).is("paid_at", null),
+    // Transactions: one query from month start covers both spending total and recent activity
+    supabase.from("transactions").select("id, merchant, amount, date, category").eq("user_id", user.id).gte("date", monthStart).order("date", { ascending: false }).order("created_at", { ascending: false }),
+    // Upcoming expenses: one query from month start, filter client-side for week view
+    supabase.from("upcoming_expenses").select("id, name, amount, expense_date").eq("user_id", user.id).eq("is_paid", false).gte("expense_date", monthStart).order("expense_date", { ascending: true }),
+    // Accounts: one query covers last_synced + hasAccounts check
+    supabase.from("accounts").select("id, last_synced").eq("user_id", user.id).eq("is_active", true).order("last_synced", { ascending: false, nullsFirst: false }),
     supabase.from("calendar_connections").select("user_id").eq("user_id", user.id).maybeSingle(),
   ]);
 
@@ -68,18 +62,31 @@ export default async function DashboardPage() {
 
   const goals = goalsResult.data ?? [];
   const displayName = (settingsResult.data?.display_name ?? "there").trim();
-  const upcomingBills = upcomingBillsResult.data ?? [];
+  const allBills = allBillsResult.data ?? [];
 
-  const monthlyRecurringTotal = (allBillsResult.data ?? []).reduce((s, b) => s + toMonthly(Number(b.amount), b.frequency), 0);
-  const monthlyUpcomingTotal = (upcomingExpensesMonthResult.data ?? []).reduce((s, e) => s + Number(e.amount), 0);
+  const upcomingBills = allBills
+    .filter((b) => b.next_due_date && b.next_due_date >= today && b.next_due_date <= sevenDaysOut)
+    .sort((a, b) => (a.next_due_date ?? "").localeCompare(b.next_due_date ?? ""));
+
+  const monthlyRecurringTotal = allBills.reduce((s, b) => s + toMonthly(Number(b.amount), b.frequency), 0);
+  const monthlySubsTotal = allBills
+    .filter((b) => b.is_subscription && (b.subscription_status === "keep" || b.subscription_status == null))
+    .reduce((s, b) => s + Number(b.amount), 0);
+
+  const allTx = txResult.data ?? [];
+  const recentTx = allTx.filter((t) => t.date >= sevenDaysAgo).slice(0, 10);
+  const totalSpentMonth = allTx.filter((t) => Number(t.amount) < 0).reduce((s, t) => s + Math.abs(Number(t.amount)), 0);
+
+  const allUpcomingExpenses = upcomingExpensesResult.data ?? [];
+  const upcomingExpensesWeek = allUpcomingExpenses.filter((e) => e.expense_date <= sevenDaysOut);
+  const monthlyUpcomingTotal = allUpcomingExpenses.reduce((s, e) => s + Number(e.amount), 0);
   const monthlyBillsTotal = monthlyRecurringTotal + monthlyUpcomingTotal;
-  const totalSpentMonth = (spendingRes.data ?? []).reduce((s, t) => s + Math.abs(Number(t.amount)), 0);
-  const monthlySubsTotal = (subsResult.data ?? []).filter((s) => s.subscription_status === "keep" || s.subscription_status == null).reduce((s, sub) => s + Number(sub.amount), 0);
+
+  const accountsData = accountsResult.data ?? [];
+  const hasAccounts = accountsData.length > 0;
+  const lastSynced = accountsData[0]?.last_synced ?? null;
 
   const in3Days = new Date(Date.now() + 3 * 86_400_000).toISOString().split("T")[0];
-  const recentTx = recentTxResult.data ?? [];
-  const lastSynced = lastSyncedResult.data?.last_synced ?? null;
-  const hasAccounts = (accountsCheckResult.data?.length ?? 0) > 0;
   const isNewUser = !!user.created_at && (Date.now() - new Date(user.created_at).getTime()) < 7 * 86_400_000;
   // Pass raw timestamp to DashboardSyncButton — formatting happens client-side so it stays live
 
@@ -212,7 +219,7 @@ export default async function DashboardPage() {
             </div>
             <a href="/bills" className="text-xs text-blue-400 transition-colors hover:text-blue-300">See all</a>
           </div>
-          {upcomingBills.length === 0 && (upcomingExpensesWeekResult.data ?? []).length === 0 ? (
+          {upcomingBills.length === 0 && (upcomingExpensesWeek).length === 0 ? (
             <div className="rounded-2xl border border-dashed border-[var(--border)] p-6 text-center">
               <p className="text-sm text-[var(--text-3)]">Nothing due this week.</p>
               <p className="mt-1 text-xs text-[var(--text-3)] opacity-60">You&apos;re ahead of it.</p>
@@ -240,7 +247,7 @@ export default async function DashboardPage() {
                   </div>
                 );
               })}
-              {(upcomingExpensesWeekResult.data ?? []).map((exp) => {
+              {(upcomingExpensesWeek).map((exp) => {
                 const diff = Math.ceil((new Date(exp.expense_date + "T00:00:00").getTime() - Date.now()) / 86400000);
                 const isClose = diff <= 3;
                 return (

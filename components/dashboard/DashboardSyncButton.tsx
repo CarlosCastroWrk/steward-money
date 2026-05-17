@@ -39,7 +39,7 @@ export function DashboardSyncButton({ serverLastSynced }: Props) {
   }, []);
 
   const isStale = lastSynced
-    ? Date.now() - new Date(lastSynced).getTime() > 2 * 60 * 60 * 1000 // amber after 2h
+    ? Date.now() - new Date(lastSynced).getTime() > 6 * 60 * 60 * 1000 // amber after 6h
     : true;
 
   async function handleTap(e: React.MouseEvent) {
@@ -89,8 +89,9 @@ export function DashboardSyncButton({ serverLastSynced }: Props) {
     <button
       type="button"
       onClick={handleTap}
-      className="mt-1 inline-block text-[10px] text-white/30 hover:text-white/50 transition-colors"
+      className="mt-1 inline-flex items-center gap-1 text-[10px] text-white/30 hover:text-white/50 transition-colors"
     >
+      <span className="h-1.5 w-1.5 rounded-full bg-emerald-400/70" />
       {relativeTime(lastSynced)} · Sync
     </button>
   );

@@ -1,8 +1,30 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
+import { RefreshCw } from "lucide-react";
+
+const STRATEGY_CACHE_KEY = "solomon_strategy";
+const STRATEGY_CACHE_TS_KEY = "solomon_strategy_ts";
+const STRATEGY_TTL_MS = 4 * 60 * 60 * 1000; // 4 hours
+
+function getCachedStrategy(): string | null {
+  try {
+    const ts = Number(sessionStorage.getItem(STRATEGY_CACHE_TS_KEY) ?? "0");
+    if (Date.now() - ts > STRATEGY_TTL_MS) return null;
+    return sessionStorage.getItem(STRATEGY_CACHE_KEY);
+  } catch {
+    return null;
+  }
+}
+
+function setCachedStrategy(value: string) {
+  try {
+    sessionStorage.setItem(STRATEGY_CACHE_KEY, value);
+    sessionStorage.setItem(STRATEGY_CACHE_TS_KEY, String(Date.now()));
+  } catch { /* ignore */ }
+}
 
 interface MonthlyBucket { label: string; income: number; expense: number; net: number }
 
@@ -33,8 +55,29 @@ export function CashFlowView() {
   const router = useRouter();
   const [buckets, setBuckets] = useState<MonthlyBucket[]>([]);
   const [topCategories, setTopCategories] = useState<Array<{ name: string; total: number }>>([]);
-  const [insight, setInsight] = useState<string>("");
+  const [insight, setInsight] = useState<string>(() => getCachedStrategy() ?? "");
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const fetchStrategy = useCallback(async (force = false) => {
+    if (!force) {
+      const cached = getCachedStrategy();
+      if (cached) { setInsight(cached); return; }
+    }
+    setRefreshing(true);
+    try {
+      const res = await fetch("/api/agents/solomon/strategy");
+      if (res.ok) {
+        const data = await res.json();
+        if (data?.strategy) {
+          setCachedStrategy(data.strategy);
+          setInsight(data.strategy);
+        }
+      }
+    } finally {
+      setRefreshing(false);
+    }
+  }, []);
 
   useEffect(() => {
     async function load() {
@@ -46,15 +89,16 @@ export function CashFlowView() {
       sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
       const sixMonthsAgoStr = sixMonthsAgo.toISOString().split("T")[0];
 
-      const [txRes, insightRes] = await Promise.all([
+      const [txRes] = await Promise.all([
         supabase
           .from("transactions")
           .select("date, amount, category")
           .eq("user_id", user.id)
           .gte("date", sixMonthsAgoStr)
           .order("date", { ascending: true }),
-        fetch("/api/agents/solomon/strategy").then(r => r.ok ? r.json() : null).catch(() => null),
       ]);
+
+      await fetchStrategy();
 
       const transactions = txRes.data ?? [];
 
@@ -95,11 +139,10 @@ export function CashFlowView() {
           .map(([name, total]) => ({ name, total }))
       );
 
-      if (insightRes?.strategy) setInsight(insightRes.strategy);
       setLoading(false);
     }
     load();
-  }, []);
+  }, [fetchStrategy]);
 
   if (loading) {
     return (
@@ -185,7 +228,17 @@ export function CashFlowView() {
       {/* Solomon insight */}
       {insight && (
         <div className="rounded-2xl border border-[var(--border)] bg-[var(--bg-card)] p-4">
-          <p className="text-[10px] font-semibold uppercase tracking-widest text-amber-500 mb-2">Solomon</p>
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-[10px] font-semibold uppercase tracking-widest text-amber-500">Solomon</p>
+            <button
+              onClick={() => fetchStrategy(true)}
+              disabled={refreshing}
+              className="text-[var(--text-3)] hover:text-[var(--text-2)] transition-colors disabled:opacity-40"
+              aria-label="Refresh Solomon's insight"
+            >
+              <RefreshCw className={`h-3 w-3 ${refreshing ? "animate-spin" : ""}`} />
+            </button>
+          </div>
           <p className="text-sm text-[var(--text-2)] leading-relaxed">{insight}</p>
         </div>
       )}

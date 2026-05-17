@@ -1,16 +1,16 @@
 "use client";
 
 import { useEffect, useState, useRef, useCallback } from "react";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
-type Alert = {
-  id: string;
-  message: string;
-  severity: "info" | "warning" | "danger";
-  type: string;
-  created_at: string;
-  is_read: boolean;
+type NotifItem = {
+  id: "insight" | "solomon";
+  text: string;
+  generatedAt: string;
+  seen: boolean;
+  href: string;
+  label: string;
 };
 
 function BellIcon() {
@@ -34,18 +34,75 @@ function timeAgo(dateStr: string): string {
 
 export function NotificationBell({ align = "right" }: { align?: "left" | "right" }) {
   const [authed, setAuthed] = useState(false);
-  const [alerts, setAlerts] = useState<Alert[]>([]);
+  const [items, setItems] = useState<NotifItem[]>([]);
   const [open, setOpen] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
   const pathname = usePathname();
+  const router = useRouter();
 
-  const fetchAlerts = useCallback(async (supabase: ReturnType<typeof createClient>) => {
-    const { data } = await supabase
-      .from("alerts")
-      .select("id, message, severity, type, created_at, is_read")
-      .order("created_at", { ascending: false })
-      .limit(20);
-    setAlerts((data ?? []) as Alert[]);
+  const fetchItems = useCallback(async (supabase: ReturnType<typeof createClient>) => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const [insightRes, solomonRes, settingsRes] = await Promise.all([
+      supabase
+        .from("luka_daily_insights")
+        .select("id, insight_text, generated_at")
+        .eq("user_id", user.id)
+        .eq("is_active", true)
+        .maybeSingle(),
+      supabase
+        .from("weekly_reports")
+        .select("id, week_start, summary, stewardship_score")
+        .eq("user_id", user.id)
+        .order("week_start", { ascending: false })
+        .limit(1)
+        .maybeSingle(),
+      supabase
+        .from("user_settings")
+        .select("insight_seen_at, solomon_seen_at")
+        .eq("user_id", user.id)
+        .maybeSingle(),
+    ]);
+
+    const insightSeenAt = settingsRes.data?.insight_seen_at ?? null;
+    const solomonSeenAt = settingsRes.data?.solomon_seen_at ?? null;
+    const result: NotifItem[] = [];
+
+    if (insightRes.data) {
+      const generatedAt = insightRes.data.generated_at;
+      const seen = insightSeenAt ? new Date(insightSeenAt) >= new Date(generatedAt) : false;
+      result.push({
+        id: "insight",
+        text: insightRes.data.insight_text,
+        generatedAt,
+        seen,
+        href: "/",
+        label: "Luka's Insight",
+      });
+    }
+
+    if (solomonRes.data) {
+      const weekStart = solomonRes.data.week_start;
+      // Only show Saturday through Monday (days 6, 0, 1)
+      const today = new Date();
+      const dow = today.getDay();
+      const isWeekend = dow === 6 || dow === 0 || dow === 1;
+      if (isWeekend) {
+        const seen = solomonSeenAt ? new Date(solomonSeenAt) >= new Date(weekStart) : false;
+        const score = solomonRes.data.stewardship_score;
+        result.push({
+          id: "solomon",
+          text: solomonRes.data.summary ?? "Solomon's weekly word is ready.",
+          generatedAt: weekStart,
+          seen,
+          href: "/pulse/solomon",
+          label: `Solomon's Word${score ? ` · ${score}/10` : ""}`,
+        });
+      }
+    }
+
+    setItems(result);
   }, []);
 
   useEffect(() => {
@@ -53,15 +110,15 @@ export function NotificationBell({ align = "right" }: { align?: "left" | "right"
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) {
         setAuthed(true);
-        fetchAlerts(supabase);
+        fetchItems(supabase);
       }
     });
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_e, session) => {
       setAuthed(!!session);
-      if (session) fetchAlerts(supabase);
+      if (session) fetchItems(supabase);
     });
     return () => subscription.unsubscribe();
-  }, [fetchAlerts]);
+  }, [fetchItems]);
 
   useEffect(() => {
     function onClickOutside(e: MouseEvent) {
@@ -76,33 +133,22 @@ export function NotificationBell({ align = "right" }: { align?: "left" | "right"
   const isAuthPage = pathname === "/login" || pathname.startsWith("/onboarding");
   if (!authed || isAuthPage) return null;
 
-  const unread = alerts.filter((a) => !a.is_read);
+  const unread = items.filter((i) => !i.seen);
   const hasUnread = unread.length > 0;
 
-  async function markRead(id: string) {
+  async function markSeen(id: NotifItem["id"]) {
     const supabase = createClient();
-    await supabase.from("alerts").update({ is_read: true }).eq("id", id);
-    setAlerts((prev) => prev.map((a) => (a.id === id ? { ...a, is_read: true } : a)));
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+    const col = id === "insight" ? "insight_seen_at" : "solomon_seen_at";
+    await supabase.from("user_settings").update({ [col]: new Date().toISOString() }).eq("user_id", user.id);
+    setItems((prev) => prev.map((i) => i.id === id ? { ...i, seen: true } : i));
   }
 
-  async function markAllRead() {
-    const ids = unread.map((a) => a.id);
-    if (ids.length === 0) return;
-    const supabase = createClient();
-    await supabase.from("alerts").update({ is_read: true }).in("id", ids);
-    setAlerts((prev) => prev.map((a) => ({ ...a, is_read: true })));
-  }
-
-  function dotColor(severity: string) {
-    if (severity === "danger") return "bg-[var(--color-danger)]";
-    if (severity === "warning") return "bg-amber-500";
-    return "bg-[var(--accent)]";
-  }
-
-  function textColor(severity: string) {
-    if (severity === "danger") return "text-[var(--color-danger)]";
-    if (severity === "warning") return "text-amber-400";
-    return "text-[var(--text-2)]";
+  async function handleItemClick(item: NotifItem) {
+    await markSeen(item.id);
+    setOpen(false);
+    router.push(item.href);
   }
 
   return (
@@ -134,54 +180,49 @@ export function NotificationBell({ align = "right" }: { align?: "left" | "right"
             }
           `}</style>
 
-          {/* Header */}
           <div className="flex items-center justify-between border-b border-[var(--border)] px-4 py-3">
             <p className="text-sm font-medium text-[var(--text-1)]">
               Notifications
               {hasUnread && (
-                <span className="ml-2 rounded-full bg-[var(--color-danger)]/15 px-1.5 py-0.5 text-[10px] font-semibold text-[var(--color-danger)]">
+                <span className="ml-2 rounded-full bg-[var(--accent)]/15 px-1.5 py-0.5 text-[10px] font-semibold text-[var(--accent)]">
                   {unread.length}
                 </span>
               )}
             </p>
-            {hasUnread && (
-              <button
-                onClick={markAllRead}
-                className="text-xs text-[var(--text-3)] transition-colors hover:text-[var(--color-income)]"
-              >
-                Mark all read
-              </button>
-            )}
           </div>
 
-          {/* List */}
           <div className="max-h-[340px] overflow-y-auto">
-            {alerts.length === 0 ? (
+            {items.length === 0 ? (
               <div className="flex flex-col items-center gap-1.5 px-4 py-10 text-center">
                 <p className="text-sm font-medium text-[var(--color-income)]">You&apos;re all caught up ✓</p>
                 <p className="text-xs text-[var(--text-3)]">No notifications right now</p>
               </div>
             ) : (
-              <div className="divide-y divide-[var(--divider)]">
-                {alerts.map((alert) => (
+              <div className="divide-y divide-[var(--border-subtle)]">
+                {items.map((item) => (
                   <button
-                    key={alert.id}
-                    onClick={() => markRead(alert.id)}
+                    key={item.id}
+                    onClick={() => handleItemClick(item)}
                     className={`w-full px-4 py-3 text-left transition-colors hover:bg-[var(--bg-elevated)] ${
-                      alert.is_read ? "opacity-40" : ""
+                      item.seen ? "opacity-50" : ""
                     }`}
                   >
                     <div className="flex items-start gap-3">
                       <span
-                        className={`mt-1.5 h-2 w-2 flex-shrink-0 rounded-full ${dotColor(alert.severity)}`}
+                        className={`mt-1.5 h-2 w-2 flex-shrink-0 rounded-full ${
+                          item.id === "solomon" ? "bg-[var(--solomon)]" : "bg-[var(--luka)]"
+                        }`}
                       />
                       <div className="flex-1 min-w-0">
-                        <p className={`text-xs leading-relaxed ${textColor(alert.severity)}`}>
-                          {alert.message}
+                        <p className="text-[10px] font-semibold uppercase tracking-wide text-[var(--text-3)] mb-0.5">
+                          {item.label}
                         </p>
-                        <p className="mt-0.5 text-[10px] text-[var(--text-3)]">{timeAgo(alert.created_at)}</p>
+                        <p className="text-xs leading-relaxed text-[var(--text-2)] line-clamp-2">
+                          {item.text}
+                        </p>
+                        <p className="mt-0.5 text-[10px] text-[var(--text-3)]">{timeAgo(item.generatedAt)}</p>
                       </div>
-                      {!alert.is_read && (
+                      {!item.seen && (
                         <span className="mt-1.5 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-[var(--accent)]" />
                       )}
                     </div>

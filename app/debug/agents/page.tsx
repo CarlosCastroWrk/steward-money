@@ -8,6 +8,8 @@ import { AgentsDebugView } from "@/components/debug/AgentsDebugView";
 import { getActiveInsight } from "@/lib/daily-insight";
 
 export default async function AgentsDebugPage() {
+  if (process.env.NODE_ENV !== "development") redirect("/");
+
   const supabase = createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/login");
