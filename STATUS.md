@@ -1,6 +1,45 @@
 # STATUS.md — Steward Money
 
-_Last updated: 2026-05-13_
+_Last updated: 2026-05-17_
+
+## Shipped 2026-05-17 — SPRINT_MAY2026 Complete: All 20 Tasks (session 8)
+
+Commits `7eb85a92` (Phase 1) · `b01453a4` (Phase 2) · `e9870b1f` (Phase 3) · `fc221340` (Phase 4)
+Deploy: `steward-money-w8m8.vercel.app` (build `dpl_55CmrSaSLL8uSJXvstKRBWQmEtew`)
+
+**Phase 1 — Dead code removal (Tasks 1–5)**
+- Removed `resend` from package.json (no imports found; welcome email scrapped)
+- Tombstoned 5 archived agents (Argus, Silas, Manna, Eden, Nova) → 410 Gone responses
+- Extracted `toMonthly()` from page.tsx into `lib/format.ts` as named export
+- Deleted `DashboardTabs` and swipeable tab system (replaced by vertical scroll in Phase 3)
+- Removed stale `AllocationCard` (rebuilt from scratch in Phase 4 Task 17)
+
+**Phase 2 — Bug fixes (Tasks 6–10)**
+- Dashboard queries reduced from 14 → 9 (bills 3→1, transactions 2→1, upcoming 2→1, accounts 2→1)
+- `NotificationBell` rewritten — pulls from `luka_daily_insights` + `weekly_reports`; dot when unseen; marks seen via `user_settings`; migration 031 adds `insight_seen_at` + `solomon_seen_at`
+- `CashFlowView` Solomon strategy: sessionStorage cache (4h TTL) + Refresh button; removes live fetch from dashboard load
+- `DashboardSyncButton` stale threshold 2h → 6h; green dot added for fresh state
+- `/debug/agents` page: redirects to `/` in production (`NODE_ENV !== "development"`)
+
+**Phase 3 — One dashboard (Tasks 11–15)**
+- Income panel (next paycheck date + amount) added between insight and STS card
+- Liquid Cash + Net Position computed from accounts data; shown as companion numbers on STS card
+- Stats strip reordered: Spent / Bills / Income Expected / Goals
+- `MoneyFlowChart` added (CSS bars, no recharts — not installed; CLAUDE.md prohibits adding deps)
+- Dashboard replaced tabs with vertical scroll: insight → income → STS → calendar → stats → chart → recent activity → bills → goals → categories
+
+**Phase 4 — Luka AI experience (Tasks 16–20)**
+- `LukaContextLink` component: "Talk to Luka about this →" button dispatches `luka:open` CustomEvent with prefill text; added to `LukaDailyInsight`
+- Allocation flow: webhook detects paycheck landing (±$50 match vs active `income_sources`), sets `allocation_pending=true`; `AllocationCard` fetches `/api/agents/allocate` and displays breakdown; `AllocationCardWrapper` mounts on dashboard; dismiss clears flag in DB. Migration 032 adds `allocation_pending` to `user_settings`
+- Solomon card: week score + word shown on dashboard (conditional Sat/Sun/Mon)
+- Memories icon link added to both desktop and mobile Luka chat headers (→ `/more/memory`)
+- Voice tip: first-open-only banner "Tap the mic icon to talk instead of type", localStorage-flagged, auto-dismisses after 5s or on first message
+
+**Pending action (user):**
+- Run migration `032_allocation_pending.sql` in Supabase SQL editor (adds `allocation_pending boolean not null default false` to `user_settings`)
+- Migration 031 (`insight_seen_at`, `solomon_seen_at`) should also be confirmed run if not already applied
+
+
 
 ## Shipped 2026-05-13 — Plaid Stability Bugfix (session 7)
 
