@@ -1,5 +1,7 @@
 # CLAUDE.md
 
+**Active Sprint:** See `SPRINT_MAY2026.md` for the current improvement plan — 20 tasks across 4 phases. Start there.
+
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 ## Commands

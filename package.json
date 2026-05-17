@@ -24,8 +24,7 @@
     "plaid": "^42.1.0",
     "react": "18.3.1",
     "react-dom": "18.3.1",
-    "react-plaid-link": "^4.1.1",
-    "resend": "^6.12.3"
+    "react-plaid-link": "^4.1.1"
   },
   "devDependencies": {
     "@playwright/test": "^1.59.1",

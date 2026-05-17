@@ -2,7 +2,7 @@ import { Metadata } from "next";
 import { calculateSafeToSpend } from "@/lib/safe-to-spend";
 import { advanceStaleIncomeDates } from "@/lib/income";
 import { createClient } from "@/lib/supabase/server";
-import { formatUSD, formatUSDCents, formatDate } from "@/lib/format";
+import { formatUSD, formatUSDCents, formatDate, toMonthly } from "@/lib/format";
 import Link from "next/link";
 import { GreetingHeader } from "@/components/dashboard/GreetingHeader";
 import { LukaDailyInsight } from "@/components/dashboard/LukaDailyInsight";
@@ -19,15 +19,6 @@ export const metadata: Metadata = {
   title: "Dashboard — Steward Money",
 };
 
-function toMonthly(amount: number, freq: string): number {
-  switch (freq) {
-    case "weekly":    return (amount * 52) / 12;
-    case "biweekly":  return (amount * 26) / 12;
-    case "quarterly": return amount / 3;
-    case "yearly":    return amount / 12;
-    default:          return amount;
-  }
-}
 
 export default async function DashboardPage() {
   const supabase = createClient();

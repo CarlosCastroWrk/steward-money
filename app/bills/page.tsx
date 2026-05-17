@@ -4,16 +4,7 @@ export const metadata: Metadata = { title: "Expenses" };
 import { createClient } from "@/lib/supabase/server";
 import { ExpensesView } from "@/components/bills/ExpensesView";
 import { BackButton } from "@/components/BackButton";
-
-function toMonthly(amount: number, freq: string): number {
-  switch (freq) {
-    case "weekly":    return (amount * 52) / 12;
-    case "biweekly":  return (amount * 26) / 12;
-    case "quarterly": return amount / 3;
-    case "yearly":    return amount / 12;
-    default:          return amount;
-  }
-}
+import { toMonthly } from "@/lib/format";
 
 export default async function ExpensesPage() {
   const supabase = createClient();
