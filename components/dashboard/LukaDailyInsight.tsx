@@ -1,4 +1,5 @@
 import type { LukaInsight } from "@/lib/daily-insight";
+import { LukaContextLink } from "@/components/luka/LukaContextLink";
 
 function LukaIcon() {
   return (
@@ -36,9 +37,12 @@ export function LukaDailyInsight({ insight }: { insight: LukaInsight | null }) {
       </div>
 
       {insight ? (
-        <p className="text-sm leading-relaxed text-[var(--text-2)]">
-          {insight.insight_text}
-        </p>
+        <>
+          <p className="text-sm leading-relaxed text-[var(--text-2)]">
+            {insight.insight_text}
+          </p>
+          <LukaContextLink context={insight.insight_text} />
+        </>
       ) : (
         <p className="text-sm italic leading-relaxed text-[var(--text-3)]">
           Luka is still getting to know your patterns. Check back tomorrow.

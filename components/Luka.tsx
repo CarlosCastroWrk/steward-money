@@ -233,6 +233,8 @@ function MessageList({
   messagesEndRef,
   voiceOutputEnabled,
   lukaContext,
+  showVoiceTip,
+  onDismissVoiceTip,
 }: {
   messages: Message[];
   loading: boolean;
@@ -240,6 +242,8 @@ function MessageList({
   messagesEndRef: React.RefObject<HTMLDivElement>;
   voiceOutputEnabled: boolean;
   lukaContext: LukaContext | null;
+  showVoiceTip?: boolean;
+  onDismissVoiceTip?: () => void;
 }) {
   const [speaking, setSpeaking] = useState(false);
 
@@ -342,6 +346,16 @@ function MessageList({
               </button>
             ))}
           </div>
+          {showVoiceTip && (
+            <div className="mt-4 flex items-center gap-2 rounded-xl bg-[var(--luka)]/10 border border-[var(--luka)]/20 px-3.5 py-2.5 text-xs text-[var(--luka)]">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-3.5 w-3.5 flex-shrink-0">
+                <path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z" />
+                <path d="M19 10v2a7 7 0 01-14 0v-2M12 19v4M8 23h8" />
+              </svg>
+              <span className="flex-1">Tip: tap the mic icon to talk instead of type</span>
+              <button type="button" onClick={onDismissVoiceTip} className="flex-shrink-0 text-[var(--luka)]/60 hover:text-[var(--luka)] transition-colors leading-none" aria-label="Dismiss">×</button>
+            </div>
+          )}
         </div>
       )}
       {rendered}
@@ -483,6 +497,8 @@ export function Luka() {
   const [showConvDrawer, setShowConvDrawer] = useState(false);
   const [userMsgCount, setUserMsgCount] = useState(0);
 
+  const [showVoiceTip, setShowVoiceTip] = useState(false);
+
   // Ensure portal target exists (avoid SSR mismatch)
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
@@ -502,6 +518,17 @@ export function Luka() {
     window.addEventListener("luka:open", handler);
     return () => window.removeEventListener("luka:open", handler);
   }, []);
+
+  // ── Voice tip — show once on first open ────────────────────────────────────
+  useEffect(() => {
+    if (!open) return;
+    if (typeof window === "undefined") return;
+    if (localStorage.getItem("luka_voice_tip_shown")) return;
+    setShowVoiceTip(true);
+    localStorage.setItem("luka_voice_tip_shown", "1");
+    const t = setTimeout(() => setShowVoiceTip(false), 5000);
+    return () => clearTimeout(t);
+  }, [open]);
 
   // ── Auth + context ─────────────────────────────────────────────────────────
   useEffect(() => {
@@ -638,6 +665,7 @@ export function Luka() {
   }, []);
 
   useEffect(() => { scrollToBottom(); }, [messages, loading, scrollToBottom]);
+  useEffect(() => { if (userMsgCount > 0) setShowVoiceTip(false); }, [userMsgCount]);
   useEffect(() => {
     if (open && inputRef.current) setTimeout(() => inputRef.current?.focus(), 150);
   }, [open]);
@@ -810,6 +838,9 @@ export function Luka() {
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
             <p className="text-sm font-medium text-[var(--text-1)]">Luka</p>
+            <a href="/more/memory" onClick={() => setOpen(false)} className="text-[var(--text-3)] hover:text-[var(--luka)] transition-colors" title="Memories" aria-label="View memories">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" className="h-3.5 w-3.5"><path d="M9 3H5a2 2 0 00-2 2v4m6-6h10a2 2 0 012 2v4M9 3v18m0 0h10a2 2 0 002-2V9M9 21H5a2 2 0 01-2-2V9m0 0h18" /></svg>
+            </a>
             <span className="flex items-center gap-1 rounded-full border border-[var(--border)] px-2 py-0.5 text-[9px] text-[var(--text-3)]">
               <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
               {lukaContext ? "Knows your situation" : "Online"}
@@ -855,6 +886,11 @@ export function Luka() {
           <SparkleIcon className="h-4 w-4 text-white" />
         </div>
         <p className="flex-1 text-sm font-medium text-[var(--text-1)]">Luka</p>
+        <a href="/more/memory" onClick={() => setOpen(false)} className="text-[var(--text-3)] hover:text-[var(--luka)] transition-colors" title="Memories" aria-label="View memories">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" className="h-3.5 w-3.5">
+            <path d="M9 3H5a2 2 0 00-2 2v4m6-6h10a2 2 0 012 2v4M9 3v18m0 0h10a2 2 0 002-2V9M9 21H5a2 2 0 01-2-2V9m0 0h18" />
+          </svg>
+        </a>
         {listening && (
           <span className="flex items-center gap-1 rounded-full bg-red-500/15 px-2 py-0.5 text-[10px] text-red-400">
             <span className="h-1.5 w-1.5 rounded-full bg-red-400 animate-pulse" />
@@ -892,6 +928,8 @@ export function Luka() {
       messagesEndRef={messagesEndRef}
       voiceOutputEnabled={voiceOutputEnabled}
       lukaContext={lukaContext}
+      showVoiceTip={showVoiceTip}
+      onDismissVoiceTip={() => setShowVoiceTip(false)}
     />
   );
 

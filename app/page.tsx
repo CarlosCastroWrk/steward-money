@@ -11,6 +11,7 @@ import { CalendarCard } from "@/components/dashboard/CalendarCard";
 import { ConnectBankCard } from "@/components/dashboard/ConnectBankCard";
 import { DashboardSyncButton } from "@/components/dashboard/DashboardSyncButton";
 import { MoneyFlowChart } from "@/components/dashboard/MoneyFlowChart";
+import { AllocationCardWrapper } from "@/components/dashboard/AllocationCardWrapper";
 import { generateInsightIfNeeded } from "@/lib/daily-insight";
 
 export const dynamic = "force-dynamic";
@@ -43,11 +44,12 @@ export default async function DashboardPage() {
     accountsResult,
     calendarConnResult,
     primaryIncomeResult,
+    solomonResult,
   ] = await Promise.all([
     calculateSafeToSpend(supabase, user.id),
     generateInsightIfNeeded(supabase, user.id).catch(() => null),
     supabase.from("goals").select("id, name, target_amount, current_amount, deadline").eq("user_id", user.id).order("priority", { ascending: true }),
-    supabase.from("user_settings").select("display_name, last_plan_review").eq("user_id", user.id).maybeSingle(),
+    supabase.from("user_settings").select("display_name, last_plan_review, allocation_pending").eq("user_id", user.id).maybeSingle(),
     // Bills: one query, filter client-side for upcoming/monthly/subscriptions
     supabase.from("bills").select("id, name, amount, frequency, next_due_date, is_autopay, is_subscription, subscription_status").eq("user_id", user.id).is("paid_at", null),
     // Transactions: one query from month start covers both spending total and recent activity
@@ -59,6 +61,10 @@ export default async function DashboardPage() {
     supabase.from("calendar_connections").select("user_id").eq("user_id", user.id).maybeSingle(),
     // All active income sources — primary is highest amount, also used for income expected total
     supabase.from("income_sources").select("name, amount, frequency, next_expected_date").eq("user_id", user.id).eq("is_active", true).order("amount", { ascending: false }),
+    // Solomon's weekly word — only fetch on Sat/Sun/Mon (days 6, 0, 1)
+    [6, 0, 1].includes(new Date().getDay())
+      ? supabase.from("weekly_reports").select("solomon_word, stewardship_score, week_start").eq("user_id", user.id).order("week_start", { ascending: false }).limit(1).maybeSingle()
+      : Promise.resolve({ data: null }),
   ]);
 
   const calendarConnected = !!calendarConnResult.data;
@@ -107,6 +113,8 @@ export default async function DashboardPage() {
     catMap.set(k, (catMap.get(k) ?? 0) + Math.abs(Number(tx.amount)));
   }
   const topCategories = [...catMap.entries()].sort((a, b) => b[1] - a[1]).slice(0, 5);
+
+  const solomonWord = (solomonResult as { data: { solomon_word?: string; stewardship_score?: number } | null }).data;
 
   const allIncomeSources = primaryIncomeResult.data ?? [];
   const primaryIncome = allIncomeSources[0] ?? null; // highest amount = primary
@@ -216,6 +224,26 @@ export default async function DashboardPage() {
 
       {/* 4.5 Money Flow mini-chart */}
       {hasAccounts && <MoneyFlowChart income={monthlyIncomeExpected} spent={totalSpentMonth} />}
+
+      {/* Solomon's Word — Sat/Sun/Mon only */}
+      {solomonWord?.solomon_word && (
+        <div className="rounded-2xl border border-[var(--solomon)]/30 bg-[var(--bg-card)] px-5 py-4">
+          <div className="flex items-center justify-between mb-3">
+            <p className="text-[10px] font-semibold uppercase tracking-widest text-[var(--solomon)]">
+              Solomon&apos;s Word
+            </p>
+            {solomonWord.stewardship_score && (
+              <span className="text-[10px] font-semibold text-[var(--solomon)] bg-[var(--solomon)]/10 px-2 py-0.5 rounded-full">
+                {solomonWord.stewardship_score}/10
+              </span>
+            )}
+          </div>
+          <p className="text-sm leading-relaxed text-[var(--text-2)]">{solomonWord.solomon_word}</p>
+        </div>
+      )}
+
+      {/* Allocation card — appears after paycheck lands */}
+      <AllocationCardWrapper initiallyPending={!!settingsResult.data?.allocation_pending} />
 
       {/* 5. Recent activity */}
       <section>

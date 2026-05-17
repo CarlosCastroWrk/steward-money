@@ -125,6 +125,36 @@ async function runTransactionSync(accessToken: string, itemDbId: string, userId:
   console.log(`[webhook] sync done for item ${itemDbId}: added=${addedCount} removed=${removedCount}`);
 }
 
+async function checkIncomeAndSetAllocationPending(
+  supabase: ReturnType<typeof createAdminClient>,
+  userId: string
+) {
+  const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+  const [recentTxRes, incomeSrcRes] = await Promise.all([
+    supabase
+      .from("transactions")
+      .select("amount")
+      .eq("user_id", userId)
+      .gt("amount", 0)
+      .gte("created_at", oneHourAgo),
+    supabase
+      .from("income_sources")
+      .select("amount")
+      .eq("user_id", userId)
+      .eq("is_active", true),
+  ]);
+  const recentIncome = recentTxRes.data ?? [];
+  const incomeSources = incomeSrcRes.data ?? [];
+  if (recentIncome.length === 0 || incomeSources.length === 0) return;
+  const matched = recentIncome.some((tx) =>
+    incomeSources.some((src) => Math.abs(Number(tx.amount) - Number(src.amount)) <= 50)
+  );
+  if (matched) {
+    await supabase.from("user_settings").update({ allocation_pending: true }).eq("user_id", userId);
+    console.log(`[webhook] allocation_pending set for user ${userId}`);
+  }
+}
+
 export async function POST(req: NextRequest) {
   const rawBody = await req.text();
 
@@ -166,6 +196,10 @@ export async function POST(req: NextRequest) {
         // Fire-and-forget: check if the new transactions should refresh the daily insight
         generateInsightIfNeeded(supabase, item.user_id).catch((err) => {
           console.error("[webhook] insight regen failed (non-fatal):", err);
+        });
+        // Fire-and-forget: check if any income transaction landed — set allocation_pending if so
+        checkIncomeAndSetAllocationPending(supabase, item.user_id).catch((err) => {
+          console.error("[webhook] allocation check failed (non-fatal):", err);
         });
       } else if (webhookCode === "TRANSACTIONS_REMOVED") {
         const removedIds = (body.removed_transactions as string[] | undefined) ?? [];
